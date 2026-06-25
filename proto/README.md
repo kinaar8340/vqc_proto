@@ -93,7 +93,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `orbital_braille/stable_fonts.py` | **Emergent codeword font.** Phase ladder from TOE constants; Fisher-Rao separation metric; glyph lookup by byte value. |
 | `orbital_braille/font_optimizer.py` | **Font optimizer.** Gradient-free search maximizing Fisher-Rao separation subject to W_g and braiding penalties. |
 | `orbital_braille/altermagnetic.py` | **p-wave BMGL.** SOC λ = 0.4, odd-parity p = 1.2, γ₁ = 1.5 inhibition; 16-qubit repetition QEC proxy. Pulled from `src/encode_decode.py`. |
-| `orbital_braille/slm_typehead.py` | **SLM virtual typehead.** Phase-only hologram generation for software-defined orbits (no mechanical rotation). |
+| `orbital_braille/slm_typehead.py` | **SLM virtual typehead.** Device presets (Holoeye/Meadowlark/Thorlabs), phase export (PNG/TIFF/raw), Gerchberg-Saxton, `manifest.json` sidecar. |
+| `generate_slm_holograms.py` | **SLM package CLI.** Full hologram bundle for bench upload. See [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md). |
 | `orbital_braille/turbulence.py` | **Free-space channel.** Kolmogorov phase screens (Fried r₀), pointing jitter — LEO/satellite link proxy on top of BMGL. |
 | `run_demo.py` | End-to-end encode → turbulence → decode + 6-panel figure. |
 | `sweep_orbs.py` | Sweep orb count 2–6; report separation and fidelity. |
@@ -143,6 +144,19 @@ A person of ordinary skill in the art can reproduce this embodiment without undu
 2. Observe pyramidal FM pulse and spectral shards in the generated six-panel figure.
 3. Verify shard recovery fidelity > 0.92 through the included p-wave BMGL turbulence model.
 4. Export SLM phase masks via `generate_slm_holograms.py` for hardware validation.
+5. Load `outputs/slm/*/frames/phase_*.png` onto a phase-only SLM per [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md).
+
+### How to reproduce on real hardware
+
+| Step | Action |
+|------|--------|
+| 1 | `python generate_slm_holograms.py --device holoeye_pluto_2 --num-orbs 4` |
+| 2 | Upload `frames/phase_0000.png` … to SLM (8-bit grayscale, phase-only mode) |
+| 3 | Bench: laser → SLM → Fourier lens → camera far-field |
+| 4 | Expect OAM donut + 4 Braille lobes; play sequence for pyramidal chirp |
+| 5 | Compare camera capture to `preview_montage.png` and `manifest.json` duties |
+
+**Full guide:** [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) — device presets, LUT calibration, troubleshooting.
 
 > **Provenance:** Simulation developed June 2026 · Repo [`kinaar8340/vqc_proto`](https://github.com/kinaar8340/vqc_proto) · Parent [`vqc_sims_public`](https://github.com/kinaar8340/vqc_sims_public) · Patent chain: US provisional 63/913,110 + non-provisional Docket VQC-2025-NP01.
 
@@ -163,7 +177,8 @@ A person of ordinary skill in the art can reproduce this embodiment without undu
 
 ## Future work
 
-- [ ] **SLM bench validation** — upload `generate_slm_holograms.py` PNG frames to phase-only SLM; camera far-field decode.
+- [x] **SLM hologram export** — `generate_slm_holograms.py` + [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md)
+- [ ] **SLM bench validation** — upload frames to phase-only SLM; camera far-field decode.
 - [ ] **fs-laser helical phase masks** — outsource ℓ = 3 (or target) masks per 2014 RSC inscription template; OSA fidelity test.
 - [ ] **Meta-optimizer integration** — wire `font_optimizer.py` + `typehead.py` into `toe/scripts/meta_optimize_invariants.py` for auto-discovery of orb radii, ω, and duty cycles.
 - [ ] **Fisher-Rao repo coupling** — use `~/Projects/Fisher_Rao` geodesic losses for end-to-end font training.

@@ -7,7 +7,18 @@ from .altermagnetic import PWaveBMGL, apply_turbulence
 from .quaternion_codec import Quaternion, encode_shard, decode_shard
 from .stable_fonts import EmergentConstants, build_stable_font, font_separation
 from .font_optimizer import optimize_font, FontOptResult
-from .slm_typehead import SLMConfig, slm_phase_pattern, slm_phase_sequence, save_phase_hologram
+from .slm_typehead import (
+    SLMConfig,
+    SLMDevicePreset,
+    SLM_PRESETS,
+    SLMPackageMeta,
+    export_hologram_package,
+    gerchberg_saxton,
+    slm_phase_pattern,
+    slm_phase_sequence,
+    save_phase_hologram,
+    phase_to_levels,
+)
 from .turbulence import apply_free_space_channel, kolmogorov_phase_screen
 
 __all__ = [
@@ -29,9 +40,15 @@ __all__ = [
     "optimize_font",
     "FontOptResult",
     "SLMConfig",
+    "SLMDevicePreset",
+    "SLM_PRESETS",
+    "SLMPackageMeta",
+    "export_hologram_package",
+    "gerchberg_saxton",
     "slm_phase_pattern",
     "slm_phase_sequence",
     "save_phase_hologram",
+    "phase_to_levels",
     "apply_free_space_channel",
     "kolmogorov_phase_screen",
 ]

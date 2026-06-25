@@ -106,7 +106,9 @@ This simulation constitutes **reduction-to-practice** of the multi-orb point-sou
 
 > **Provenance:** Developed June 2026 as sibling repo [`vqc_proto`](https://github.com/kinaar8340/vqc_proto), extending [`vqc_sims_public`](https://github.com/kinaar8340/vqc_sims_public). Reproducible via `run_demo.py` with fixed seed (42). Full claim mapping in [`proto/README.md`](proto/README.md).
 
-**Future work (high priority):** phase-only SLM bench validation · integration with `meta_optimize_invariants.py` · fs-laser inscribed helical masks + low-cost laser array PoC.
+**SLM virtual typehead (ready):** [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) · `python proto/generate_slm_holograms.py --device holoeye_pluto_2`
+
+**Future work (high priority):** SLM bench validation · `meta_optimize_invariants.py` integration · fs-laser helical masks + laser array PoC.
 
 ---
 
