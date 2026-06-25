@@ -21,25 +21,43 @@ The intensity pattern from superposed orbs produces **Chladni-like nodal interfe
 
 ---
 
-## Demo output
+## Latest validated demo (4 orbs)
 
-![Orbital Braille simulation — phase, turbulence, intensity, pyramidal pulse, spectral shards, typehead layout](outputs/orbital_braille_demo.png)
+**Reproduce:** `.venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4` (seed 42)
 
-**Encoded payload:** `"I live in Oregon"` (matches patent Figure 1 ASCII shard example)  
-**Configuration:** 4 orbs, γ₁ = 1.5 p-wave BMGL, emergent stable font  
-**Recovery:** 92.9% shard fidelity (Pearson), dominant OAM mode recovered after turbulence
+| Metric | Value |
+|--------|-------|
+| Payload | `"I live in Oregon"` (patent Figure 1 ASCII shards) |
+| Encoded quaternion | w=0.428, x=0.188, y=0.634, z=0.616 |
+| Glyph duties | [0.898, 0.587, 0.10, 0.10] (4-orb PWM Braille cell) |
+| Fisher-Rao font separation | **0.989 rad** |
+| Shard fidelity (post-BMGL) | **0.929** (Pearson) |
+| Glyph match | index **2**, fidelity **0.868** |
+| Dominant ℓ recovered | 0 (after Kolmogorov + pointing jitter + BMGL) |
+
+![Orbital Braille Demo — 4-orb layout, multi-lobe phase, OAM donut + Braille dots, pyramidal pulse, spectral shards](outputs/orbital_braille_demo.png)
+
+*Panels: (1) clean helical phase, (2) phase after p-wave BMGL, (3) intensity with OAM donut + Braille lobes, (4) pyramidal FM pulse, (5) Welch spectral shards, (6) typehead orb layout with ℓ labels and PWM duties.*
 
 ---
 
 ## Quick start
 
 ```bash
-cd proto
+# From repo root after: git clone git@github.com:kinaar8340/vqc_proto.git
+cd vqc_proto/proto
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
+# Latest validated demo (metrics in table above)
 .venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
+
+# Compare orb counts 2–6
 .venv/bin/python sweep_orbs.py
+
+# Grid search: orbs × γ₁ × r₀
 .venv/bin/python meta_optimize_orbital.py
+
+# Export SLM phase hologram PNG frames
 .venv/bin/python generate_slm_holograms.py --frames 32
 ```
 
@@ -116,6 +134,17 @@ Maps to elements in the VQC non-provisional (Docket VQC-2025-NP01) and supplemen
 | **DWDM + OAM analogy** | Typehead orbs = parallel "colors" within one wavelength channel; each carries independent PWM shard layer. |
 
 **Distinct embodiment for continuation/divisional:** *"A data encoder comprising N ≥ 2 PWM-gated coherent point sources arranged on distinct orbital trajectories, wherein timed superposition of said sources generates a pyramidal frequency-modulated pulse whose Welch power spectrum comprises discrete spectral shards, and wherein said shards are impressed upon an orbital angular momentum Laguerre-Gaussian carrier beam modulated by a quaternion rotation."*
+
+### Reduction to practice statement
+
+A person of ordinary skill in the art can reproduce this embodiment without undue experimentation:
+
+1. Clone this repository and run `run_demo.py` with the documented command.
+2. Observe pyramidal FM pulse and spectral shards in the generated six-panel figure.
+3. Verify shard recovery fidelity > 0.92 through the included p-wave BMGL turbulence model.
+4. Export SLM phase masks via `generate_slm_holograms.py` for hardware validation.
+
+> **Provenance:** Simulation developed June 2026 · Repo [`kinaar8340/vqc_proto`](https://github.com/kinaar8340/vqc_proto) · Parent [`vqc_sims_public`](https://github.com/kinaar8340/vqc_sims_public) · Patent chain: US provisional 63/913,110 + non-provisional Docket VQC-2025-NP01.
 
 ---
 

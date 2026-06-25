@@ -32,45 +32,81 @@ Pre-generated simulation archives under `data/L199/` are not included in this re
 
 ## Orbital Braille Prototype (`proto/`)
 
-**New in this repo:** a working simulation of the **VQC Typehead / Orbital Braille** embodiment — *N* co-rotating, PWM-gated point sources whose interference imprints pyramidal spectral shards onto an OAM/quaternion carrier. Think IBM Selectric typeball meets optical Braille: orbital phases select the glyph, interference patterns are the "paper impression."
+**New in this repository:** a working end-to-end simulation of the **VQC Typehead / Orbital Braille** embodiment.
 
-![Orbital Braille demo — encoded phase, BMGL turbulence, OAM donut + Braille dots, pyramidal pulse, spectral shards, typehead layout](proto/outputs/orbital_braille_demo.png)
+*N* co-rotating, PWM-gated point sources whose interference imprints **pyramidal spectral shards** onto an OAM/quaternion carrier.  
+Concept: IBM Selectric typeball meets optical Braille — orbital phases + duties select the glyph; the far-field interference pattern is the "paper impression."
 
-*Demo output encoding `"I live in Oregon"` (patent Figure 1 payload) through p-wave BMGL turbulence — 92.9% shard fidelity recovery.*
+### Latest validated demo (4 orbs)
 
-**Technical documentation:** [`proto/README.md`](proto/README.md) — mapping table, module reference, patent claim alignment, future work.
+**Command:** `.venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4`
 
-### Quick start
+| Metric | Value |
+|--------|-------|
+| Payload | `"I live in Oregon"` (patent Figure 1) |
+| Encoded quaternion | w=0.428, x=0.188, y=0.634, z=0.616 |
+| Fisher-Rao font separation | **0.989 rad** |
+| Shard fidelity (post-BMGL) | **0.929** (Pearson) |
+| Glyph match | index **2**, fidelity **0.868** |
+| p-wave BMGL | γ₁ = 1.5, inhibition boost ≈ 1.167× |
+
+![Orbital Braille Demo — 4-orb layout, multi-lobe phase, OAM donut + Braille dots, pyramidal pulse, spectral shards](proto/outputs/orbital_braille_demo.png)
+
+*Six-panel output: clean helical phase → p-wave BMGL turbulence → intensity (OAM donut + orbital Braille lobes) → pyramidal FM pulse → Welch spectral shards → typehead orb positions (ℓ labels + PWM duties).*
+
+**Technical documentation & module reference:** [`proto/README.md`](proto/README.md) — typeball mapping, encoding pipeline, patent claim table, future work.
+
+### Quick start (4-orb prototype)
 
 ```bash
 git clone git@github.com:kinaar8340/vqc_proto.git
 cd vqc_proto/proto
+
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
+# Latest validated demo (reproduces metrics above)
 .venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
+
+# Compare orb counts (2–6)
 .venv/bin/python sweep_orbs.py
-.venv/bin/python meta_optimize_orbital.py      # grid search: orbs × γ₁ × r₀
-.venv/bin/python generate_slm_holograms.py     # export SLM phase PNG frames
+
+# Optional: grid search over orbs × γ₁ × r₀ + SLM hologram export
+.venv/bin/python meta_optimize_orbital.py
+.venv/bin/python generate_slm_holograms.py
 ```
 
-### Orb sweep results
+### Orb count trade-off (current results)
 
-| Orbs | Fisher-Rao separation | Shard fidelity | Glyph fidelity | Verdict |
-|------|----------------------|----------------|----------------|---------|
-| 2 | 0.787 rad | 0.937 | **0.999** | Best decode, cramped alphabet |
-| **4** | **0.989 rad** | **0.929** | 0.868 | **Prototype sweet spot** |
-| 6 | 1.027 rad | 0.920 | 0.804 | More capacity, harder demux |
+| Orbs | Fisher-Rao separation | Shard fidelity | Glyph fidelity | Recommendation |
+|------|----------------------|----------------|----------------|----------------|
+| 2 | 0.787 rad | 0.937 | **0.999** | Highest decode accuracy, limited alphabet |
+| **4** | **0.989 rad** | **0.929** | 0.868 | **Prototype sweet spot — best balance** |
+| 6 | 1.027 rad | 0.920 | 0.804 | Higher capacity, increased demux difficulty |
 
-### Why 4 orbs?
+### Why 4 orbs is the current prototype choice
 
-Four orbiting sources hit the best trade-off for a bench or SLM prototype:
+- Near-ideal codeword separation (~1 rad geodesic distance on the PWM duty simplex)
+- **>92% shard recovery** after realistic turbulence (Kolmogorov + pointing jitter + p-wave BMGL)
+- Natural mapping to a **4-dot extended Braille cell**
+- Directly implementable on **SLM** (virtual orbits, no mechanics) or a simple rotating 4-laser array
+- Aligns with VQC claims: pyramidal FM pulses, spectral shard encoding, quaternion rotation, p-wave BMGL robustness
 
-1. **Fisher-Rao glyph separation ≈ 1 rad** — codewords are well-separated on the duty-cycle simplex (stable "font" locked to emergent constants 350/π, κ = 0.85, braiding 0.084).
-2. **>92% shard fidelity** through simulated p-wave BMGL turbulence (γ₁ = 1.5, ~17% error inhibition).
-3. **Natural Braille analog** — four independent PWM "dots" give combinatorial glyph capacity without the mode overlap that degrades decode above 6 orbs.
-4. **Hardware-feasible** — mappable to four laser diodes on a rotating arm, or four virtual spots on a phase-only SLM (no moving parts).
+### Reduction to practice & patent enablement
 
-Two orbs decode almost perfectly but lack alphabet headroom; six or more buys separation at the cost of ICA/mode-sort fidelity.
+This simulation constitutes **reduction-to-practice** of the multi-orb point-source mechanism for generating and recovering pyramidal spectral shards on an OAM carrier — a distinct embodiment supporting the VQC non-provisional (Docket VQC-2025-NP01) and supplemental disclosures (Nov 15–27, 2025).
+
+| Enablement element | Where implemented |
+|--------------------|-------------------|
+| Pyramidal FM pulse → spectral shards | `typehead.py` + Welch PSD in `run_demo.py` |
+| Quaternion shard compression | `quaternion_codec.py` (Rodrigues-compatible) |
+| OAM Laguerre-Gaussian carrier | `lg_modes.py` |
+| Stable codeword font (emergent constants) | `stable_fonts.py` (350/π, κ, braiding 0.084) |
+| p-wave BMGL error inhibition | `altermagnetic.py` (γ₁ = 1.5) |
+| SLM virtual typehead (no moving parts) | `slm_typehead.py`, `generate_slm_holograms.py` |
+
+> **Provenance:** Developed June 2026 as sibling repo [`vqc_proto`](https://github.com/kinaar8340/vqc_proto), extending [`vqc_sims_public`](https://github.com/kinaar8340/vqc_sims_public). Reproducible via `run_demo.py` with fixed seed (42). Full claim mapping in [`proto/README.md`](proto/README.md).
+
+**Future work (high priority):** phase-only SLM bench validation · integration with `meta_optimize_invariants.py` · fs-laser inscribed helical masks + low-cost laser array PoC.
 
 ---
 
