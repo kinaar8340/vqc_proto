@@ -25,6 +25,23 @@ Pre-generated simulation archives under `data/L199/` are not included in this re
 
 ---
 
+## Orbital Braille Prototype (`proto/`)
+
+Fork extension implementing the **VQC Typehead / Orbital Braille** embodiment — multi-orb PWM-gated point sources whose interference generates pyramidal spectral shards on an OAM/quaternion carrier.
+
+```bash
+cd proto
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
+.venv/bin/python sweep_orbs.py
+.venv/bin/python meta_optimize_orbital.py
+.venv/bin/python generate_slm_holograms.py
+```
+
+See [`proto/README.md`](proto/README.md) for architecture, orb sweep results, and SLM virtual typehead details.
+
+---
+
 ## Quick Start
 
 ### 1. Install
