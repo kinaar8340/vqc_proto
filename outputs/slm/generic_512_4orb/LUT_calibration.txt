@@ -1,0 +1,15 @@
+SLM phase LUT calibration notes
+================================
+Device preset: generic_512
+Bit depth: 8
+Phase mapping: 0_2pi
+  0 gray   -> 0 rad
+  max gray -> 2*pi rad (8-bit full scale)
+
+Measure at 1550.0 nm:
+1. Upload uniform ramps (0, 64, 128, 192, 255 for 8-bit).
+2. Record interferometric phase shift per gray level.
+3. Replace linear mapping in your SLM driver if deviation > 5%.
+
+Frame timing: 16 frames over 1.000 ns
+  -> 0.062 ns per frame (adjust SLM refresh to match chirp)
