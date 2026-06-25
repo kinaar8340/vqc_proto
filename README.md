@@ -471,15 +471,14 @@ See [`IP_NOTICE.md`](IP_NOTICE.md) · [`LICENSE`](LICENSE) · [`CONTRIBUTING.md`
 | `vqc_proto` | [vqc_sims_public/tree/vqc_proto](https://github.com/kinaar8340/vqc_sims_public/tree/vqc_proto) | Full parent repo + `proto/` subdirectory |
 | `vqc_proto-standalone` | [vqc_sims_public/tree/vqc_proto-standalone](https://github.com/kinaar8340/vqc_sims_public/tree/vqc_proto-standalone) | Proto-only root layout (this directory) |
 
-### Create fork `kinaar8340/vqc_proto`
+### Repository
+
+**https://github.com/kinaar8340/vqc_proto** — sibling of `vqc_sims_public` (GitHub blocks self-forks).
 
 ```bash
-gh auth login -h github.com -p ssh -s repo
-gh repo fork kinaar8340/vqc_sims_public --fork-name vqc_proto --clone=false
-git push git@github.com:kinaar8340/vqc_proto.git vqc_proto:main
+git clone git@github.com:kinaar8340/vqc_proto.git
+# Proto code is in the proto/ subdirectory of that repo
 ```
-
-Or fork via GitHub UI: [Fork vqc_sims_public](https://github.com/kinaar8340/vqc_sims_public/fork) → rename to `vqc_proto`.
 
 ## Parent Repository
 
