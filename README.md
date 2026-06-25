@@ -5,7 +5,9 @@ Ultra-high-density quantum data compression and transfer via OAM-flux qubits and
 [![Repository](https://img.shields.io/badge/GitHub-vqc__proto-blue)](https://github.com/kinaar8340/vqc_proto)
 [![Parent](https://img.shields.io/badge/Parent-vqc__sims__public-lightgrey)](https://github.com/kinaar8340/vqc_sims_public)
 
-> **Sibling repository** of [vqc_sims_public](https://github.com/kinaar8340/vqc_sims_public) (GitHub does not allow self-forks). Contains the full VQC simulation suite plus the Orbital Braille prototype in `proto/`.
+> **Sibling repository** of [vqc_sims_public](https://github.com/kinaar8340/vqc_sims_public) (GitHub does not allow self-forks). Contains the full VQC simulation suite plus the **Orbital Braille** prototype in [`proto/`](proto/).
+
+The **Vortex Quaternion Conduit (VQC)** is a hybrid classical–quantum optical communication architecture that multiplexes data into orthogonal orbital angular momentum (OAM) modes per DWDM channel, compresses payload shards via quaternion hypercomplex encoding, and propagates them through nested helical phase structures with Beam-Motion-Gated Learning (BMGL) and 16-qubit QEC for turbulence-resilient recovery. Full specification: [VQC Non-Provisional Application (draft)](https://github.com/kinaar8340/qvpic/blob/main/docs/VQC_NonProvisional_Patent_Application.md) · provisional US 63/913,110.
 
 **Public release:** Phase 1.2.93 (Nov 27, 2025) — **COMPLETE**  
 **Orchestrator:** `run_all.py` v1.2.91 Ω  
@@ -15,7 +17,7 @@ Ultra-high-density quantum data compression and transfer via OAM-flux qubits and
 
 ## Overview
 
-VQC simulates a full photonic–quantum pipeline that encodes classical data into quaternion representations, propagates orbital angular momentum (OAM) modes through nested helical beams, and recovers them with overcomplete ICA demixing under 16-qubit quantum error correction (QEC).
+This repository simulates the full VQC photonic–quantum pipeline: quaternion-encoded shards, OAM mode propagation through nested helical beams, overcomplete ICA demixing, and 16-qubit quantum error correction (QEC).
 
 | Capability | Detail |
 |---|---|
@@ -30,18 +32,45 @@ Pre-generated simulation archives under `data/L199/` are not included in this re
 
 ## Orbital Braille Prototype (`proto/`)
 
-Fork extension implementing the **VQC Typehead / Orbital Braille** embodiment — multi-orb PWM-gated point sources whose interference generates pyramidal spectral shards on an OAM/quaternion carrier.
+**New in this repo:** a working simulation of the **VQC Typehead / Orbital Braille** embodiment — *N* co-rotating, PWM-gated point sources whose interference imprints pyramidal spectral shards onto an OAM/quaternion carrier. Think IBM Selectric typeball meets optical Braille: orbital phases select the glyph, interference patterns are the "paper impression."
+
+![Orbital Braille demo — encoded phase, BMGL turbulence, OAM donut + Braille dots, pyramidal pulse, spectral shards, typehead layout](proto/outputs/orbital_braille_demo.png)
+
+*Demo output encoding `"I live in Oregon"` (patent Figure 1 payload) through p-wave BMGL turbulence — 92.9% shard fidelity recovery.*
+
+**Technical documentation:** [`proto/README.md`](proto/README.md) — mapping table, module reference, patent claim alignment, future work.
+
+### Quick start
 
 ```bash
-cd proto
+git clone git@github.com:kinaar8340/vqc_proto.git
+cd vqc_proto/proto
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
 .venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
 .venv/bin/python sweep_orbs.py
-.venv/bin/python meta_optimize_orbital.py
-.venv/bin/python generate_slm_holograms.py
+.venv/bin/python meta_optimize_orbital.py      # grid search: orbs × γ₁ × r₀
+.venv/bin/python generate_slm_holograms.py     # export SLM phase PNG frames
 ```
 
-See [`proto/README.md`](proto/README.md) for architecture, orb sweep results, and SLM virtual typehead details.
+### Orb sweep results
+
+| Orbs | Fisher-Rao separation | Shard fidelity | Glyph fidelity | Verdict |
+|------|----------------------|----------------|----------------|---------|
+| 2 | 0.787 rad | 0.937 | **0.999** | Best decode, cramped alphabet |
+| **4** | **0.989 rad** | **0.929** | 0.868 | **Prototype sweet spot** |
+| 6 | 1.027 rad | 0.920 | 0.804 | More capacity, harder demux |
+
+### Why 4 orbs?
+
+Four orbiting sources hit the best trade-off for a bench or SLM prototype:
+
+1. **Fisher-Rao glyph separation ≈ 1 rad** — codewords are well-separated on the duty-cycle simplex (stable "font" locked to emergent constants 350/π, κ = 0.85, braiding 0.084).
+2. **>92% shard fidelity** through simulated p-wave BMGL turbulence (γ₁ = 1.5, ~17% error inhibition).
+3. **Natural Braille analog** — four independent PWM "dots" give combinatorial glyph capacity without the mode overlap that degrades decode above 6 orbs.
+4. **Hardware-feasible** — mappable to four laser diodes on a rotating arm, or four virtual spots on a phase-only SLM (no moving parts).
+
+Two orbs decode almost perfectly but lack alphabet headroom; six or more buys separation at the cost of ICA/mode-sort fidelity.
 
 ---
 
@@ -50,8 +79,8 @@ See [`proto/README.md`](proto/README.md) for architecture, orb sweep results, an
 ### 1. Install
 
 ```bash
-git clone https://github.com/kinaar8340/vqc_sims_public.git
-cd vqc_sims_public
+git clone https://github.com/kinaar8340/vqc_proto.git
+cd vqc_proto
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
