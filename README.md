@@ -2,7 +2,10 @@
 
 Ultra-high-density quantum data compression and transfer via OAM-flux qubits and quaternion encoding.
 
-[![Repository](https://img.shields.io/badge/GitHub-vqc__sims__public-blue)](https://github.com/kinaar8340/vqc_sims_public)
+[![Repository](https://img.shields.io/badge/GitHub-vqc__proto-blue)](https://github.com/kinaar8340/vqc_proto)
+[![Parent](https://img.shields.io/badge/Parent-vqc__sims__public-lightgrey)](https://github.com/kinaar8340/vqc_sims_public)
+
+> **Sibling repository** of [vqc_sims_public](https://github.com/kinaar8340/vqc_sims_public) (GitHub does not allow self-forks). Contains the full VQC simulation suite plus the Orbital Braille prototype in `proto/`.
 
 **Public release:** Phase 1.2.93 (Nov 27, 2025) — **COMPLETE**  
 **Orchestrator:** `run_all.py` v1.2.91 Ω  

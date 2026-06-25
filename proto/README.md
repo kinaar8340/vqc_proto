@@ -50,15 +50,14 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `vqc_proto` | [vqc_sims_public/tree/vqc_proto](https://github.com/kinaar8340/vqc_sims_public/tree/vqc_proto) | Full parent repo + `proto/` subdirectory |
 | `vqc_proto-standalone` | [vqc_sims_public/tree/vqc_proto-standalone](https://github.com/kinaar8340/vqc_sims_public/tree/vqc_proto-standalone) | Proto-only root layout (this directory) |
 
-### Create fork `kinaar8340/vqc_proto`
+### Repository
+
+This code lives at **https://github.com/kinaar8340/vqc_proto** (sibling of `vqc_sims_public`; synced from branch `vqc_proto`).
 
 ```bash
-gh auth login -h github.com -p ssh -s repo
-gh repo fork kinaar8340/vqc_sims_public --fork-name vqc_proto --clone=false
-git push git@github.com:kinaar8340/vqc_proto.git vqc_proto:main
+git clone git@github.com:kinaar8340/vqc_proto.git
+cd vqc_proto/proto
 ```
-
-Or fork via GitHub UI: [Fork vqc_sims_public](https://github.com/kinaar8340/vqc_sims_public/fork) → rename to `vqc_proto`.
 
 ## Parent Repository
 
