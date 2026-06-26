@@ -66,7 +66,17 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 **Docker (from repo root):** `docker compose run --rm proto-quick`
 
-**Glossary:** [`../GLOSSARY.md`](../GLOSSARY.md) · **Notebook:** [`notebooks/orbital_braille_demo.ipynb`](notebooks/orbital_braille_demo.ipynb)
+**Glossary:** [`../GLOSSARY.md`](../GLOSSARY.md) · **Roadmap:** [`../ROADMAP.md`](../ROADMAP.md) · **Notebook:** [`notebooks/orbital_braille_demo.ipynb`](notebooks/orbital_braille_demo.ipynb)
+
+### Profiling & web demo
+
+```bash
+# Hot-path timing + cProfile (LG modes, OAM projection, ICA, encode/decode)
+.venv/bin/python profile_hotpaths.py --quick
+
+# Gradio browser demo (pip install -r requirements-web.txt first)
+.venv/bin/python gradio_demo.py
+```
 
 ---
 

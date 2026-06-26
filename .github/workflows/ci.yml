@@ -27,6 +27,6 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: pip install -r proto/requirements.txt
-      - run: pytest tests/test_orbital_braille.py tests/test_metrics.py -q --tb=short
+      - run: pytest tests/test_orbital_braille.py tests/test_proto_loader.py tests/test_metrics.py -q --tb=short
       - working-directory: proto
         run: python run_demo_quick.py --payload "test" --num-orbs 2
