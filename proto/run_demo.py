@@ -14,6 +14,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import logging
+import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -28,6 +30,13 @@ from orbital_braille import (
     build_stable_font,
     font_separation,
 )
+
+logger = logging.getLogger(__name__)
+
+QUICK_GRID_SIZE = 32
+QUICK_NUM_TIMES = 16
+FULL_GRID_SIZE = 80
+FULL_NUM_TIMES = 64
 
 
 def plot_results(
@@ -121,29 +130,50 @@ def plot_results(
     print(f"Saved → {path}")
 
 
+def build_config(num_orbs: int, *, quick: bool = False) -> TypeheadConfig:
+    """Return TypeheadConfig for full or quick (low-resolution) demo runs."""
+    return TypeheadConfig(
+        num_orbs=num_orbs,
+        grid_size=QUICK_GRID_SIZE if quick else FULL_GRID_SIZE,
+        num_times=QUICK_NUM_TIMES if quick else FULL_NUM_TIMES,
+        bmgl=PWaveBMGL(gamma_1=1.5),
+        constants=EmergentConstants(),
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Orbital Braille VQC prototype")
     parser.add_argument("--payload", default="I live in Oregon", help="Text to encode")
     parser.add_argument("--num-orbs", type=int, default=4, help="Number of orbiting sources")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Low-resolution mode (~seconds). Use run_demo_quick.py for the same behavior.",
+    )
+    parser.add_argument(
         "--out-dir",
         type=Path,
         default=Path(__file__).parent / "outputs",
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
-    cfg = TypeheadConfig(
-        num_orbs=args.num_orbs,
-        bmgl=PWaveBMGL(gamma_1=1.5),
-        constants=EmergentConstants(),
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(levelname)s: %(message)s",
     )
+
+    t0 = time.perf_counter()
+    cfg = build_config(args.num_orbs, quick=args.quick)
     typehead = OrbitalTypehead(cfg, seed=args.seed)
 
     font_sep = font_separation(build_stable_font(args.num_orbs, num_glyphs=16))
+    mode = "QUICK" if args.quick else "FULL"
     print("=" * 60)
     print("ORBITAL BRAILLE — VQC TYPEHEAD PROTOTYPE")
     print("=" * 60)
+    print(f"Mode: {mode}  (grid={cfg.grid_size}, times={cfg.num_times})")
     print(f"Emergent W_g = {cfg.constants.Wg:.4f}  (350/π)")
     print(f"Braiding linking target = {cfg.constants.braiding_linking}")
     print(f"p-wave BMGL γ₁ = {cfg.bmgl.gamma_1}  boost = {cfg.bmgl.inhibition_boost:.3f}")
@@ -178,7 +208,10 @@ def main() -> None:
     print()
 
     plot_results(encoded, noisy, decoded, args.out_dir, args.payload)
-    print("Demo complete.")
+    elapsed = time.perf_counter() - t0
+    print(f"Demo complete in {elapsed:.1f}s.")
+    if args.quick:
+        print("Tip: omit --quick (or use run_demo.py) for publication-quality figures.")
 
 
 if __name__ == "__main__":

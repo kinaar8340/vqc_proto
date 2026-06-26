@@ -48,7 +48,10 @@ The intensity pattern from superposed orbs produces **Chladni-like nodal interfe
 cd vqc_proto/proto
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-# Latest validated demo (metrics in table above)
+# Seconds — low-res preview (same pipeline, smaller grid)
+.venv/bin/python run_demo_quick.py --payload "I live in Oregon" --num-orbs 4
+
+# Full quality — metrics in table above
 .venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
 
 # Compare orb counts 2–6
@@ -60,6 +63,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 # Export SLM phase hologram PNG frames
 .venv/bin/python generate_slm_holograms.py --frames 32
 ```
+
+**Docker (from repo root):** `docker compose run --rm proto-quick`
+
+**Glossary:** [`../GLOSSARY.md`](../GLOSSARY.md) · **Notebook:** [`notebooks/orbital_braille_demo.ipynb`](notebooks/orbital_braille_demo.ipynb)
 
 ---
 
