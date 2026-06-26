@@ -1,0 +1,42 @@
+services:
+  proto-quick:
+    build: .
+    image: vqc_proto:latest
+    volumes:
+      - ./proto/outputs:/app/proto/outputs
+    command: >
+      python run_demo_quick.py
+      --payload "I live in Oregon"
+      --num-orbs 4
+
+  proto-full:
+    build: .
+    image: vqc_proto:latest
+    volumes:
+      - ./proto/outputs:/app/proto/outputs
+    command: >
+      python run_demo.py
+      --payload "I live in Oregon"
+      --num-orbs 4
+
+  pipeline-quick:
+    build: .
+    image: vqc_proto:latest
+    working_dir: /app
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    environment:
+      OMP_NUM_THREADS: "4"
+    command: python run_all.py --quick
+
+  dashboard:
+    build: .
+    image: vqc_proto:latest
+    working_dir: /app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    command: streamlit run analysis/dashboard.py --server.address 0.0.0.0

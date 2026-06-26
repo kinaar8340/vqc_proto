@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff black
+      - run: ruff check proto/run_demo.py proto/run_demo_quick.py run_all.py tests/test_orbital_braille.py
+      - run: black --check proto/run_demo.py proto/run_demo_quick.py run_all.py tests/test_orbital_braille.py
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pip install -r proto/requirements.txt
+      - run: pytest tests/test_orbital_braille.py tests/test_metrics.py -q --tb=short
+      - working-directory: proto
+        run: python run_demo_quick.py --payload "test" --num-orbs 2

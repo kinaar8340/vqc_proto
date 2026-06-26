@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # run_all.py – Vortex Quaternion Conduit Master Orchestration | Phase 1.2.91 Ω
 
+import argparse
 import os
 import re
 import shutil
@@ -59,6 +60,31 @@ def print_banner():
     print("═" * 80 + "\n")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="VQC master pipeline orchestrator")
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Smoke-test mode: L_max=15 (~minutes instead of hours)",
+    )
+    parser.add_argument(
+        "--L-max",
+        type=int,
+        default=None,
+        dest="l_max",
+        help="Override OAM horizon (default: max(199, highest data/L##/))",
+    )
+    args = parser.parse_args()
+
+    if args.quick:
+        final_l = 15
+        L_inner_capped = 15
+        AUTO_DST = DATA_DIR / f"L{final_l}"
+        print("▓▒░ QUICK MODE: L_max=15 (smoke test) ░▒▓")
+    elif args.l_max is not None:
+        final_l = args.l_max
+        L_inner_capped = min(final_l, 1999)
+        AUTO_DST = DATA_DIR / f"L{final_l}"
+
     env = os.environ.copy()
     env.update({
         "VQC_L_MAX_OVERRIDE": str(final_l),

@@ -5,6 +5,47 @@ Ultra-high-density quantum data compression and transfer via OAM-flux qubits and
 [![Repository](https://img.shields.io/badge/GitHub-vqc__proto-blue)](https://github.com/kinaar8340/vqc_proto)
 [![Parent](https://img.shields.io/badge/Parent-vqc__sims__public-lightgrey)](https://github.com/kinaar8340/vqc_sims_public)
 
+> **IP notice:** CC-BY-NC-SA-4.0 + patent restrictions — see [`IP_NOTICE.md`](IP_NOTICE.md) before commercial use.
+
+---
+
+## Try the Orbital Braille Prototype in < 5 minutes
+
+Most visitors want the **VQC Typehead / Orbital Braille** demo first. Three ways in:
+
+### Option A — Docker (zero local setup)
+
+```bash
+git clone https://github.com/kinaar8340/vqc_proto.git && cd vqc_proto
+docker compose run --rm proto-quick
+```
+
+Output lands in `proto/outputs/orbital_braille_demo.png`.
+
+### Option B — Quick mode (seconds, local Python)
+
+```bash
+git clone https://github.com/kinaar8340/vqc_proto.git && cd vqc_proto/proto
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python run_demo_quick.py --payload "I live in Oregon" --num-orbs 4
+```
+
+### Option C — Full-quality demo (~1 min)
+
+```bash
+.venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
+```
+
+Reproduces the validated metrics below (Fisher-Rao **0.989 rad**, shard FID **0.929**).
+
+![Orbital Braille Demo — 4-orb layout, multi-lobe phase, OAM donut + Braille dots, pyramidal pulse, spectral shards](proto/outputs/orbital_braille_demo.png)
+
+**Next steps:** [`proto/README.md`](proto/README.md) · [`GLOSSARY.md`](GLOSSARY.md) · [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) · Jupyter notebook [`proto/notebooks/orbital_braille_demo.ipynb`](proto/notebooks/orbital_braille_demo.ipynb)
+
+**Full VQC pipeline** (1–2 h at `L_max=199`): `python run_all.py` · smoke test: `python run_all.py --quick` (`L_max=15`)
+
+---
+
 > **Sibling repository** of [vqc_sims_public](https://github.com/kinaar8340/vqc_sims_public) (GitHub does not allow self-forks). Contains the full VQC simulation suite plus the **Orbital Braille** prototype in [`proto/`](proto/).
 
 The **Vortex Quaternion Conduit (VQC)** is a hybrid classical–quantum optical communication architecture that multiplexes data into orthogonal orbital angular momentum (OAM) modes per DWDM channel, compresses payload shards via quaternion hypercomplex encoding, and propagates them through nested helical phase structures with Beam-Motion-Gated Learning (BMGL) and 16-qubit QEC for turbulence-resilient recovery. Full specification: [VQC Non-Provisional Application (draft)](https://github.com/kinaar8340/qvpic/blob/main/docs/VQC_NonProvisional_Patent_Application.md) · provisional US 63/913,110.
@@ -64,7 +105,10 @@ cd vqc_proto/proto
 
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-# Latest validated demo (reproduces metrics above)
+# Seconds — low-res smoke test
+.venv/bin/python run_demo_quick.py --payload "I live in Oregon" --num-orbs 4
+
+# Full quality — reproduces metrics above
 .venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
 
 # Compare orb counts (2–6)
@@ -74,6 +118,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python meta_optimize_orbital.py
 .venv/bin/python generate_slm_holograms.py
 ```
+
+**Docker:** `docker compose run --rm proto-quick` from repo root.
 
 ### Orb count trade-off (current results)
 
@@ -128,6 +174,9 @@ pip install -r requirements.txt
 ### 2. Run the full pipeline
 
 ```bash
+# Smoke test (~minutes): L_max=15
+python run_all.py --quick
+
 # Recommended: respects params.yaml, parallel Isomap, auto-archives to data/L199/
 OMP_NUM_THREADS=16 python run_all.py
 
@@ -157,9 +206,11 @@ pytest -q
 
 ```bash
 streamlit run analysis/dashboard.py
+# or via Docker:
+docker compose up dashboard   # http://localhost:8501
 ```
 
-The dashboard auto-detects the highest `data/L##/` archive and renders figures, tables, GIFs, and PDF summaries.
+The dashboard auto-detects the highest `data/L##/` archive and renders figures, tables, GIFs, and PDF summaries. Proto demo output: `proto/outputs/orbital_braille_demo.png`.
 
 ---
 
@@ -340,6 +391,8 @@ See [`requirements.txt`](requirements.txt). Core packages:
 
 Released under **CC-BY-NC-SA-4.0** with additional patent restrictions. You may view, fork, and modify for **non-commercial research** with attribution. Commercial use, sublicensing, or deployment requires written license from the patent holder.
 
+See [`IP_NOTICE.md`](IP_NOTICE.md) · [`LICENSE`](LICENSE) · [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`GLOSSARY.md`](GLOSSARY.md)
+
 **Contact:** [kinaar0@protonmail.com](mailto:kinaar0@protonmail.com)
 
-Contributions welcome for non-commercial research use. See [`LICENSE`](LICENSE) for full terms.
+**Suggested GitHub topics:** `quantum-computing` `photonics` `oam` `optical-communication` `simulation` `prototype`

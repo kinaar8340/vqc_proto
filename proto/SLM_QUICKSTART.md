@@ -78,12 +78,41 @@ Far field / camera sensor
 
 ## 4. Upload workflow
 
-### Holoeye (HoloVision / Load Hologram)
+### Holoeye PLUTO-2 (HoloVision / Load Hologram)
 
 1. Generate with `--device holoeye_pluto_2`
-2. Upload `frames/phase_0000.bmp` or PNG (8-bit grayscale, no gamma)
+2. Upload `frames/phase_0000.bmp` or PNG (8-bit grayscale, **no gamma**)
 3. Set **phase-only mode**; disable amplitude coupling if available
 4. Play sequence at `manifest.json` → `t_max_ns / frames` per frame
+
+**Common pitfalls (Holoeye):**
+- **Gamma-corrected PNGs** flatten phase contrast — export raw 8-bit linear grayscale.
+- **Wrong SLM window size** — PLUTO-2 is 1920×1080; using `generic_512` stretches the hologram.
+- **LC temperature drift** — re-run LUT calibration after warm-up (~15 min).
+- **USB bandwidth** — reduce `--frames` or use Holoeye's on-board sequence player for >30 fps.
+
+### Meadowlark LCOS (512 / 1920 variants)
+
+1. Generate with `--device meadowlark_512` (16-bit TIFF output when supported)
+2. Use Meadowlark Blink SDK or `.tiff` loader; map 0–65535 → 0–2π
+3. Enable **phase-only** addressing; disable dithering (destroys OAM structure)
+4. 15 µm pitch → adjust beam expander so fill factor matches your aperture
+
+**Common pitfalls (Meadowlark):**
+- **Dithering enabled** — produces speckle instead of clean orbital lobes.
+- **8-bit down-conversion** — prefer native 16-bit path; re-quantize only after LUT fit.
+- **Back-reflection** — use non-polarizing beam splitter or angled pickoff; LCOS is reflective.
+
+### Thorlabs Exulus / similar 1080p LCOS
+
+1. Generate with `--device thorlabs_1080p`
+2. 6.4 µm pitch — verify Fourier lens focal length matches your λ and aperture
+3. Exulus software accepts 8-bit BMP; disable any auto-scaling
+
+**Common pitfalls (Thorlabs):**
+- **Auto-scaling in Exulus GUI** — lock min/max gray to 0–255 before upload.
+- **Polarization** — LCOS efficiency is polarization-sensitive; align laser to manufacturer spec.
+- **Thermal blanking** — long sequences may throttle refresh; match `manifest.json` frame period.
 
 ### Generic / custom driver
 
@@ -132,5 +161,7 @@ Simulation decode: `run_demo.py` (92.9% shard FID reference at 4 orbs).
 ## 8. Patent / enablement note
 
 This package is **reduction-to-practice** for the claim element: *PWM-gated point sources on distinct orbital trajectories generating pyramidal spectral shards on an OAM carrier*. The `manifest.json` sidecar documents reproducible orb geometry tied to emergent font constants (350/π, κ = 0.85).
+
+See [`IP_NOTICE.md`](IP_NOTICE.md) for license and patent restrictions.
 
 **Contact:** kinaar0@protonmail.com · Repo: https://github.com/kinaar8340/vqc_proto
