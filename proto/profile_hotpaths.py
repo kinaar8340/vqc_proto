@@ -20,7 +20,7 @@ from orbital_braille import (
     lg_mode,
     project_oam_spectrum,
 )
-from run_demo import build_config
+from demo_core import build_config
 
 logger = logging.getLogger(__name__)
 

@@ -54,6 +54,14 @@ black --check .
 - Dashboard UX (filtering, proto output auto-load)
 - Documentation clarifications in `GLOSSARY.md`
 
+## Hugging Face Space deploy
+
+```bash
+./scripts/sync_hf_space.sh
+export HF_TOKEN=hf_...   # write token from huggingface.co/settings/tokens
+./scripts/deploy_hf_space.sh kinaar8340/orbital-braille-vqc
+```
+
 ## Questions
 
 Open a [GitHub issue](https://github.com/kinaar8340/vqc_proto/issues) or email [kinaar0@protonmail.com](mailto:kinaar0@protonmail.com).
