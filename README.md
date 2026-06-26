@@ -40,7 +40,9 @@ Reproduces the validated metrics below (Fisher-Rao **0.989 rad**, shard FID **0.
 
 ![Orbital Braille Demo — 4-orb layout, multi-lobe phase, OAM donut + Braille dots, pyramidal pulse, spectral shards](proto/outputs/orbital_braille_demo.png)
 
-**Next steps:** [`proto/README.md`](proto/README.md) · [`GLOSSARY.md`](GLOSSARY.md) · [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) · Jupyter notebook [`proto/notebooks/orbital_braille_demo.ipynb`](proto/notebooks/orbital_braille_demo.ipynb)
+**Next steps:** [`proto/README.md`](proto/README.md) · [`GLOSSARY.md`](GLOSSARY.md) · [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) · [`ROADMAP.md`](ROADMAP.md) · Jupyter [`proto/notebooks/orbital_braille_demo.ipynb`](proto/notebooks/orbital_braille_demo.ipynb)
+
+**Web demos:** `python proto/gradio_demo.py` (port 7860) · `streamlit run analysis/dashboard.py` (proto tab auto-loads latest output)
 
 **Full VQC pipeline** (1–2 h at `L_max=199`): `python run_all.py` · smoke test: `python run_all.py --quick` (`L_max=15`)
 

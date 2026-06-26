@@ -39,4 +39,17 @@ services:
     volumes:
       - ./data:/app/data
       - ./outputs:/app/outputs
+      - ./proto/outputs:/app/proto/outputs
     command: streamlit run analysis/dashboard.py --server.address 0.0.0.0
+
+  gradio:
+    build: .
+    image: vqc_proto:latest
+    working_dir: /app/proto
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./proto/outputs:/app/proto/outputs
+    command: >
+      sh -c "pip install -q -r requirements-web.txt &&
+      python gradio_demo.py"

@@ -14,6 +14,12 @@ import plotly.graph_objects as go
 import warnings
 from scipy.sparse import SparseEfficiencyWarning
 import base64
+import json
+
+try:
+    from analysis.proto_loader import discover_proto_outputs, load_manifest_summary, latest_proto_demo
+except ImportError:
+    from proto_loader import discover_proto_outputs, load_manifest_summary, latest_proto_demo
 
 warnings.filterwarnings('ignore')
 
@@ -159,12 +165,24 @@ def main():
     # === Sidebar ===
     with st.sidebar:
         st.header("📁 Data Source")
-        manual_dir = st.text_input("Manual override (optional)", placeholder="e.g. data/L199")
+        view_mode = st.radio(
+            "View",
+            ["Pipeline archive", "Orbital Braille proto", "Both"],
+            index=2,
+            help="Proto auto-loads proto/outputs/ (demo PNG, SLM montages, manifests)",
+        )
+        manual_dir = st.text_input("Pipeline override (optional)", placeholder="e.g. data/L199")
         selected_dir = manual_dir if manual_dir and os.path.isdir(manual_dir) else None
         if selected_dir:
-            st.success(f"Manual → `{selected_dir}`")
+            st.success(f"Pipeline → `{selected_dir}`")
         else:
-            st.info("Auto-detecting latest L## folder")
+            st.info("Pipeline: auto-detecting latest data/L##/")
+
+        proto_demo = latest_proto_demo()
+        if proto_demo:
+            st.success("Proto: demo figure found")
+        else:
+            st.warning("Proto: run `cd proto && python run_demo_quick.py`")
 
         st.markdown("---")
         st.markdown("### 🏆 L=199 ASCENSION METRICS")
@@ -174,14 +192,73 @@ def main():
         st.metric("Knot Mean FID (8₃)", "1.0000", delta="PERFECT")
 
     # Load data
-    dfs, pngs, gifs, pdfs_text, used_dir = load_outputs(output_dir=selected_dir)
-    st.success(f"**Viewing persistent archive:** `{used_dir}`")
+    show_pipeline = view_mode in ("Pipeline archive", "Both")
+    show_proto = view_mode in ("Orbital Braille proto", "Both")
 
-    # Tabs
-    tabs = st.tabs(["📊 Tables", "🖼 Static", "🎬 Animations", "📄 PDF Reports", "📈 Interactive"])
+    dfs, pngs, gifs, pdfs_text, used_dir = ({}, [], [], {}, "n/a")
+    if show_pipeline:
+        dfs, pngs, gifs, pdfs_text, used_dir = load_outputs(output_dir=selected_dir)
+        st.success(f"**Pipeline archive:** `{used_dir}`")
+
+    proto_bundle = discover_proto_outputs() if show_proto else None
+
+    tab_labels = []
+    if show_proto:
+        tab_labels.append("🔤 Orbital Braille")
+    if show_pipeline:
+        tab_labels.extend(["📊 Tables", "🖼 Static", "🎬 Animations", "📄 PDF Reports", "📈 Interactive"])
+    tabs = st.tabs(tab_labels)
+    tab_idx = 0
+
+    # === Orbital Braille proto ===
+    if show_proto:
+        with tabs[tab_idx]:
+            st.header("Orbital Braille Prototype")
+            st.caption("Auto-loaded from `proto/outputs/` — latest run_demo / SLM export artifacts")
+
+            if proto_bundle and proto_bundle.has_content:
+                if proto_bundle.demo_png:
+                    st.subheader("Latest demo (6-panel)")
+                    st.image(proto_bundle.demo_png, use_container_width=True)
+                    st.caption(proto_bundle.demo_png)
+
+                if proto_bundle.slm_montages:
+                    st.subheader("SLM hologram previews")
+                    cols = st.columns(3)
+                    for i, asset in enumerate(proto_bundle.slm_montages[:6]):
+                        with cols[i % 3]:
+                            st.image(asset.path, caption=asset.label, use_container_width=True)
+
+                if proto_bundle.slm_manifests:
+                    st.subheader("SLM manifests")
+                    manifest_pick = st.selectbox(
+                        "Manifest",
+                        options=[a.path for a in proto_bundle.slm_manifests],
+                        format_func=lambda p: os.path.relpath(p, proto_bundle.root),
+                    )
+                    if manifest_pick:
+                        summary = load_manifest_summary(manifest_pick)
+                        st.json(summary)
+
+                if proto_bundle.meta_json:
+                    st.subheader("Meta-optimization runs")
+                    for asset in proto_bundle.meta_json[:5]:
+                        with st.expander(asset.label):
+                            with open(asset.path, encoding="utf-8") as fh:
+                                st.json(json.load(fh))
+            else:
+                st.info(
+                    "No proto outputs yet. Quick start:\n\n"
+                    "```bash\ncd proto && python run_demo_quick.py\n```"
+                )
+                st.markdown(
+                    "Or launch the Gradio demo: `python proto/gradio_demo.py`"
+                )
+        tab_idx += 1
 
     # === Tables ===
-    with tabs[0]:
+    if show_pipeline:
+        with tabs[tab_idx]:
         st.header("Data Tables")
         if dfs:
             st.success(f"**{len(dfs)} CSV tables loaded successfully**")
@@ -190,9 +267,11 @@ def main():
                     st.dataframe(df, use_container_width=True)
         else:
             st.error("No CSV tables found in archive.")
+        tab_idx += 1
 
     # === Static Figures ===
-    with tabs[1]:
+    if show_pipeline:
+        with tabs[tab_idx]:
         st.header("Static Figures")
         if pngs:
             cols = st.columns(4)
@@ -201,9 +280,11 @@ def main():
                     st.image(png, caption=os.path.basename(png), use_container_width=True)
         else:
             st.info("No static figures found.")
+        tab_idx += 1
 
     # === ANIMATIONS TAB ===
-    with tabs[2]:
+    if show_pipeline:
+        with tabs[tab_idx]:
         st.header("🎬 Animations (Looping 3D Isomap + Chirp Evolution)")
 
         if not gifs:
@@ -234,9 +315,11 @@ def main():
                         st.caption(f"🎬 {os.path.basename(gif_path)}")
                     else:
                         st.caption(f"❌ Failed: {os.path.basename(gif_path)}")
+        tab_idx += 1
 
     # === PDF Reports ===
-    with tabs[3]:
+    if show_pipeline:
+        with tabs[tab_idx]:
         st.header("📄 PDF Summary Reports")
         if pdfs_text:
             st.success(f"{len(pdfs_text)} patent-grade PDF artifact(s) loaded")
@@ -244,9 +327,11 @@ def main():
             st.text_area("Extracted Text Preview", pdfs_text[selected], height=600)
         else:
             st.warning("No PDF reports found.")
+        tab_idx += 1
 
     # === Interactive Visualizations ===
-    with tabs[4]:
+    if show_pipeline:
+        with tabs[tab_idx]:
         st.header("📈 Interactive Visualizations")
 
         col_left, col_right = st.columns(2)
@@ -275,6 +360,7 @@ def main():
                 st.metric("Latest Chemical QEC Fidelity", f"{latest_fid:.4f}", delta="Pass >0.97")
             else:
                 st.metric("Chemical QEC Fidelity", "N/A")
+        tab_idx += 1
 
     # Footer
     st.markdown("---")
