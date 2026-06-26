@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 __pycache__/
 *.pyc
 *.pyo
@@ -15,3 +16,11 @@ data/
 *.csv
 *.jpg
 *.jpeg
+=======
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.DS_Store
+>>>>>>> 6f61b64 (feat: Orbital Braille VQC typehead prototype (local root layout))
