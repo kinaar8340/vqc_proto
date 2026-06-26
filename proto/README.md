@@ -76,6 +76,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 # Gradio browser demo (pip install -r requirements-web.txt first)
 .venv/bin/python gradio_demo.py
+
+# Live public demo (Hugging Face Space)
+# https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc
+# Deploy: ../../scripts/deploy_hf_space.sh
 ```
 
 ---

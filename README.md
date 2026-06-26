@@ -3,17 +3,37 @@
 Ultra-high-density quantum data compression and transfer via OAM-flux qubits and quaternion encoding.
 
 [![Repository](https://img.shields.io/badge/GitHub-vqc__proto-blue)](https://github.com/kinaar8340/vqc_proto)
+[![HF Space](https://img.shields.io/badge/🤗%20Hugging%20Face-live%20demo-yellow)](https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc)
 [![Parent](https://img.shields.io/badge/Parent-vqc__sims__public-lightgrey)](https://github.com/kinaar8340/vqc_sims_public)
 
 > **IP notice:** CC-BY-NC-SA-4.0 + patent restrictions — see [`IP_NOTICE.md`](IP_NOTICE.md) before commercial use.
 
 ---
 
+## Try the live demo (zero install)
+
+**[🤗 Hugging Face Space — Orbital Braille VQC Typehead](https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc)**
+
+Run the prototype in your browser: enter a payload, pick orb count (2–6), toggle quick/full mode, get metrics + the 6-panel figure. No clone required.
+
+Maintainers: deploy or refresh with `export HF_TOKEN=hf_... && ./scripts/deploy_hf_space.sh`
+
+---
+
 ## Try the Orbital Braille Prototype in < 5 minutes
 
-Most visitors want the **VQC Typehead / Orbital Braille** demo first. Three ways in:
+Most visitors want the **VQC Typehead / Orbital Braille** demo first. Four ways in:
 
-### Option A — Docker (zero local setup)
+### Option A — Live web demo (recommended)
+
+Open the **[Hugging Face Space](https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc)** or run locally:
+
+```bash
+cd proto && pip install -r requirements-web.txt && python gradio_demo.py
+# → http://localhost:7860
+```
+
+### Option B — Docker (zero local setup)
 
 ```bash
 git clone https://github.com/kinaar8340/vqc_proto.git && cd vqc_proto
@@ -22,7 +42,7 @@ docker compose run --rm proto-quick
 
 Output lands in `proto/outputs/orbital_braille_demo.png`.
 
-### Option B — Quick mode (seconds, local Python)
+### Option C — Quick mode (seconds, local Python)
 
 ```bash
 git clone https://github.com/kinaar8340/vqc_proto.git && cd vqc_proto/proto
@@ -30,7 +50,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python run_demo_quick.py --payload "I live in Oregon" --num-orbs 4
 ```
 
-### Option C — Full-quality demo (~1 min)
+### Option D — Full-quality demo (~1 min)
 
 ```bash
 .venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4

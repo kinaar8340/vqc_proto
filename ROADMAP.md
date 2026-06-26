@@ -40,22 +40,42 @@ python profile_hotpaths.py --grid-size 80 # full-res
 
 ---
 
-## Phase 2 — Gradio web demo 🚧 (in progress)
+## Phase 2 — Gradio web demo ✅
 
 **Goal:** Let visitors try Orbital Braille without cloning Python envs.
 
 | Task | Status | Notes |
 |------|--------|-------|
 | `proto/gradio_demo.py` | ✅ | Payload, orbs, quick/full, 6-panel output |
+| `proto/demo_core.py` | ✅ | Shared with run_demo + HF Space |
 | `proto/requirements-web.txt` | ✅ | `pip install -r requirements-web.txt` |
 | docker-compose `gradio` service | ✅ | Port 7860 |
-| Hugging Face Spaces deploy | ⬜ | Phase 2b — optional public hosting |
-| Share demo link in README / X | ⬜ | After HF or tunnel |
 
-**Run:**
+## Phase 2b — Hugging Face Spaces 🚧 (in progress)
+
+**Goal:** Public zero-install browser demo at maximum visibility.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| `space/orbital-braille/` bundle | ✅ | app.py, requirements, README frontmatter |
+| `scripts/sync_hf_space.sh` | ✅ | Copy proto → space folder |
+| `scripts/deploy_hf_space.sh` | ✅ | `HF_TOKEN` + huggingface_hub upload |
+| README live-demo badge + section | ✅ | Top of main README |
+| Space live at HF URL | ⬜ | Run deploy script (needs HF write token) |
+| X thread / social update | ⬜ | After Space is live |
+
+**Deploy:**
 ```bash
-cd proto && pip install -r requirements-web.txt
-python gradio_demo.py
+# 1. Create Space at huggingface.co/new-space (Gradio SDK) — or let deploy script create it
+# 2. Sync + upload
+export HF_TOKEN=hf_...
+./scripts/sync_hf_space.sh
+./scripts/deploy_hf_space.sh kinaar8340/orbital-braille-vqc
+```
+
+**Local:**
+```bash
+cd proto && pip install -r requirements-web.txt && python gradio_demo.py
 # or: docker compose up gradio
 ```
 
