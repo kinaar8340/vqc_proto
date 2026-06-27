@@ -970,7 +970,8 @@ footer {{
 }}
 .gradio-container .vqc-source-tab,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab span {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab span,
+.gradio-container .vqc-nav-cell a.vqc-source-tab {{
     display: inline !important;
     padding: 0 !important;
     border: none !important;
@@ -978,9 +979,10 @@ footer {{
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    color: {_VQC_TAB_GREEN_TEXT} !important;
-    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
     text-decoration: underline !important;
+    text-decoration-color: {_VQC_MATRIX_GREEN} !important;
     text-underline-offset: 0.18em !important;
     font-weight: 600 !important;
     font-size: 0.92rem !important;
@@ -993,13 +995,15 @@ footer {{
     width: auto !important;
     margin: 0 !important;
     opacity: 1 !important;
-    transition: color 0.15s ease, opacity 0.15s ease;
+    text-shadow: 0 0 6px rgba(51, 255, 102, 0.25) !important;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease, opacity 0.15s ease;
 }}
 .gradio-container a.vqc-source-tab:hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover span {{
-    color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
-    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
+    color: #7dff9a !important;
+    -webkit-text-fill-color: #7dff9a !important;
+    text-decoration-color: #7dff9a !important;
     background: transparent !important;
     text-decoration: underline !important;
 }}
@@ -1013,8 +1017,9 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled:not(.active) span,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled]:not(.active) span {{
     cursor: pointer !important;
-    color: {_VQC_TAB_GREEN_TEXT} !important;
-    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
+    text-decoration-color: {_VQC_MATRIX_GREEN} !important;
     background: transparent !important;
     text-decoration: underline !important;
 }}
@@ -1023,31 +1028,37 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active span,
 .gradio-container .vqc-source-tab.active:hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover span {{
-    color: {_VQC_TAB_ORANGE_TEXT} !important;
-    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover span,
+.gradio-container a.vqc-source-tab.active {{
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
+    text-decoration-color: {_VQC_MATRIX_GREEN} !important;
     background: transparent !important;
     text-decoration: underline !important;
+    text-decoration-thickness: 2px !important;
     cursor: default !important;
     opacity: 1 !important;
+    text-shadow: 0 0 8px rgba(51, 255, 102, 0.45) !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled],
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled span,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] span {{
-    color: {_VQC_TAB_ORANGE_TEXT} !important;
-    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
+    text-decoration-color: {_VQC_MATRIX_GREEN} !important;
     background: transparent !important;
     text-decoration: underline !important;
+    text-decoration-thickness: 2px !important;
     cursor: default !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active::before {{
     content: none !important;
     display: none !important;
 }}
-.gradio-container a:hover,
-.gradio-container .markdown a:hover,
-.gradio-container .prose a:hover {{
+.gradio-container a:hover:not(.vqc-source-tab),
+.gradio-container .markdown a:hover:not(.vqc-source-tab),
+.gradio-container .prose a:hover:not(.vqc-source-tab) {{
     color: #f97316 !important;
     -webkit-text-fill-color: #f97316 !important;
 }}
@@ -1790,12 +1801,6 @@ def build_app() -> gr.Blocks:
                             with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
                                 gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
                             with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
-                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
-                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
-                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
-                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
-                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
-                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
                                 gr.HTML(
                                     _external_tab_html(
                                         "SLM Quickstart",
@@ -1803,6 +1808,12 @@ def build_app() -> gr.Blocks:
                                         "slm",
                                     )
                                 )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
                 optics_terminal = gr.Textbox(
                     label="Matrix status display — selection menu · d-pad nav",
                     value=_optics_terminal_menu(0),
