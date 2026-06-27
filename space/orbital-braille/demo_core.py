@@ -240,7 +240,7 @@ def _render_animation_frame(
     extent = [-2.5, 2.5, -2.5, 2.5]
     t_ns = encoded.t * 1e9
 
-    fig, axes = plt.subplots(2, 2, figsize=(9.2, 5.4), facecolor="#0a0818")
+    fig, axes = plt.subplots(2, 2, figsize=(12.0, 6.8), facecolor="#0a0818")
     short_payload = payload[:28] + ("…" if len(payload) > 28 else "")
     fig.suptitle(
         f"Orbital Braille typehead  ·  \"{short_payload}\"  ·  "
@@ -319,7 +319,7 @@ def _render_animation_frame(
 
     plt.tight_layout(rect=[0, 0.02, 1, 0.96])
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=100, facecolor=fig.get_facecolor())
+    fig.savefig(buf, format="png", dpi=110, facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return Image.open(buf).convert("RGB")

@@ -118,6 +118,24 @@ HFB_CSS = f"""
 .gradio-container input[type="range"] {{
     opacity: 1 !important;
 }}
+.gradio-container .vqc-full-width {{
+    width: 100% !important;
+}}
+.gradio-container .vqc-animation-panel {{
+    width: 100% !important;
+    min-height: 420px;
+}}
+.gradio-container .vqc-animation-panel .image-container,
+.gradio-container .vqc-animation-panel img {{
+    width: 100% !important;
+    max-width: 100% !important;
+    object-fit: contain;
+}}
+.gradio-container .vqc-figure-panel .image-container,
+.gradio-container .vqc-figure-panel img {{
+    width: 100% !important;
+    object-fit: contain;
+}}
 footer {{ visibility: hidden; }}
 """
 
@@ -253,14 +271,28 @@ def build_app() -> gr.Blocks:
             "`VQC prototype` (4 orbs) · `Hello OAM` (2 orbs)"
         )
         run_cache = gr.State(value=None)
-        with gr.Row():
-            metrics = gr.Textbox(label="Metrics", lines=12)
-            figure = gr.Image(label="6-panel output", type="filepath")
-        with gr.Row():
-            animate_btn = gr.Button("Animate typehead", variant="secondary")
-            animation = gr.Image(label="Typehead animation (GIF)", type="filepath")
+        with gr.Row(equal_height=True):
+            with gr.Column(scale=1):
+                metrics = gr.Textbox(label="Metrics", lines=14)
+            with gr.Column(scale=2):
+                figure = gr.Image(
+                    label="6-panel output",
+                    type="filepath",
+                    elem_classes=["vqc-figure-panel"],
+                )
+        animate_btn = gr.Button(
+            "Animate typehead",
+            variant="secondary",
+            elem_classes=["vqc-full-width"],
+        )
+        animation = gr.Image(
+            label="Typehead animation (GIF)",
+            type="filepath",
+            height=520,
+            elem_classes=["vqc-animation-panel"],
+        )
         animation_info = gr.Markdown(
-            "*After **Run demo**, click **Animate typehead** for a per-run GIF "
+            "*After **Run demo**, click **Animate typehead** for a full-width per-run GIF "
             "(phase · intensity · pulse · orb trails).*"
         )
         with gr.Accordion("SLM package download", open=False):
