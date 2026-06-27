@@ -124,7 +124,7 @@ def _build_vqc_theme() -> gr.themes.Base:
     )
 
 
-# hfb.png: #vqc-fixed-bg covers viewport (fixed, no scroll). Content scrolls above it.
+# hfb.png on body: cover + fixed (viewport-sized, no scroll). Content scrolls above.
 HFB_CSS = f"""
 :root, :root .dark {{
     --body-background-fill: transparent !important;
@@ -139,32 +139,31 @@ HFB_CSS = f"""
     --border-color-primary: rgba(255, 255, 255, 0.12) !important;
     color-scheme: dark;
 }}
-html, body, #root, .app {{
-    background: transparent !important;
-    background-color: transparent !important;
-    color: #e8e0f8 !important;
+html {{
+    background-color: #0a0818 !important;
     min-height: 100% !important;
-    height: auto !important;
-    width: 100% !important;
-    overflow-x: hidden !important;
 }}
-#vqc-fixed-bg {{
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 0 !important;
-    pointer-events: none !important;
+body {{
     background-color: #0a0818 !important;
     background-image: url('{HFB_RAW_URL}') !important;
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    color: #e8e0f8 !important;
+    min-height: 100vh !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+}}
+#root, .app {{
+    background: transparent !important;
+    background-color: transparent !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: 100% !important;
 }}
 .gradio-container {{
     position: relative !important;
-    z-index: 1 !important;
     width: 100% !important;
     max-width: 100% !important;
     min-height: 0 !important;
@@ -173,8 +172,6 @@ html, body, #root, .app {{
     background-color: transparent !important;
 }}
 footer {{
-    position: relative !important;
-    z-index: 1 !important;
     background: transparent !important;
 }}
 .gradio-container .main,
@@ -410,7 +407,6 @@ def build_app() -> gr.Blocks:
         css=HFB_CSS,
         fill_width=True,
     ) as demo:
-        gr.HTML('<div id="vqc-fixed-bg" aria-hidden="true"></div>', container=False)
         gr.Markdown(
             "# Orbital Braille — VQC Typehead Prototype\n"
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
