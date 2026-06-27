@@ -86,24 +86,6 @@ _VQC_ACCENT = "#ea580c"  # matches slider / primary button orange
 _VQC_HF_RUNNING = "#1ed760"  # Hugging Face "Running" status green
 _VQC_FIELD_FILL = "rgba(10, 8, 24, 0.50)"
 
-# Extend this list to add future Source bookmark tabs.
-# Tabs with "page" switch in-app screens; others open external URLs.
-SOURCE_TABS: list[dict[str, str | None]] = [
-    {"id": "github", "label": "GitHub", "url": GITHUB_URL},
-    {"id": "live-demo", "label": "Live demo", "url": HF_SPACE_URL, "page": "demo"},
-    {
-        "id": "animations",
-        "label": "Animations",
-        "url": None,
-        "page": "animations",
-    },
-    {
-        "id": "slm",
-        "label": "SLM quickstart",
-        "url": f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
-    },
-]
-
 ANIMATIONS_INTRO_MD = (
     "Recorded end-to-end flow: pick a preset or **Run demo**, then **Animate typehead** — "
     "helical phase, OAM intensity, pyramidal pulse, and PWM orbs (payload: "
@@ -111,60 +93,48 @@ ANIMATIONS_INTRO_MD = (
 )
 
 
-def _active_source_tab_id(page: str = "demo") -> str:
-    """Which Source tab id is active for the given in-app page."""
-    if page == "animations":
-        return "animations"
-    return "live-demo" if is_hf_space() else "local"
+def _active_tab_html(label: str, tab_id: str) -> str:
+    """Non-clickable active Source pill (HF Running green)."""
+    return (
+        f'<span class="vqc-source-tab active" aria-current="page" data-tab="{tab_id}">'
+        f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}</span>'
+    )
 
 
-def _source_tab_entries() -> list[dict[str, str | None]]:
-    """Tabs shown in the Source bar (append here for future bookmarks)."""
-    entries = list(SOURCE_TABS)
-    if not is_hf_space():
-        entries.append({"id": "local", "label": "Local app", "url": None, "page": "demo"})
-    return entries
+def _external_tab_html(label: str, url: str, tab_id: str) -> str:
+    """External Source bookmark — opens in a new tab."""
+    return (
+        f'<a href="{url}" class="vqc-source-tab" data-tab="{tab_id}" '
+        f'target="_blank" rel="noopener noreferrer">{label}</a>'
+    )
 
 
-def _source_tabs_html(active_page: str = "demo") -> str:
-    """Bookmark-style Source tabs — active tab uses HF Running green."""
+def _source_nav_visibility(page: str = "demo") -> dict[str, gr.Update]:
+    """Which Source pills are active vs. clickable Gradio buttons."""
     on_hf = is_hf_space()
-    active_id = _active_source_tab_id(active_page)
-    parts = [
-        '<nav class="vqc-source-tabs" aria-label="Source bookmarks">',
-        '<span class="vqc-source-label">Source:</span>',
-    ]
-    for tab in _source_tab_entries():
-        tab_id = str(tab["id"])
-        label = str(tab["label"])
-        url = tab.get("url")
-        page_key = tab.get("page")
-        is_active = tab_id == active_id
-        if is_active:
-            parts.append(
-                f'<span class="vqc-source-tab active" aria-current="page" data-tab="{tab_id}">'
-                f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}</span>'
-            )
-        elif page_key and not (tab_id == "live-demo" and not on_hf):
-            parts.append(
-                f'<button type="button" class="vqc-source-tab" data-vqc-nav="{page_key}" '
-                f'data-tab="{tab_id}">{label}</button>'
-            )
-        elif url:
-            parts.append(
-                f'<a href="{url}" class="vqc-source-tab" data-tab="{tab_id}" '
-                f'target="_blank" rel="noopener noreferrer">{label}</a>'
-            )
-    parts.append("</nav>")
-    return "".join(parts)
+    on_demo = page == "demo"
+    return {
+        "tab_demo_active": gr.update(visible=on_hf and on_demo),
+        "tab_demo_btn": gr.update(visible=on_hf and not on_demo),
+        "tab_local_active": gr.update(visible=not on_hf and on_demo),
+        "tab_local_btn": gr.update(visible=not on_hf and not on_demo),
+        "tab_anim_active": gr.update(visible=not on_demo),
+        "tab_anim_btn": gr.update(visible=on_demo),
+    }
 
 
 def _nav_to_page(page: str) -> tuple:
     """Switch between demo and animations screens; refresh Source tab highlights."""
+    nav = _source_nav_visibility(page)
     return (
         gr.update(visible=page == "demo"),
         gr.update(visible=page == "animations"),
-        _source_tabs_html(page) + f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
+        nav["tab_demo_active"],
+        nav["tab_demo_btn"],
+        nav["tab_local_active"],
+        nav["tab_local_btn"],
+        nav["tab_anim_active"],
+        nav["tab_anim_btn"],
         page,
     )
 
@@ -254,20 +224,6 @@ WALLPAPER_HEAD = f"""
     if (document.body) mountWallpaper();
     document.addEventListener('DOMContentLoaded', mountWallpaper);
     window.addEventListener('load', mountWallpaper);
-}})();
-(function() {{
-    function clickNav(page) {{
-        var wrap = document.getElementById('vqc-nav-' + page);
-        if (!wrap) return;
-        var btn = wrap.querySelector('button');
-        if (btn) btn.click();
-    }}
-    document.addEventListener('click', function(e) {{
-        var el = e.target.closest('[data-vqc-nav]');
-        if (!el) return;
-        e.preventDefault();
-        clickNav(el.getAttribute('data-vqc-nav'));
-    }});
 }})();
 </script>
 """
@@ -377,22 +333,45 @@ footer {{
 .gradio-container .markdown p a,
 .gradio-container .prose a,
 .gradio-container .prose p a,
-.gradio-container .vqc-source-tabs {{
+.gradio-container .vqc-source-tabs-row {{
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: center !important;
     gap: 0.45rem 0.65rem !important;
-    margin: 0.35rem 0 0.5rem 0 !important;
+    margin: 0.35rem 0 0.15rem 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}}
+.gradio-container .vqc-source-tabs-row > .block,
+.gradio-container .vqc-source-tabs-row > .form,
+.gradio-container .vqc-source-tabs-row .block,
+.gradio-container .vqc-source-tabs-row .form {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+}}
+.gradio-container .vqc-source-tabs-row .html-container {{
+    padding: 0 !important;
+    margin: 0 !important;
 }}
 .gradio-container .vqc-source-label {{
     color: #e8e0f8 !important;
-    font-size: 1rem !important;
+    font-size: 0.92rem !important;
     font-weight: 600 !important;
     margin-right: 0.15rem !important;
+    line-height: 1.2 !important;
 }}
-.gradio-container .vqc-source-tab {{
+.gradio-container .vqc-source-tab,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
     display: inline-flex !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 0.4rem !important;
     padding: 0.3rem 0.85rem !important;
     border-radius: 999px !important;
@@ -404,37 +383,34 @@ footer {{
     font-weight: 600 !important;
     font-size: 0.92rem !important;
     line-height: 1.2 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+    box-shadow: none !important;
+    min-height: unset !important;
+    height: auto !important;
+    width: auto !important;
+    margin: 0 !important;
     transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }}
 .gradio-container a.vqc-source-tab:hover,
-.gradio-container button.vqc-source-tab:hover {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:hover {{
     color: #f97316 !important;
     -webkit-text-fill-color: #f97316 !important;
     border-color: rgba(249, 115, 22, 0.55) !important;
     background: rgba(10, 8, 24, 0.5) !important;
 }}
-.gradio-container button.vqc-source-tab {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
     cursor: pointer !important;
     font-family: inherit !important;
 }}
-.gradio-container .vqc-nav-hidden {{
-    display: none !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-}}
-.gradio-container .vqc-source-tab.active {{
+.gradio-container .vqc-source-tab.active,
+.gradio-container .vqc-source-tab.active:hover {{
     color: {_VQC_HF_RUNNING} !important;
     -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
     border-color: rgba(30, 215, 96, 0.55) !important;
     background: rgba(30, 215, 96, 0.14) !important;
     cursor: default !important;
-}}
-.gradio-container a.vqc-source-tab.active:hover {{
-    color: {_VQC_HF_RUNNING} !important;
-    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
 }}
 .gradio-container .vqc-tab-dot {{
     width: 7px !important;
@@ -661,13 +637,31 @@ def build_app() -> gr.Blocks:
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
             "Use **Quick** resolution for sub-second runs."
         )
-        source_bar = gr.HTML(
-            _source_tabs_html("demo") + f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
-        )
         current_page = gr.State("demo")
-        with gr.Row(elem_classes=["vqc-nav-hidden"]):
-            nav_demo_btn = gr.Button("Demo", elem_id="vqc-nav-demo")
-            nav_animations_btn = gr.Button("Animations", elem_id="vqc-nav-animations")
+        with gr.Row(elem_classes=["vqc-source-tabs-row"]):
+            gr.HTML('<span class="vqc-source-label">Source:</span>')
+            gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
+            gr.HTML(
+                _external_tab_html("Live demo", HF_SPACE_URL, "live-demo"),
+                visible=not is_hf_space(),
+            )
+            tab_demo_active = gr.HTML(_active_tab_html("Live demo", "live-demo"), visible=is_hf_space())
+            tab_demo_btn = gr.Button("Live demo", elem_classes=["vqc-source-tab"], visible=False, scale=0)
+            tab_local_active = gr.HTML(
+                _active_tab_html("Local app", "local"),
+                visible=not is_hf_space(),
+            )
+            tab_local_btn = gr.Button("Local app", elem_classes=["vqc-source-tab"], visible=False, scale=0)
+            tab_anim_active = gr.HTML(_active_tab_html("Animations", "animations"), visible=False)
+            tab_anim_btn = gr.Button("Animations", elem_classes=["vqc-source-tab"], scale=0)
+            gr.HTML(
+                _external_tab_html(
+                    "SLM quickstart",
+                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+                    "slm",
+                )
+            )
+        gr.HTML(f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>')
 
         with gr.Column(visible=True) as page_demo:
             gr.Markdown(SIMULATION_BANNER_MD)
@@ -808,9 +802,20 @@ def build_app() -> gr.Blocks:
                 "same flow as **Run demo** → **Animate typehead** on the **Live demo** tab."
             )
 
-        nav_outputs = [page_demo, page_animations, source_bar, current_page]
-        nav_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
-        nav_animations_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+        nav_outputs = [
+            page_demo,
+            page_animations,
+            tab_demo_active,
+            tab_demo_btn,
+            tab_local_active,
+            tab_local_btn,
+            tab_anim_active,
+            tab_anim_btn,
+            current_page,
+        ]
+        tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
+        tab_local_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
+        tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
