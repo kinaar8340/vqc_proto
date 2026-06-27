@@ -1110,14 +1110,14 @@ footer {{
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active),
 .gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active) span {{
-    color: {_VQC_ACCENT} !important;
-    -webkit-text-fill-color: {_VQC_ACCENT} !important;
-    text-shadow: 0 0 6px rgba(234, 88, 12, 0.25) !important;
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
+    text-shadow: 0 0 6px rgba(51, 255, 102, 0.35) !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover,
 .gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover span {{
-    color: {_VQC_TAB_ORANGE_TEXT} !important;
-    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
+    color: #7dff9a !important;
+    -webkit-text-fill-color: #7dff9a !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):not(.vqc-optics-key-defined):hover {{
     background: #141414 !important;
