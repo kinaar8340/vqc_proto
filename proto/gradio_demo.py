@@ -109,7 +109,7 @@ def _source_tab_btn_update(*, active: bool) -> gr.Update:
 
 
 def _home_tab_update(*, on_demo_page: bool) -> gr.Update:
-    """Home tab (Live demo / Local app): orange on demo page, green link back from Animations."""
+    """Live demo tab: orange on demo page, green link back from Animations."""
     if on_demo_page:
         return gr.update(interactive=False, elem_classes=["vqc-source-tab", "active"], variant="secondary")
     return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
@@ -117,13 +117,11 @@ def _home_tab_update(*, on_demo_page: bool) -> gr.Update:
 
 def _nav_to_page(page: str) -> tuple:
     """Switch between demo and animations screens; refresh Source tab highlights."""
-    on_hf = is_hf_space()
     on_demo = page == "demo"
     return (
         gr.update(visible=on_demo),
         gr.update(visible=not on_demo),
-        _home_tab_update(on_demo_page=on_demo) if on_hf else gr.update(),
-        _home_tab_update(on_demo_page=on_demo) if not on_hf else gr.update(),
+        _home_tab_update(on_demo_page=on_demo),
         _source_tab_btn_update(active=not on_demo),
         page,
     )
@@ -684,23 +682,10 @@ def build_app() -> gr.Blocks:
         with gr.Row(elem_classes=["vqc-source-tabs-row"]):
             gr.HTML('<span class="vqc-source-label">Source:</span>')
             gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
-            gr.HTML(
-                _external_tab_html("Live demo", HF_SPACE_URL, "live-demo"),
-                visible=not is_hf_space(),
-            )
             tab_demo_btn = gr.Button(
                 "Live demo",
                 elem_classes=["vqc-source-tab", "active"],
                 interactive=False,
-                visible=on_hf,
-                scale=0,
-                variant="secondary",
-            )
-            tab_local_btn = gr.Button(
-                "Local app",
-                elem_classes=["vqc-source-tab", "active"],
-                interactive=False,
-                visible=not on_hf,
                 scale=0,
                 variant="secondary",
             )
@@ -862,12 +847,10 @@ def build_app() -> gr.Blocks:
             page_demo,
             page_animations,
             tab_demo_btn,
-            tab_local_btn,
             tab_anim_btn,
             current_page,
         ]
         tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
-        tab_local_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
         tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
 
         gr.Markdown(
