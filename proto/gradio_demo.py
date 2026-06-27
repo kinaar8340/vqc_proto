@@ -507,19 +507,28 @@ footer {{
     margin: 0.15rem 0 0.35rem 0 !important;
     line-height: 1.45 !important;
 }}
+.gradio-container .vqc-animations-page,
+.gradio-container .vqc-animations-page > .block,
+.gradio-container .vqc-animations-page .html-container {{
+    width: 100% !important;
+    max-width: 100% !important;
+}}
 .gradio-container .vqc-screencast-wrap {{
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.65rem !important;
+    gap: 0.75rem !important;
     width: 100% !important;
-    max-width: min(1040px, 92vw) !important;
-    margin: 0.2rem auto 0.45rem !important;
+    max-width: 100% !important;
+    margin: 0.25rem 0 0.5rem 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
 }}
 .gradio-container .vqc-screencast-video {{
     width: 100% !important;
     min-width: 0 !important;
     height: auto !important;
-    max-height: min(22vh, 220px) !important;
+    aspect-ratio: 16 / 9 !important;
+    max-height: min(36vh, 360px) !important;
     object-fit: contain !important;
     border-radius: 8px !important;
     display: block !important;
