@@ -1,17 +1,3 @@
----
-title: Orbital Braille VQC Typehead
-emoji: 🔤
-colorFrom: blue
-colorTo: purple
-sdk: gradio
-sdk_version: 5.12.0
-python_version: 3.12
-app_file: app.py
-pinned: false
-license: cc-by-nc-sa-4.0
-short_description: Orbital Braille VQC Typehead — browser demo
----
-
 # Orbital Braille — VQC Typehead
 
 <p align="center">

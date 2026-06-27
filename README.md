@@ -20,6 +20,8 @@ Ultra-high-density quantum data compression and transfer via OAM-flux qubits and
 
 Run the prototype in your browser: enter a payload, pick orb count (2–6), toggle quick/full mode, get metrics + the 6-panel figure. No clone required.
 
+**New to OAM or the typeball analogy?** The Space README includes a [beginner guide](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc/blob/main/README.md) with diagrams, OAM comparisons, and an animated typehead walkthrough ([`typehead_demo.gif`](typehead_demo.gif)).
+
 Maintainers: deploy or refresh with `export HF_TOKEN=hf_... && ./scripts/deploy_hf_space.sh`
 
 ---
