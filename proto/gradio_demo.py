@@ -376,8 +376,8 @@ footer {{
     height: auto !important;
     width: auto !important;
     margin: 0 !important;
-    opacity: 1 !important;
-    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    opacity: 0.8 !important;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
 }}
 .gradio-container a.vqc-source-tab:hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover {{
@@ -394,7 +394,7 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled:not(.active),
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled]:not(.active),
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled:not(.active) {{
-    opacity: 1 !important;
+    opacity: 0.8 !important;
     cursor: default !important;
     color: {_VQC_HF_RUNNING} !important;
     -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
@@ -404,7 +404,7 @@ footer {{
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] {{
-    opacity: 1 !important;
+    opacity: 0.8 !important;
     cursor: default !important;
     color: {_VQC_ACCENT} !important;
     -webkit-text-fill-color: {_VQC_ACCENT} !important;
@@ -421,6 +421,7 @@ footer {{
     border-color: rgba(234, 88, 12, 0.55) !important;
     background: rgba(234, 88, 12, 0.16) !important;
     cursor: default !important;
+    opacity: 0.8 !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active::before {{
     content: "" !important;
