@@ -56,6 +56,7 @@ if not HFB_IMAGE.is_file():
     HFB_IMAGE = APP_DIR.parent / "hfb.png"
 HFB_SRC = str(HFB_IMAGE) if HFB_IMAGE.is_file() else HFB_RAW_URL
 
+# Panel fields: 60% transparent (alpha 0.4). Sliders/buttons: ~80% opaque for usability.
 HFB_CSS = f"""
 .gradio-container {{
     background-image: url('{HFB_RAW_URL}') !important;
@@ -63,9 +64,55 @@ HFB_CSS = f"""
     background-position: center center !important;
     background-attachment: fixed !important;
 }}
-.contain, .main, .tabs, .tabitem, .form, .column, .row {{
-    background-color: rgba(10, 8, 24, 0.88) !important;
+.gradio-container .contain,
+.gradio-container .main,
+.gradio-container .tabs,
+.gradio-container .tabitem,
+.gradio-container .form,
+.gradio-container .column,
+.gradio-container .row,
+.gradio-container .block,
+.gradio-container .panel,
+.gradio-container .gr-panel,
+.gradio-container .gr-box,
+.gradio-container .input-container,
+.gradio-container input[type="text"],
+.gradio-container textarea,
+.gradio-container [data-testid="textbox"] {{
+    background-color: rgba(10, 8, 24, 0.4) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border-radius: 10px;
+}}
+.gradio-container .accordion,
+.gradio-container details {{
+    background-color: rgba(10, 8, 24, 0.4) !important;
+    backdrop-filter: blur(6px);
+}}
+.gradio-container button,
+.gradio-container .gr-button {{
+    background-color: rgba(28, 22, 48, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    opacity: 1 !important;
+}}
+.gradio-container button.primary,
+.gradio-container .primary {{
+    background-color: rgba(234, 88, 12, 0.85) !important;
+    border-color: rgba(255, 180, 80, 0.4) !important;
+}}
+.gradio-container input[type="range"],
+.gradio-container .gr-slider input[type="range"] {{
+    opacity: 0.8 !important;
+}}
+.gradio-container .gr-slider {{
+    background-color: rgba(10, 8, 24, 0.4) !important;
+}}
+.gradio-container label.wrap {{
+    background: transparent !important;
+}}
+.gradio-container .image-container,
+.gradio-container .gr-image {{
+    background: rgba(10, 8, 24, 0.35) !important;
 }}
 footer {{ visibility: hidden; }}
 """
