@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import tempfile
 import traceback
 from pathlib import Path
@@ -128,9 +129,114 @@ OPTICS_PANEL_FACE_HTML = """
 <div class="vqc-optics-receiver-face" aria-hidden="true">
   <span class="vqc-optics-brand">ORBITAL BRAILLE</span>
   <span class="vqc-optics-panel-title">Optics Control Panel</span>
-  <span class="vqc-optics-subtitle">TUNE · ENCODE · TRANSMIT</span>
+  <span class="vqc-optics-subtitle">TUNE · ENCODE · TRANSMIT · CLI READOUT</span>
+  <span class="vqc-optics-terminal-caption">MATRIX STATUS DISPLAY — KEYPAD BELOW</span>
 </div>
 """
+
+_OPTICS_TERM_BAR = "─" * 48
+
+
+def _strip_md_plain(text: str) -> str:
+    """Flatten markdown blockquotes and emphasis for terminal readout."""
+    plain = re.sub(r"^>\s*", "", text.strip(), flags=re.MULTILINE)
+    plain = re.sub(r"\*\*([^*]+)\*\*", r"\1", plain)
+    plain = re.sub(r"`([^`]+)`", r"\1", plain)
+    return plain.strip()
+
+
+def _optics_terminal_frame(title: str, body: str) -> str:
+    return f"{title}\n{_OPTICS_TERM_BAR}\n{body}"
+
+
+def _optics_terminal_home() -> str:
+    build = get_build_label().replace("`", "")
+    demo_line = _strip_md_plain(SIMULATION_BANNER_MD).split("\n")[0]
+    return _optics_terminal_frame(
+        "ORBITAL BRAILLE · OPTICS CONTROL PANEL",
+        "\n".join(
+            [
+                "CLI readout online. Use keypad for verbose status.",
+                "",
+                "  HOME   — boot screen (this view)",
+                "  STATUS — pipeline & environment",
+                "  DEMO   — simulation scope (encode→decode)",
+                "  BUILD  — last updated / commit",
+                "  HELP   — keypad legend",
+                "  CLR    — clear display",
+                "",
+                f"[BUILD] {build}",
+                f"[DEMO]  {demo_line}",
+                "",
+                "> Awaiting RUN DEMO…",
+            ]
+        ),
+    )
+
+
+def _optics_terminal_status() -> str:
+    on_hf = is_hf_space()
+    env = "Hugging Face Space" if on_hf else "Local Gradio"
+    slm_note = (
+        "SLM frame export disabled on HF (use local demo for PNG frames)"
+        if on_hf
+        else "SLM frame export available locally"
+    )
+    return _optics_terminal_frame(
+        "SYSTEM STATUS",
+        "\n".join(
+            [
+                f"Environment : {env}",
+                f"Payload def.: {DEFAULT_PAYLOAD!r}",
+                "Resolution  : Quick (fast) · Full (publication)",
+                "Pipeline    : encode → BMGL turbulence → FastICA decode",
+                f"SLM export  : {slm_note}",
+                "",
+                "Controls ready. Tune knobs, pick a preset, or RUN DEMO.",
+            ]
+        ),
+    )
+
+
+def _optics_terminal_demo() -> str:
+    return _optics_terminal_frame("SIMULATION DEMO", _strip_md_plain(SIMULATION_BANNER_MD))
+
+
+def _optics_terminal_build() -> str:
+    build = get_build_label().replace("`", "")
+    return _optics_terminal_frame(
+        "BUILD / LAST UPDATED",
+        "\n".join(
+            [
+                build,
+                "",
+                "Synced from vqc_proto via scripts/sync_hf_space.sh on deploy.",
+                f"Repo: {GITHUB_URL}",
+                f"Space: {HF_SPACE_URL}",
+            ]
+        ),
+    )
+
+
+def _optics_terminal_help() -> str:
+    return _optics_terminal_frame(
+        "KEYPAD HELP",
+        "\n".join(
+            [
+                "Calculator-style keys drive the matrix readout above.",
+                "",
+                "  HOME   Boot screen — combined BUILD + DEMO summary",
+                "  STATUS Runtime environment and pipeline notes",
+                "  DEMO   Full simulation-demo disclaimer (verbose)",
+                "  BUILD  Last updated timestamp and commit hash",
+                "  HELP   This legend",
+                "  CLR    Blank the display",
+                "",
+                "Tuning knobs and preset keys below are unchanged.",
+                "RUN DEMO remains outside this panel.",
+            ]
+        ),
+    )
 
 
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
@@ -673,6 +779,72 @@ footer {{
     letter-spacing: 0.22em !important;
     color: #9a8458 !important;
 }}
+.gradio-container .vqc-optics-terminal-caption {{
+    font-size: 0.58rem !important;
+    letter-spacing: 0.18em !important;
+    color: #3dff7a !important;
+    text-shadow: 0 0 8px rgba(61, 255, 122, 0.45) !important;
+    margin-top: 0.1rem !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-terminal textarea,
+.gradio-container .vqc-optics-panel .vqc-optics-terminal input {{
+    background: #020a04 !important;
+    border: 2px inset #1a4d2a !important;
+    color: #33ff66 !important;
+    -webkit-text-fill-color: #33ff66 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 0.78rem !important;
+    line-height: 1.45 !important;
+    text-shadow: 0 0 6px rgba(51, 255, 102, 0.35) !important;
+    box-shadow:
+        inset 0 0 18px rgba(0, 40, 12, 0.65),
+        0 0 12px rgba(51, 255, 102, 0.08) !important;
+    border-radius: 6px !important;
+    caret-color: #33ff66 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-terminal .label-wrap span {{
+    color: #3dff7a !important;
+    letter-spacing: 0.14em !important;
+    text-shadow: 0 0 6px rgba(61, 255, 122, 0.35) !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-terminal-wrap {{
+    background: rgba(0, 0, 0, 0.28) !important;
+    border: 1px solid #1a4d2a !important;
+    border-radius: 10px !important;
+    padding: 0.5rem 0.6rem 0.45rem !important;
+    margin: 0 0 0.55rem 0 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-calc-row {{
+    gap: 0.45rem !important;
+    margin: 0 0 0.65rem 0 !important;
+    justify-content: center !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-calc-btn {{
+    flex: 1 1 0 !important;
+    min-width: 4.5rem !important;
+    max-width: 7.5rem !important;
+    background: linear-gradient(180deg, #1f3d1a 0%, #0a1a08 100%) !important;
+    border: 2px solid #2d6b3a !important;
+    color: #7dff9a !important;
+    -webkit-text-fill-color: #7dff9a !important;
+    border-radius: 6px !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    padding: 0.38rem 0.35rem !important;
+    box-shadow:
+        inset 0 1px 0 rgba(125, 255, 154, 0.12),
+        0 2px 4px rgba(0, 0, 0, 0.45) !important;
+    text-shadow: 0 0 6px rgba(125, 255, 154, 0.25) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-calc-btn:hover {{
+    background: linear-gradient(180deg, #2d6b3a 0%, #143320 100%) !important;
+    border-color: #3dff7a !important;
+    color: #b8ffd0 !important;
+    -webkit-text-fill-color: #b8ffd0 !important;
+    box-shadow: 0 0 10px rgba(61, 255, 122, 0.25) !important;
+}}
 .gradio-container .vqc-optics-panel .label-wrap span,
 .gradio-container .vqc-optics-panel label span {{
     color: #e8d4a8 !important;
@@ -1059,12 +1231,55 @@ def build_app() -> gr.Blocks:
                     variant="secondary",
                 )
             gr.Markdown(ONBOARDING_MD)
-        gr.HTML(f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>')
-
         with gr.Column(visible=True) as page_demo:
-            gr.Markdown(SIMULATION_BANNER_MD)
             with gr.Group(elem_classes=["vqc-optics-panel"]):
                 gr.HTML(OPTICS_PANEL_FACE_HTML)
+                optics_terminal = gr.Textbox(
+                    label="Matrix status display",
+                    value=_optics_terminal_home(),
+                    lines=10,
+                    max_lines=14,
+                    interactive=False,
+                    elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
+                )
+                with gr.Row(elem_classes=["vqc-optics-calc-row"]):
+                    term_home_btn = gr.Button(
+                        "HOME",
+                        size="sm",
+                        elem_classes=["vqc-optics-calc-btn"],
+                        variant="secondary",
+                    )
+                    term_status_btn = gr.Button(
+                        "STATUS",
+                        size="sm",
+                        elem_classes=["vqc-optics-calc-btn"],
+                        variant="secondary",
+                    )
+                    term_demo_btn = gr.Button(
+                        "DEMO",
+                        size="sm",
+                        elem_classes=["vqc-optics-calc-btn"],
+                        variant="secondary",
+                    )
+                with gr.Row(elem_classes=["vqc-optics-calc-row"]):
+                    term_build_btn = gr.Button(
+                        "BUILD",
+                        size="sm",
+                        elem_classes=["vqc-optics-calc-btn"],
+                        variant="secondary",
+                    )
+                    term_help_btn = gr.Button(
+                        "HELP",
+                        size="sm",
+                        elem_classes=["vqc-optics-calc-btn"],
+                        variant="secondary",
+                    )
+                    term_clr_btn = gr.Button(
+                        "CLR",
+                        size="sm",
+                        elem_classes=["vqc-optics-calc-btn"],
+                        variant="secondary",
+                    )
                 with gr.Row(elem_classes=["vqc-optics-tune-row"]):
                     payload = gr.Textbox(
                         label="Payload",
@@ -1135,6 +1350,13 @@ def build_app() -> gr.Blocks:
                     info=slm_frames_info,
                     elem_classes=["vqc-slm-toggle"],
                 )
+            term_home_btn.click(_optics_terminal_home, outputs=[optics_terminal])
+            term_status_btn.click(_optics_terminal_status, outputs=[optics_terminal])
+            term_demo_btn.click(_optics_terminal_demo, outputs=[optics_terminal])
+            term_build_btn.click(_optics_terminal_build, outputs=[optics_terminal])
+            term_help_btn.click(_optics_terminal_help, outputs=[optics_terminal])
+            term_clr_btn.click(lambda: "", outputs=[optics_terminal])
+
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
             run_cache = gr.State(value=None)
             with gr.Row(equal_height=True):
@@ -1241,6 +1463,7 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
+        demo.load(_optics_terminal_home, outputs=[optics_terminal])
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
