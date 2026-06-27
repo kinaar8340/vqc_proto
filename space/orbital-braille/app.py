@@ -93,14 +93,6 @@ ANIMATIONS_INTRO_MD = (
 )
 
 
-def _active_tab_html(label: str, tab_id: str) -> str:
-    """Non-clickable active Source pill (HF Running green)."""
-    return (
-        f'<span class="vqc-source-tab active" aria-current="page" data-tab="{tab_id}">'
-        f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}</span>'
-    )
-
-
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
     """External Source bookmark — opens in a new tab."""
     return (
@@ -109,32 +101,24 @@ def _external_tab_html(label: str, url: str, tab_id: str) -> str:
     )
 
 
-def _source_nav_visibility(page: str = "demo") -> dict[str, gr.Update]:
-    """Which Source pills are active vs. clickable Gradio buttons."""
-    on_hf = is_hf_space()
-    on_demo = page == "demo"
-    return {
-        "tab_demo_active": gr.update(visible=on_hf and on_demo),
-        "tab_demo_btn": gr.update(visible=on_hf and not on_demo),
-        "tab_local_active": gr.update(visible=not on_hf and on_demo),
-        "tab_local_btn": gr.update(visible=not on_hf and not on_demo),
-        "tab_anim_active": gr.update(visible=not on_demo),
-        "tab_anim_btn": gr.update(visible=on_demo),
-    }
+def _source_tab_btn_update(*, active: bool) -> gr.Update:
+    """One Gradio button per in-app tab — active = orange highlight, inactive = green."""
+    if active:
+        return gr.update(interactive=False, elem_classes=["vqc-source-tab", "active"])
+    return gr.update(interactive=True, elem_classes=["vqc-source-tab"])
 
 
 def _nav_to_page(page: str) -> tuple:
     """Switch between demo and animations screens; refresh Source tab highlights."""
-    nav = _source_nav_visibility(page)
+    on_hf = is_hf_space()
+    on_demo = page == "demo"
+    home_active = on_demo
     return (
-        gr.update(visible=page == "demo"),
-        gr.update(visible=page == "animations"),
-        nav["tab_demo_active"],
-        nav["tab_demo_btn"],
-        nav["tab_local_active"],
-        nav["tab_local_btn"],
-        nav["tab_anim_active"],
-        nav["tab_anim_btn"],
+        gr.update(visible=on_demo),
+        gr.update(visible=not on_demo),
+        _source_tab_btn_update(active=on_hf and home_active),
+        _source_tab_btn_update(active=not on_hf and home_active),
+        _source_tab_btn_update(active=not on_demo),
         page,
     )
 
@@ -375,10 +359,10 @@ footer {{
     gap: 0.4rem !important;
     padding: 0.3rem 0.85rem !important;
     border-radius: 999px !important;
-    border: 1px solid rgba(234, 88, 12, 0.45) !important;
-    background: rgba(10, 8, 24, 0.35) !important;
-    color: {_VQC_ACCENT} !important;
-    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    border: 1px solid rgba(30, 215, 96, 0.55) !important;
+    background: rgba(30, 215, 96, 0.14) !important;
+    color: {_VQC_HF_RUNNING} !important;
+    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
     text-decoration: none !important;
     font-weight: 600 !important;
     font-size: 0.92rem !important;
@@ -391,34 +375,43 @@ footer {{
     height: auto !important;
     width: auto !important;
     margin: 0 !important;
+    opacity: 1 !important;
     transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }}
 .gradio-container a.vqc-source-tab:hover,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab:hover {{
-    color: #f97316 !important;
-    -webkit-text-fill-color: #f97316 !important;
-    border-color: rgba(249, 115, 22, 0.55) !important;
-    background: rgba(10, 8, 24, 0.5) !important;
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover {{
+    color: #5ef59a !important;
+    -webkit-text-fill-color: #5ef59a !important;
+    border-color: rgba(30, 215, 96, 0.75) !important;
+    background: rgba(30, 215, 96, 0.22) !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
     cursor: pointer !important;
     font-family: inherit !important;
 }}
-.gradio-container .vqc-source-tab.active,
-.gradio-container .vqc-source-tab.active:hover {{
-    color: {_VQC_HF_RUNNING} !important;
-    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
-    border-color: rgba(30, 215, 96, 0.55) !important;
-    background: rgba(30, 215, 96, 0.14) !important;
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled] {{
+    opacity: 1 !important;
     cursor: default !important;
 }}
-.gradio-container .vqc-tab-dot {{
+.gradio-container .vqc-source-tab.active,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active,
+.gradio-container .vqc-source-tab.active:hover,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover {{
+    color: {_VQC_ACCENT} !important;
+    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    border-color: rgba(234, 88, 12, 0.55) !important;
+    background: rgba(234, 88, 12, 0.16) !important;
+    cursor: default !important;
+}}
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active::before {{
+    content: "" !important;
     width: 7px !important;
     height: 7px !important;
     border-radius: 50% !important;
-    background: {_VQC_HF_RUNNING} !important;
+    background: {_VQC_ACCENT} !important;
     flex-shrink: 0 !important;
-    box-shadow: 0 0 6px rgba(30, 215, 96, 0.65) !important;
+    box-shadow: 0 0 6px rgba(234, 88, 12, 0.65) !important;
 }}
 .gradio-container a:hover,
 .gradio-container .markdown a:hover,
@@ -645,14 +638,20 @@ def build_app() -> gr.Blocks:
                 _external_tab_html("Live demo", HF_SPACE_URL, "live-demo"),
                 visible=not is_hf_space(),
             )
-            tab_demo_active = gr.HTML(_active_tab_html("Live demo", "live-demo"), visible=is_hf_space())
-            tab_demo_btn = gr.Button("Live demo", elem_classes=["vqc-source-tab"], visible=False, scale=0)
-            tab_local_active = gr.HTML(
-                _active_tab_html("Local app", "local"),
-                visible=not is_hf_space(),
+            tab_demo_btn = gr.Button(
+                "Live demo",
+                elem_classes=["vqc-source-tab", "active"],
+                interactive=False,
+                visible=on_hf,
+                scale=0,
             )
-            tab_local_btn = gr.Button("Local app", elem_classes=["vqc-source-tab"], visible=False, scale=0)
-            tab_anim_active = gr.HTML(_active_tab_html("Animations", "animations"), visible=False)
+            tab_local_btn = gr.Button(
+                "Local app",
+                elem_classes=["vqc-source-tab", "active"],
+                interactive=False,
+                visible=not on_hf,
+                scale=0,
+            )
             tab_anim_btn = gr.Button("Animations", elem_classes=["vqc-source-tab"], scale=0)
             gr.HTML(
                 _external_tab_html(
@@ -805,11 +804,8 @@ def build_app() -> gr.Blocks:
         nav_outputs = [
             page_demo,
             page_animations,
-            tab_demo_active,
             tab_demo_btn,
-            tab_local_active,
             tab_local_btn,
-            tab_anim_active,
             tab_anim_btn,
             current_page,
         ]
