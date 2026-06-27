@@ -234,24 +234,24 @@ def _optics_terminal_menu(menu_index: int) -> str:
         "▲▼ ◀▶ move highlight · SEL confirm · 01 Home",
         "",
     ]
-    for index, (_action, label, _stream) in enumerate(_term_menu_items()):
+    for index, (_action, keypad_key, label, _stream) in enumerate(_term_menu_items()):
         mark = "▶" if index == menu_index else " "
-        lines.append(f" [{mark}] {label}")
+        lines.append(f"{keypad_key:02d} --- [{mark}] {label}")
     return _optics_terminal_frame("SELECTION MENU", "\n".join(lines))
 
 
-def _term_menu_items() -> tuple[tuple[str, str, Callable[[], Iterator[str]]], ...]:
+def _term_menu_items() -> tuple[tuple[str, int, str, Callable[[], Iterator[str]]], ...]:
     return (
-        ("home", "Home — keypad legend", _stream_optics_terminal_home),
-        ("status", "Status — pipeline & environment", _stream_optics_terminal_status),
-        ("demo", "Demo — simulation scope (encode→decode)", _stream_optics_terminal_demo),
-        ("build", "Build — last updated / commit", _stream_optics_terminal_build),
-        ("help", "Help — keypad reference", _stream_optics_terminal_help),
+        ("home", 1, "Home Keypad Legend", _stream_optics_terminal_home),
+        ("status", 2, "Status Pipeline & Environment", _stream_optics_terminal_status),
+        ("demo", 3, "Demo Simulation Scope (encode-decode)", _stream_optics_terminal_demo),
+        ("build", 4, "Build Last Updated / Commit", _stream_optics_terminal_build),
+        ("help", 5, "Help Keypad Reference", _stream_optics_terminal_help),
     )
 
 
 def _term_menu_index_for_action(action: str) -> int:
-    for index, (key, _label, _stream) in enumerate(_term_menu_items()):
+    for index, (key, _keypad, _label, _stream) in enumerate(_term_menu_items()):
         if key == action:
             return index
     return 0
@@ -535,7 +535,7 @@ def _make_term_dpad_click(active_key: str):
 
         if active_key == "dpad_select":
             if mode == TERM_UI_MENU:
-                _action, _label, stream_fn = _term_menu_items()[menu_index]
+                _action, _keypad, _label, stream_fn = _term_menu_items()[menu_index]
                 page_state = {"mode": TERM_UI_PAGE, "index": menu_index}
                 yield from _term_yield_stream_then_release(
                     stream_fn(),
