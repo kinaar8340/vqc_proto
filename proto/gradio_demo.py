@@ -314,22 +314,18 @@ footer {{
 .gradio-container .markdown li {{
     color: #e8e0f8 !important;
 }}
-.gradio-container a,
-.gradio-container a:link,
-.gradio-container a:visited,
-.gradio-container .markdown a,
-.gradio-container .markdown p a,
-.gradio-container .prose a,
-.gradio-container .prose p a,
 .gradio-container .vqc-source-tabs-row {{
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: center !important;
     gap: 0.45rem 0.65rem !important;
-    margin: 0.35rem 0 0.15rem 0 !important;
+    margin: 0.35rem 0 0.1rem 0 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
+}}
+.gradio-container .vqc-source-nav-row {{
+    margin: 0 0 0.15rem 0 !important;
 }}
 .gradio-container .vqc-source-tabs-row > .block,
 .gradio-container .vqc-source-tabs-row > .form,
@@ -680,10 +676,19 @@ def build_app() -> gr.Blocks:
         )
         current_page = gr.State("demo")
         with gr.Row(elem_classes=["vqc-source-tabs-row"]):
-            gr.HTML('<span class="vqc-source-label">Source:</span>')
+            gr.HTML('<span class="vqc-source-label">Links:</span>')
             gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
+            gr.HTML(
+                _external_tab_html(
+                    "SLM Quickstart",
+                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+                    "slm",
+                )
+            )
+        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
+            gr.HTML('<span class="vqc-source-label">Source:</span>')
             tab_demo_btn = gr.Button(
-                "Live demo",
+                "Live Demo",
                 elem_classes=["vqc-source-tab", "active"],
                 interactive=False,
                 scale=0,
@@ -694,13 +699,6 @@ def build_app() -> gr.Blocks:
                 elem_classes=["vqc-source-tab"],
                 scale=0,
                 variant="secondary",
-            )
-            gr.HTML(
-                _external_tab_html(
-                    "SLM quickstart",
-                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
-                    "slm",
-                )
             )
         gr.HTML(f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>')
 
@@ -840,7 +838,7 @@ def build_app() -> gr.Blocks:
             )
             gr.Markdown(
                 f"[Direct MP4 link]({DEMO_SCREENCAST_URL}) · "
-                "same flow as **Run demo** → **Animate typehead** on the **Live demo** tab."
+                "same flow as **Run demo** → **Animate typehead** on the **Live Demo** tab."
             )
 
         nav_outputs = [
