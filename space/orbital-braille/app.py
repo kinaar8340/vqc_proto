@@ -175,36 +175,36 @@ TERM_KEYPAD_DESCRIPTIONS: dict[int, str] = {
     5: "Help — keypad reference",
 }
 TERM_NAV_KEYS: tuple[str, ...] = (
+    "dpad_select",
     "dpad_up",
     "dpad_down",
     "dpad_left",
     "dpad_right",
-    "dpad_select",
     "clear",
 )
+TERM_NAV_DEFINED: dict[str, str] = {
+    "clear": "Clear — blank display",
+}
 TERM_KEYPAD_CONTROL_ORDER: tuple[str, ...] = (
     *TERM_NAV_KEYS,
     *(f"key{i:02d}" for i in range(1, TERM_KEYPAD_COUNT + 1)),
 )
 
 
-def _optics_keypad_description_lines() -> str:
-    """D-pad + 24 programmable keys (01–24)."""
-    lines = [
-        "  [↑]   Up",
-        "  [←]   Left    [SEL]  Select    [→]  Right",
-        "  [↓]   Down",
-        "  [CLR] Clear display",
-        "",
-    ]
-    for index in range(1, TERM_KEYPAD_COUNT + 1):
-        desc = TERM_KEYPAD_DESCRIPTIONS.get(index, "Unassigned — programmable")
-        lines.append(f"  [{index:02d}]  {desc}")
+def _optics_assigned_keypad_lines() -> str:
+    """Only keys with real functions — omit latch-only / unassigned slots."""
+    lines = []
+    for index in sorted(TERM_KEYPAD_DEFINED):
+        lines.append(f"  [{index:02d}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
+    for nav_key in TERM_NAV_KEYS:
+        if nav_key in TERM_NAV_DEFINED:
+            tag = "CLR" if nav_key == "clear" else nav_key.removeprefix("dpad_").upper()
+            lines.append(f"  [{tag}]  {TERM_NAV_DEFINED[nav_key]}")
     return "\n".join(lines)
 
 
 def _optics_terminal_home() -> str:
-    return _optics_terminal_frame("PROGRAMMABLE KEYPAD", _optics_keypad_description_lines())
+    return _optics_terminal_frame("PROGRAMMABLE KEYPAD", _optics_assigned_keypad_lines())
 
 
 def _optics_terminal_status() -> str:
@@ -256,12 +256,9 @@ def _optics_terminal_help() -> str:
         "KEYPAD REFERENCE",
         "\n".join(
             [
-                "D-pad + clear · 12×2 programmable matrix (01–24)",
-                "Matrix-green latch = selected · black/white = idle",
+                "Assigned keys only · matrix-green latch = selected",
                 "",
-                _optics_keypad_description_lines(),
-                "",
-                "Keys 06–24 reserved for future assignments.",
+                _optics_assigned_keypad_lines(),
             ]
         ),
     )
@@ -1005,42 +1002,32 @@ footer {{
     justify-content: stretch !important;
     width: 100% !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-dpad-spacer {{
-    visibility: hidden !important;
-    pointer-events: none !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    min-height: 1.85rem !important;
-}}
 .gradio-container .vqc-optics-panel button.vqc-optics-key {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
-    min-height: 1.85rem !important;
+    min-height: 2.55rem !important;
+    aspect-ratio: 1 / 1 !important;
     background: #000000 !important;
     border: none !important;
     border-radius: 8px !important;
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     font-family: "Courier New", Courier, monospace !important;
-    font-size: 0.62rem !important;
+    font-size: 0.72rem !important;
     font-weight: 700 !important;
     line-height: 1.1 !important;
     letter-spacing: 0.03em !important;
-    padding: 0.32rem 0.1rem !important;
+    padding: 0.28rem 0.1rem !important;
     box-shadow: none !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-dpad {{
-    font-size: 0.72rem !important;
+    font-size: 0.82rem !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-clear {{
-    width: 100% !important;
-    min-height: 2rem !important;
-    margin-top: 0.12rem !important;
     text-transform: lowercase !important;
-    font-size: 0.68rem !important;
-    letter-spacing: 0.1em !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.06em !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):hover {{
     background: #141414 !important;
@@ -1455,64 +1442,24 @@ def build_app() -> gr.Blocks:
                 )
                 term_active_key = gr.State("key01")
                 term_all_btns: dict[str, gr.Button] = {}
-
-                def _dpad_spacer() -> gr.Button:
-                    return gr.Button(
-                        " ",
-                        interactive=False,
-                        elem_classes=["vqc-optics-key", "vqc-dpad-spacer"],
-                        scale=1,
-                        variant="secondary",
-                    )
+                _dpad_row_labels = {
+                    "dpad_select": "SEL",
+                    "dpad_up": "↑",
+                    "dpad_down": "↓",
+                    "dpad_left": "←",
+                    "dpad_right": "→",
+                    "clear": "clear",
+                }
 
                 with gr.Column(elem_classes=["vqc-optics-keypad"]):
-                    with gr.Column(elem_classes=["vqc-optics-dpad-group"]):
-                        with gr.Row(elem_classes=["vqc-optics-dpad-row"]):
-                            _dpad_spacer()
-                            term_all_btns["dpad_up"] = gr.Button(
-                                "↑",
-                                elem_classes=_term_key_btn_classes("dpad_up", "key01"),
+                    with gr.Row(elem_classes=["vqc-optics-dpad-row"]):
+                        for nav_key in TERM_NAV_KEYS:
+                            term_all_btns[nav_key] = gr.Button(
+                                _dpad_row_labels[nav_key],
+                                elem_classes=_term_key_btn_classes(nav_key, "key01"),
                                 scale=1,
                                 variant="secondary",
                             )
-                            for _ in range(4):
-                                _dpad_spacer()
-                        with gr.Row(elem_classes=["vqc-optics-dpad-row"]):
-                            term_all_btns["dpad_left"] = gr.Button(
-                                "←",
-                                elem_classes=_term_key_btn_classes("dpad_left", "key01"),
-                                scale=1,
-                                variant="secondary",
-                            )
-                            term_all_btns["dpad_select"] = gr.Button(
-                                "SEL",
-                                elem_classes=_term_key_btn_classes("dpad_select", "key01"),
-                                scale=1,
-                                variant="secondary",
-                            )
-                            term_all_btns["dpad_right"] = gr.Button(
-                                "→",
-                                elem_classes=_term_key_btn_classes("dpad_right", "key01"),
-                                scale=1,
-                                variant="secondary",
-                            )
-                            for _ in range(3):
-                                _dpad_spacer()
-                        with gr.Row(elem_classes=["vqc-optics-dpad-row"]):
-                            _dpad_spacer()
-                            term_all_btns["dpad_down"] = gr.Button(
-                                "↓",
-                                elem_classes=_term_key_btn_classes("dpad_down", "key01"),
-                                scale=1,
-                                variant="secondary",
-                            )
-                            for _ in range(4):
-                                _dpad_spacer()
-                        term_all_btns["clear"] = gr.Button(
-                            "clear",
-                            elem_classes=_term_key_btn_classes("clear", "key01"),
-                            variant="secondary",
-                        )
                     with gr.Row(elem_classes=["vqc-optics-prog-row"]):
                         for index in range(1, 13):
                             key_id = _term_key_id(index)
