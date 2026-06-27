@@ -131,7 +131,20 @@ def _nav_to_page(page: str) -> tuple:
         gr.update(visible=not on_demo),
         _home_tab_update(on_demo_page=on_demo),
         _source_tab_btn_update(active=not on_demo),
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
         page,
+    )
+
+
+def _toggle_newhere(is_open: bool) -> tuple:
+    """Expand/collapse the beginner guide panel below the Links bar."""
+    show = not is_open
+    return (
+        gr.update(visible=show),
+        _source_tab_btn_update(active=show),
+        show,
     )
 
 
@@ -333,7 +346,16 @@ footer {{
     box-shadow: none !important;
 }}
 .gradio-container .vqc-source-nav-row {{
-    margin: 0 0 0.15rem 0 !important;
+    margin: 0 0 0.1rem 0 !important;
+}}
+.gradio-container .vqc-newhere-panel {{
+    margin: 0 0 0.35rem 0 !important;
+    padding: 0.65rem 0.85rem !important;
+}}
+.gradio-container .vqc-newhere-panel .markdown h3 {{
+    margin: 0 0 0.35rem 0 !important;
+    font-size: 1rem !important;
+    color: #f0e6ff !important;
 }}
 .gradio-container .vqc-source-tabs-row > .block,
 .gradio-container .vqc-source-tabs-row > .form,
@@ -685,6 +707,7 @@ def build_app() -> gr.Blocks:
             "Use **Quick** resolution for sub-second runs."
         )
         current_page = gr.State("demo")
+        newhere_open = gr.State(False)
         with gr.Row(elem_classes=["vqc-source-tabs-row"]):
             gr.HTML('<span class="vqc-source-label">Source:</span>')
             tab_demo_btn = gr.Button(
@@ -710,12 +733,19 @@ def build_app() -> gr.Blocks:
                     "slm",
                 )
             )
+            tab_newhere_btn = gr.Button(
+                "New here?",
+                elem_classes=["vqc-source-tab"],
+                scale=0,
+                variant="secondary",
+            )
+        with gr.Column(visible=False, elem_classes=["vqc-newhere-panel"]) as panel_newhere:
+            gr.Markdown("### New here? 60-second guide (Selectric typeball → OAM)")
+            gr.Markdown(ONBOARDING_MD)
         gr.HTML(f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>')
 
         with gr.Column(visible=True) as page_demo:
             gr.Markdown(SIMULATION_BANNER_MD)
-            with gr.Accordion("New here? 60-second guide (Selectric typeball → OAM)", open=False):
-                gr.Markdown(ONBOARDING_MD)
             with gr.Row():
                 payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)
                 num_orbs = gr.Slider(2, 6, value=4, step=1, label="Number of orbs")
@@ -856,10 +886,14 @@ def build_app() -> gr.Blocks:
             page_animations,
             tab_demo_btn,
             tab_anim_btn,
+            panel_newhere,
+            tab_newhere_btn,
+            newhere_open,
             current_page,
         ]
         tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
         tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+        tab_newhere_btn.click(_toggle_newhere, inputs=[newhere_open], outputs=nav_outputs[4:7])
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
