@@ -339,6 +339,8 @@ def _term_keypad_label(index: int) -> str:
 def _term_key_btn_classes(key: str, active: str) -> list[str]:
     """Black/white idle caps; matrix-green latch on active keys (never home)."""
     classes = ["vqc-optics-key"]
+    if key in TERM_NAV_KEYS:
+        classes.append("vqc-optics-dpad-key")
     if key == TERM_KEYPAD_HOME_KEY:
         classes.append("vqc-optics-key-home")
     elif key.startswith("dpad_"):
@@ -997,6 +999,9 @@ footer {{
     padding: 0.5rem 0.6rem 0.45rem !important;
     margin: 0 0 0.55rem 0 !important;
 }}
+.gradio-container .vqc-optics-panel .vqc-optics-terminal textarea {{
+    min-height: 13.5rem !important;
+}}
 .gradio-container .vqc-optics-keypad {{
     background: linear-gradient(180deg, #16120c 0%, #0a0806 100%) !important;
     border: 2px inset #3d3020 !important;
@@ -1024,6 +1029,24 @@ footer {{
     justify-content: stretch !important;
     width: 100% !important;
 }}
+.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key {{
+    min-height: 1.5rem !important;
+    height: 1.5rem !important;
+    max-height: 1.5rem !important;
+    aspect-ratio: auto !important;
+    padding: 0.1rem 0.12rem !important;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
+    font-size: 1.44rem !important;
+    line-height: 1 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad {{
+    font-size: 1.44rem !important;
+    font-weight: 800 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-clear {{
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 1.44rem !important;
+}}
 .gradio-container .vqc-optics-panel button.vqc-optics-key {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
@@ -1043,12 +1066,8 @@ footer {{
     padding: 0.28rem 0.1rem !important;
     box-shadow: none !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-dpad {{
-    font-size: 1.64rem !important;
-}}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-clear {{
     text-transform: lowercase !important;
-    font-size: 1.44rem !important;
     letter-spacing: 0.06em !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home,
@@ -1468,8 +1487,8 @@ def build_app() -> gr.Blocks:
                 optics_terminal = gr.Textbox(
                     label="Matrix status display",
                     value="",
-                    lines=10,
-                    max_lines=14,
+                    lines=12,
+                    max_lines=16,
                     interactive=False,
                     elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
                 )
@@ -1477,10 +1496,10 @@ def build_app() -> gr.Blocks:
                 term_all_btns: dict[str, gr.Button] = {}
                 _dpad_row_labels = {
                     "dpad_select": "SEL",
-                    "dpad_up": "↑",
-                    "dpad_down": "↓",
-                    "dpad_left": "←",
-                    "dpad_right": "→",
+                    "dpad_up": "▲",
+                    "dpad_down": "▼",
+                    "dpad_left": "◀",
+                    "dpad_right": "▶",
                     "clear": "clear",
                 }
 
