@@ -439,6 +439,45 @@ def build_orb_trajectory_3d_plotly(encoded, payload: str):
     return fig
 
 
+def plot_orb_trajectory_3d_static(encoded, out_dir: Path, payload: str) -> Path:
+    """Matplotlib 3D PNG fallback — works without browser WebGL (Brave-safe)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    n = encoded.intensity_time.shape[0]
+    t = encoded.t[:n]
+    t_ns = t * 1e9
+
+    fig = plt.figure(figsize=(10, 7), facecolor="#0a0818")
+    ax = fig.add_subplot(111, projection="3d", facecolor="#0a0818")
+
+    cmap = plt.cm.tab10
+    for i, orb in enumerate(encoded.orbs):
+        theta = orb.phase0 + orb.omega * t
+        x = orb.radius * np.cos(theta)
+        y = orb.radius * np.sin(theta)
+        color = cmap(i / max(len(encoded.orbs), 1))
+        ax.plot(x, y, t_ns, color=color, lw=2.0, alpha=0.85, label=f"ℓ={orb.ell}  r={orb.radius:.2f}")
+        ax.scatter(x[0], y[0], t_ns[0], c=[color], s=40, depthshade=False)
+        ax.scatter(x[-1], y[-1], t_ns[-1], c=[color], s=90, marker="*", depthshade=False)
+
+    short = payload[:28] + ("…" if len(payload) > 28 else "")
+    ax.set_title(f'3D typehead trajectories — "{short}"', color="#eee", fontsize=11, pad=12)
+    ax.set_xlabel("x", color="#aaa")
+    ax.set_ylabel("y", color="#aaa")
+    ax.set_zlabel("Time (ns)", color="#aaa")
+    ax.tick_params(colors="#888")
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.grid(True, alpha=0.25)
+    ax.legend(loc="upper left", fontsize=8, framealpha=0.6)
+    ax.view_init(elev=22, azim=-58)
+
+    path = out_dir / "orb_trajectory_3d.png"
+    fig.savefig(path, dpi=120, bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.close(fig)
+    return path
+
+
 def _style_dark_axes(axes) -> None:
     for ax in np.atleast_1d(axes).flat:
         ax.set_facecolor("#0a0818")

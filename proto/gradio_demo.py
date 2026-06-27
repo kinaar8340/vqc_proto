@@ -24,6 +24,7 @@ from demo_core import (
     is_hf_space,
     load_example_preset,
     build_orb_trajectory_3d_plotly,
+    plot_orb_trajectory_3d_static,
     plot_results,
     render_typehead_animation_bundle,
     run_pipeline,
@@ -63,6 +64,13 @@ DEFAULT_PAYLOAD = PATENT_FIGURE1_PAYLOAD
 HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
 GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
 HFB_RAW_URL = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png"
+
+WEBGL_3D_NOTE = (
+    "Interactive rotate/zoom needs **WebGL**. Firefox enables it by default; "
+    "**Brave** may block it via Shields (try lowering Shields for this Space, or "
+    "enable WebGL in `brave://settings` → System). "
+    "The **static 3D view** above always works without WebGL."
+)
 
 SLM_PACKAGE_IDLE = (
     "**Package files** (generated after **Run demo**):\n"
@@ -481,7 +489,7 @@ def run_demo(
     noise_level: float,
     export_slm_frames: bool,
     progress: gr.Progress = gr.Progress(track_tqdm=False),
-) -> tuple[str, str | None, object | None, str, str | None, tuple | None]:
+) -> tuple[str, str | None, str | None, object | None, str, str | None, tuple | None]:
     if not payload.strip():
         payload = DEFAULT_PAYLOAD
 
@@ -504,8 +512,11 @@ def run_demo(
         progress(0.45, desc="Rendering 6-panel figure…")
         fig_path = str(plot_results(encoded, noisy, decoded, out_dir, payload))
 
-        progress(0.65, desc="Building interactive 3D orb trajectories…")
-        fig_3d = build_orb_trajectory_3d_plotly(encoded, payload)
+        progress(0.6, desc="Rendering static 3D orb trajectories…")
+        fig_3d_static = str(plot_orb_trajectory_3d_static(encoded, out_dir, payload))
+
+        progress(0.7, desc="Building interactive 3D (WebGL)…")
+        fig_3d_plotly = build_orb_trajectory_3d_plotly(encoded, payload)
 
         progress(0.8, desc="Packaging SLM export…")
         slm_dir = Path(tempfile.mkdtemp(prefix="vqc_slm_"))
@@ -531,11 +542,11 @@ def run_demo(
 
         run_cache = (encoded, noisy, payload, quick)
         progress(1.0, desc="Done")
-        return metrics, fig_path, fig_3d, slm_info, str(zip_path), run_cache
+        return metrics, fig_path, fig_3d_static, fig_3d_plotly, slm_info, str(zip_path), run_cache
     except Exception as exc:
         logger.exception("run_demo failed for payload=%r", payload)
         err = f"Error: {exc}\n\n{traceback.format_exc()}"
-        return err, None, None, SLM_PACKAGE_IDLE, None, None
+        return err, None, None, None, SLM_PACKAGE_IDLE, None, None
 
 
 def animate_typehead(
@@ -668,10 +679,17 @@ def build_app() -> gr.Blocks:
                     type="filepath",
                     elem_classes=["vqc-figure-panel"],
                 )
-        figure_3d = gr.Plot(
-            label="3D orb trajectories — drag to rotate · scroll to zoom",
-            elem_classes=["vqc-plot3d-panel"],
+        figure_3d_static = gr.Image(
+            label="3D orb trajectories (static — all browsers)",
+            type="filepath",
+            elem_classes=["vqc-figure-panel"],
         )
+        with gr.Accordion("Interactive 3D — drag to rotate (WebGL)", open=False):
+            gr.Markdown(WEBGL_3D_NOTE)
+            figure_3d_plotly = gr.Plot(
+                label="Plotly 3D",
+                elem_classes=["vqc-plot3d-panel"],
+            )
         animate_btn = gr.Button(
             "Animate typehead",
             variant="secondary",
@@ -707,7 +725,15 @@ def build_app() -> gr.Blocks:
             noise_level,
             export_slm_frames,
         ]
-        run_outputs = [metrics, figure, figure_3d, slm_info, slm_file, run_cache]
+        run_outputs = [
+            metrics,
+            figure,
+            figure_3d_static,
+            figure_3d_plotly,
+            slm_info,
+            slm_file,
+            run_cache,
+        ]
 
         run_btn.click(run_demo, run_inputs, run_outputs)
         animate_btn.click(
