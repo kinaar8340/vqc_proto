@@ -135,7 +135,7 @@ OPTICS_PANEL_FACE_HTML = """
   <span class="vqc-optics-brand">ORBITAL BRAILLE</span>
   <span class="vqc-optics-panel-title">Optics Control Panel</span>
   <span class="vqc-optics-subtitle">TUNE · ENCODE · TRANSMIT · CLI READOUT</span>
-  <span class="vqc-optics-terminal-caption">MATRIX STATUS DISPLAY — KEYPAD BELOW</span>
+  <span class="vqc-optics-terminal-caption">MATRIX STATUS DISPLAY — SELECTION MENU · D-PAD NAV</span>
 </div>
 """
 
@@ -144,8 +144,7 @@ _OPTICS_TERM_CHAR_DELAY_S = 0.014
 _OPTICS_TERM_NEWLINE_DELAY_S = 0.048
 _OPTICS_TERM_UPLINK_DELAY_S = 0.22
 _OPTICS_TERM_CURSOR = "▌"
-_OPTICS_TERM_LATCH_RELEASE_DELAY_S = 1.0
-_OPTICS_TERM_DPAD_RELEASE_DELAY_S = 0.5
+_OPTICS_TERM_RELEASE_DELAY_S = 0.25
 
 
 def _strip_md_plain(text: str) -> str:
@@ -172,12 +171,14 @@ TERM_KEYPAD_DEFINED: dict[int, str] = {
 }
 TERM_KEYPAD_HOME_KEY = "key01"
 TERM_KEYPAD_DESCRIPTIONS: dict[int, str] = {
-    1: "Return to main page — momentary (Ctrl-C style)",
+    1: "Return to selection menu — momentary",
     2: "Status — pipeline & environment",
     3: "Demo — simulation scope (encode→decode)",
     4: "Build — last updated / commit",
     5: "Help — keypad reference",
 }
+TERM_UI_MENU = "menu"
+TERM_UI_PAGE = "page"
 TERM_NAV_KEYS: tuple[str, ...] = (
     "dpad_select",
     "dpad_up",
@@ -186,9 +187,22 @@ TERM_NAV_KEYS: tuple[str, ...] = (
     "dpad_right",
     "clear",
 )
+TERM_DPAD_HOLD_KEYS: tuple[str, ...] = (
+    "dpad_select",
+    "dpad_up",
+    "dpad_down",
+    "dpad_left",
+    "dpad_right",
+)
 TERM_NAV_DEFINED: dict[str, str] = {
+    "dpad_select": "Select — confirm menu item",
+    "dpad_up": "Up — previous menu item",
+    "dpad_down": "Down — next menu item",
+    "dpad_left": "Left — previous menu item",
+    "dpad_right": "Right — next menu item",
     "clear": "Clear — blank display",
 }
+_dpad_hold_gen = 0
 TERM_KEYPAD_CONTROL_ORDER: tuple[str, ...] = (
     *TERM_NAV_KEYS,
     *(f"key{i:02d}" for i in range(1, TERM_KEYPAD_COUNT + 1)),
@@ -210,6 +224,43 @@ def _optics_assigned_keypad_lines() -> str:
 
 def _optics_terminal_home() -> str:
     return _optics_terminal_frame("PROGRAMMABLE KEYPAD", _optics_assigned_keypad_lines())
+
+
+def _default_term_ui_state() -> dict:
+    return {"mode": TERM_UI_MENU, "index": 0}
+
+
+def _optics_terminal_menu(menu_index: int) -> str:
+    lines = [
+        "▲▼ ◀▶ move highlight · SEL confirm · 01 Home",
+        "",
+    ]
+    for index, (_action, label, _stream) in enumerate(_term_menu_items()):
+        mark = "▶" if index == menu_index else " "
+        lines.append(f" [{mark}] {label}")
+    return _optics_terminal_frame("SELECTION MENU", "\n".join(lines))
+
+
+def _term_menu_items() -> tuple[tuple[str, str, Callable[[], Iterator[str]]], ...]:
+    return (
+        ("home", "Home — keypad legend", _stream_optics_terminal_home),
+        ("status", "Status — pipeline & environment", _stream_optics_terminal_status),
+        ("demo", "Demo — simulation scope (encode→decode)", _stream_optics_terminal_demo),
+        ("build", "Build — last updated / commit", _stream_optics_terminal_build),
+        ("help", "Help — keypad reference", _stream_optics_terminal_help),
+    )
+
+
+def _term_menu_index_for_action(action: str) -> int:
+    for index, (key, _label, _stream) in enumerate(_term_menu_items()):
+        if key == action:
+            return index
+    return 0
+
+
+def _term_menu_step(menu_index: int, delta: int) -> int:
+    count = len(_term_menu_items())
+    return (menu_index + delta) % count
 
 
 def _optics_terminal_status() -> str:
@@ -261,7 +312,8 @@ def _optics_terminal_help() -> str:
         "KEYPAD REFERENCE",
         "\n".join(
             [
-                "Assigned keys only · matrix-green latch = selected",
+                "D-pad TUI — ▲▼ ◀▶ move · SEL opens highlighted item",
+                "Prog keys 02–05 mirror menu items · 01 Home → menu",
                 "",
                 _optics_assigned_keypad_lines(),
             ]
@@ -310,6 +362,13 @@ def _stream_optics_terminal_build() -> Iterator[str]:
 
 def _stream_optics_terminal_help() -> Iterator[str]:
     yield from _optics_terminal_stream(_optics_terminal_help, mode="help")
+
+
+def _stream_optics_terminal_menu(menu_index: int = 0) -> Iterator[str]:
+    yield from _optics_terminal_stream(
+        lambda: _optics_terminal_menu(menu_index),
+        mode="menu",
+    )
 
 
 def _stream_optics_terminal_clear(current: str) -> Iterator[str]:
@@ -374,44 +433,63 @@ def _term_keypad_btn_updates(active: str) -> tuple:
     )
 
 
-def _term_keypad_outputs(terminal_text: str, active: str) -> tuple:
-    return (terminal_text, *_term_keypad_btn_updates(active), active)
+def _term_keypad_outputs(terminal_text: str, active: str, ui_state: dict | None = None) -> tuple:
+    state = _default_term_ui_state() if ui_state is None else ui_state
+    return (terminal_text, *_term_keypad_btn_updates(active), active, state)
 
 
 def _term_yield_stream_then_release(
     stream: Iterator[str],
     *,
     active: str,
+    ui_state: dict,
     release_delay: float | None = None,
 ) -> Iterator[tuple]:
     """Stream terminal text, latch while typing, release latch after a short pause."""
-    delay = _OPTICS_TERM_LATCH_RELEASE_DELAY_S if release_delay is None else release_delay
+    delay = _OPTICS_TERM_RELEASE_DELAY_S if release_delay is None else release_delay
     last_partial = ""
     for partial in stream:
         last_partial = partial
-        yield _term_keypad_outputs(partial, active)
+        yield _term_keypad_outputs(partial, active, ui_state)
     time.sleep(delay)
-    yield _term_keypad_outputs(last_partial, "")
+    yield _term_keypad_outputs(last_partial, "", ui_state)
 
 
-def _term_stream_with_latch(stream_fn: Callable[[], Iterator[str]], *, active: str) -> Iterator[tuple]:
+def _term_stream_with_latch(
+    stream_fn: Callable[[], Iterator[str]],
+    *,
+    active: str,
+    ui_state: dict,
+) -> Iterator[tuple]:
     """Stream terminal text and latch matrix-green active state on the pressed key."""
-    yield from _term_yield_stream_then_release(stream_fn(), active=active)
+    yield from _term_yield_stream_then_release(stream_fn(), active=active, ui_state=ui_state)
 
 
-def _make_term_stream_click(active_key: str, stream_fn: Callable[[], Iterator[str]]):
-    def handler() -> Iterator[tuple]:
-        yield from _term_stream_with_latch(stream_fn, active=active_key)
+def _make_term_stream_click(
+    active_key: str,
+    stream_fn: Callable[[], Iterator[str]],
+    *,
+    menu_action: str | None = None,
+):
+    def handler(ui_state: dict) -> Iterator[tuple]:
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
+        if menu_action is not None:
+            state = {
+                "mode": TERM_UI_PAGE,
+                "index": _term_menu_index_for_action(menu_action),
+            }
+        yield from _term_stream_with_latch(stream_fn, active=active_key, ui_state=state)
 
     return handler
 
 
 def _make_term_clear_click(active_key: str):
-    def handler(current: str) -> Iterator[tuple]:
+    def handler(current: str, ui_state: dict) -> Iterator[tuple]:
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
         yield from _term_yield_stream_then_release(
             _stream_optics_terminal_clear(current),
             active=active_key,
-            release_delay=_OPTICS_TERM_DPAD_RELEASE_DELAY_S,
+            ui_state=state,
         )
 
     return handler
@@ -420,10 +498,76 @@ def _make_term_clear_click(active_key: str):
 def _make_term_momentary_click(active_key: str, *, release_delay: float):
     """Brief latch flash — momentary, no maintained state."""
 
-    def handler(current: str) -> Iterator[tuple]:
-        yield _term_keypad_outputs(current, active_key)
+    def handler(current: str, ui_state: dict) -> Iterator[tuple]:
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
+        yield _term_keypad_outputs(current, active_key, state)
         time.sleep(release_delay)
-        yield _term_keypad_outputs(current, "")
+        yield _term_keypad_outputs(current, "", state)
+
+    return handler
+
+
+def _make_term_dpad_press(active_key: str):
+    """D-pad press — navigate selection menu or confirm with SEL."""
+
+    def handler(_current: str, ui_state: dict) -> Iterator[tuple]:
+        global _dpad_hold_gen
+        _dpad_hold_gen += 1
+
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
+        mode = state.get("mode", TERM_UI_MENU)
+        menu_index = int(state.get("index", 0))
+        nav_delta = {
+            "dpad_up": -1,
+            "dpad_left": -1,
+            "dpad_down": 1,
+            "dpad_right": 1,
+        }
+
+        if active_key in nav_delta:
+            if mode == TERM_UI_PAGE:
+                menu_state = {"mode": TERM_UI_MENU, "index": menu_index}
+                text = _optics_terminal_menu(menu_index)
+            else:
+                new_index = _term_menu_step(menu_index, nav_delta[active_key])
+                menu_state = {"mode": TERM_UI_MENU, "index": new_index}
+                text = _optics_terminal_menu(new_index)
+            yield _term_keypad_outputs(text, active_key, menu_state)
+            return
+
+        if active_key == "dpad_select":
+            if mode == TERM_UI_MENU:
+                _action, _label, stream_fn = _term_menu_items()[menu_index]
+                page_state = {"mode": TERM_UI_PAGE, "index": menu_index}
+                yield from _term_yield_stream_then_release(
+                    stream_fn(),
+                    active="dpad_select",
+                    ui_state=page_state,
+                )
+                return
+            menu_state = {"mode": TERM_UI_MENU, "index": menu_index}
+            yield _term_keypad_outputs(
+                _optics_terminal_menu(menu_index),
+                active_key,
+                menu_state,
+            )
+
+    return handler
+
+
+def _make_term_dpad_release(active_key: str, *, release_delay: float):
+    """D-pad release — keep latch briefly, then clear unless a newer press occurred."""
+
+    def handler(current: str, active: str, ui_state: dict) -> Iterator[tuple]:
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
+        if active != active_key:
+            yield _term_keypad_outputs(current, active, state)
+            return
+        release_gen = _dpad_hold_gen
+        time.sleep(release_delay)
+        if release_gen != _dpad_hold_gen:
+            return
+        yield _term_keypad_outputs(current, "", state)
 
     return handler
 
@@ -431,28 +575,30 @@ def _make_term_momentary_click(active_key: str, *, release_delay: float):
 def _make_term_latch_click(active_key: str):
     """Undefined keypad slots — latch matrix-green only, terminal unchanged."""
 
-    def handler(current: str) -> Iterator[tuple]:
-        yield _term_keypad_outputs(current, active_key)
+    def handler(current: str, ui_state: dict) -> tuple:
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
+        return _term_keypad_outputs(current, active_key, state)
 
     return handler
 
 
 def _make_term_home_momentary():
-    """Home — momentary return; clears any latched key after the stream finishes."""
+    """Home — momentary return to the selection menu."""
 
-    def handler(current_active: str) -> Iterator[tuple]:
-        yield from _term_yield_stream_then_release(
-            _stream_optics_terminal_home(),
-            active=current_active,
-        )
+    def handler(current_active: str, ui_state: dict) -> Iterator[tuple]:
+        menu_state = {"mode": TERM_UI_MENU, "index": 0}
+        menu_text = _optics_terminal_menu(0)
+        yield _term_keypad_outputs(menu_text, current_active, menu_state)
+        time.sleep(_OPTICS_TERM_RELEASE_DELAY_S)
+        yield _term_keypad_outputs(menu_text, "", menu_state)
 
     return handler
 
 
-def _term_boot_home() -> Iterator[tuple]:
-    """Initial boot — show home legend, no key latched."""
-    for partial in _stream_optics_terminal_home():
-        yield _term_keypad_outputs(partial, "")
+def _term_boot_home() -> tuple:
+    """Initial boot — show selection menu immediately (no typewriter delay)."""
+    boot_state = _default_term_ui_state()
+    return _term_keypad_outputs(_optics_terminal_menu(0), "", boot_state)
 
 
 def _register_term_keypad_streamers() -> None:
@@ -645,6 +791,54 @@ WALLPAPER_HEAD = f"""
     if (document.body) mountWallpaper();
     document.addEventListener('DOMContentLoaded', mountWallpaper);
     window.addEventListener('load', mountWallpaper);
+}})();
+</script>
+"""
+
+_TERM_DPAD_HOLD_JS_KEYS = ", ".join(f"'{key}'" for key in TERM_DPAD_HOLD_KEYS)
+TERM_DPAD_HOLD_HEAD = f"""
+<script>
+(function() {{
+    var HOLD_KEYS = [{_TERM_DPAD_HOLD_JS_KEYS}];
+    function bindDpadHold() {{
+        for (var i = 0; i < HOLD_KEYS.length; i++) {{
+            var key = HOLD_KEYS[i];
+            var wrap = document.getElementById('vqc-dpad-' + key);
+            var pressTrig = document.getElementById('vqc-dpad-press-' + key);
+            var releaseTrig = document.getElementById('vqc-dpad-release-' + key);
+            if (!wrap || !pressTrig || !releaseTrig) continue;
+            var btn = wrap.querySelector('button');
+            var pressBtn = pressTrig.querySelector('button');
+            var releaseBtn = releaseTrig.querySelector('button');
+            if (!btn || !pressBtn || !releaseBtn) continue;
+            if (btn.dataset.vqcDpadBound === '1') continue;
+            btn.dataset.vqcDpadBound = '1';
+            var held = false;
+            var onPress = function(e) {{
+                if (held) return;
+                held = true;
+                e.preventDefault();
+                pressBtn.click();
+            }};
+            var onRelease = function() {{
+                if (!held) return;
+                held = false;
+                releaseBtn.click();
+            }};
+            btn.addEventListener('mousedown', onPress);
+            btn.addEventListener('mouseup', onRelease);
+            btn.addEventListener('mouseleave', onRelease);
+            btn.addEventListener('touchstart', onPress, {{passive: false}});
+            btn.addEventListener('touchend', onRelease);
+            btn.addEventListener('touchcancel', onRelease);
+        }}
+    }}
+    if (document.body) {{
+        bindDpadHold();
+        new MutationObserver(bindDpadHold).observe(document.body, {{childList: true, subtree: true}});
+    }}
+    document.addEventListener('DOMContentLoaded', bindDpadHold);
+    window.addEventListener('load', bindDpadHold);
 }})();
 </script>
 """
@@ -1476,7 +1670,7 @@ def build_app() -> gr.Blocks:
         title="Orbital Braille — VQC Typehead",
         analytics_enabled=False,
         theme=_build_vqc_theme(),
-        head=WALLPAPER_HEAD,
+        head=WALLPAPER_HEAD + TERM_DPAD_HOLD_HEAD,
         css=HFB_CSS,
         fill_width=True,
     ) as demo:
@@ -1550,13 +1744,16 @@ def build_app() -> gr.Blocks:
                 gr.HTML(OPTICS_PANEL_FACE_HTML)
                 optics_terminal = gr.Textbox(
                     label="Matrix status display",
-                    value="",
+                    value=_optics_terminal_menu(0),
                     lines=12,
                     max_lines=16,
                     interactive=False,
                     elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
                 )
                 term_active_key = gr.State("")
+                term_ui_state = gr.State(_default_term_ui_state())
+                term_dpad_press_btns: dict[str, gr.Button] = {}
+                term_dpad_release_btns: dict[str, gr.Button] = {}
                 term_all_btns: dict[str, gr.Button] = {}
                 _dpad_row_labels = {
                     "dpad_select": "SEL",
@@ -1570,12 +1767,26 @@ def build_app() -> gr.Blocks:
                 with gr.Column(elem_classes=["vqc-optics-keypad"]):
                     with gr.Row(elem_classes=["vqc-optics-dpad-row"], equal_height=True):
                         for nav_key in TERM_NAV_KEYS:
+                            btn_kwargs: dict = {
+                                "elem_classes": _term_key_btn_classes(nav_key, ""),
+                                "scale": 1,
+                                "variant": "secondary",
+                            }
+                            if nav_key in TERM_DPAD_HOLD_KEYS:
+                                btn_kwargs["elem_id"] = f"vqc-dpad-{nav_key}"
                             term_all_btns[nav_key] = gr.Button(
                                 _dpad_row_labels[nav_key],
-                                elem_classes=_term_key_btn_classes(nav_key, ""),
-                                scale=1,
-                                variant="secondary",
+                                **btn_kwargs,
                             )
+                    for hold_key in TERM_DPAD_HOLD_KEYS:
+                        term_dpad_press_btns[hold_key] = gr.Button(
+                            visible=False,
+                            elem_id=f"vqc-dpad-press-{hold_key}",
+                        )
+                        term_dpad_release_btns[hold_key] = gr.Button(
+                            visible=False,
+                            elem_id=f"vqc-dpad-release-{hold_key}",
+                        )
                     with gr.Row(elem_classes=["vqc-optics-prog-row"], equal_height=True):
                         for index in range(1, 13):
                             key_id = _term_key_id(index)
@@ -1598,6 +1809,7 @@ def build_app() -> gr.Blocks:
                     optics_terminal,
                     *[term_all_btns[key_id] for key_id in TERM_KEYPAD_CONTROL_ORDER],
                     term_active_key,
+                    term_ui_state,
                 ]
                 with gr.Row(elem_classes=["vqc-optics-tune-row"]):
                     payload = gr.Textbox(
@@ -1671,23 +1883,26 @@ def build_app() -> gr.Blocks:
                 )
             term_all_btns["clear"].click(
                 _make_term_clear_click("clear"),
-                inputs=[optics_terminal],
+                inputs=[optics_terminal, term_ui_state],
                 outputs=term_keypad_outputs,
             )
-            for nav_key in TERM_NAV_KEYS:
-                if nav_key == "clear":
-                    continue
-                term_all_btns[nav_key].click(
-                    _make_term_momentary_click(
-                        nav_key,
-                        release_delay=_OPTICS_TERM_DPAD_RELEASE_DELAY_S,
+            for hold_key in TERM_DPAD_HOLD_KEYS:
+                term_dpad_press_btns[hold_key].click(
+                    _make_term_dpad_press(hold_key),
+                    inputs=[optics_terminal, term_ui_state],
+                    outputs=term_keypad_outputs,
+                )
+                term_dpad_release_btns[hold_key].click(
+                    _make_term_dpad_release(
+                        hold_key,
+                        release_delay=_OPTICS_TERM_RELEASE_DELAY_S,
                     ),
-                    inputs=[optics_terminal],
+                    inputs=[optics_terminal, term_active_key, term_ui_state],
                     outputs=term_keypad_outputs,
                 )
             term_all_btns[TERM_KEYPAD_HOME_KEY].click(
                 _make_term_home_momentary(),
-                inputs=[term_active_key],
+                inputs=[term_active_key, term_ui_state],
                 outputs=term_keypad_outputs,
             )
             for index in range(1, TERM_KEYPAD_COUNT + 1):
@@ -1697,13 +1912,18 @@ def build_app() -> gr.Blocks:
                 if index in TERM_KEYPAD_DEFINED:
                     action = TERM_KEYPAD_DEFINED[index]
                     term_all_btns[key_id].click(
-                        _make_term_stream_click(key_id, TERM_KEYPAD_STREAMERS[action]),
+                        _make_term_stream_click(
+                            key_id,
+                            TERM_KEYPAD_STREAMERS[action],
+                            menu_action=action,
+                        ),
+                        inputs=[term_ui_state],
                         outputs=term_keypad_outputs,
                     )
                 else:
                     term_all_btns[key_id].click(
                         _make_term_latch_click(key_id),
-                        inputs=[optics_terminal],
+                        inputs=[optics_terminal, term_ui_state],
                         outputs=term_keypad_outputs,
                     )
 
