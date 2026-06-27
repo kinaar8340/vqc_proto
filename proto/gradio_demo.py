@@ -130,12 +130,11 @@ ANIMATIONS_INTRO_MD = (
     f'`"{DEFAULT_PAYLOAD}"`).'
 )
 
-OPTICS_PANEL_FACE_HTML = """
-<div class="vqc-optics-receiver-face" aria-hidden="true">
+OPTICS_LOGO_HTML = """
+<div class="vqc-optics-logo" role="img" aria-label="Orbital Braille Optics Control Panel">
   <span class="vqc-optics-brand">ORBITAL BRAILLE</span>
   <span class="vqc-optics-panel-title">Optics Control Panel</span>
   <span class="vqc-optics-subtitle">TUNE · ENCODE · TRANSMIT · CLI READOUT</span>
-  <span class="vqc-optics-terminal-caption">MATRIX STATUS DISPLAY — SELECTION MENU · D-PAD NAV</span>
 </div>
 """
 
@@ -1105,17 +1104,63 @@ footer {{
     border: none !important;
     box-shadow: none !important;
 }}
-.gradio-container .vqc-optics-receiver-face {{
+.gradio-container .vqc-optics-panel-header {{
     display: flex !important;
-    flex-direction: column !important;
+    flex-wrap: wrap !important;
     align-items: center !important;
-    gap: 0.15rem !important;
-    margin: 0 0 0.75rem 0 !important;
-    padding: 0.55rem 0.75rem 0.65rem !important;
+    gap: 0.75rem 1.1rem !important;
+    margin: 0.35rem 0 0.65rem 0 !important;
+    padding: 0.55rem 0.75rem 0.6rem !important;
     border: 2px inset #4a3818 !important;
     border-radius: 10px !important;
     background: linear-gradient(180deg, #1f140a 0%, #0f0a06 100%) !important;
     box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.65) !important;
+}}
+.gradio-container .vqc-optics-panel-header > .block,
+.gradio-container .vqc-optics-panel-header > .form,
+.gradio-container .vqc-optics-panel-header .block,
+.gradio-container .vqc-optics-panel-header .form {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+}}
+.gradio-container .vqc-optics-panel-header > .block:first-child,
+.gradio-container .vqc-optics-panel-header > .form:first-child {{
+    flex: 0 0 auto !important;
+    width: auto !important;
+}}
+.gradio-container .vqc-optics-panel-nav {{
+    flex: 1 1 18rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.28rem !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    width: auto !important;
+}}
+.gradio-container .vqc-optics-panel-nav > .block,
+.gradio-container .vqc-optics-panel-nav > .form {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}}
+.gradio-container .vqc-optics-panel-nav .vqc-source-tabs-row {{
+    margin: 0 !important;
+}}
+.gradio-container .vqc-optics-logo {{
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.1rem !important;
+    min-width: 10.5rem !important;
+    padding-right: 0.65rem !important;
+    border-right: 1px solid rgba(107, 79, 29, 0.45) !important;
 }}
 .gradio-container .vqc-optics-brand {{
     font-size: 0.62rem !important;
@@ -1613,51 +1658,49 @@ def build_app() -> gr.Blocks:
         css=HFB_CSS,
         fill_width=True,
     ) as demo:
-        gr.Markdown(
-            "# Orbital Braille — VQC Typehead Prototype\n"
-            "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
-            "Use **Quick** resolution for sub-second runs."
-        )
         current_page = gr.State("demo")
         newhere_open = gr.State(False)
         claims_open = gr.State(False)
-        with gr.Row(elem_classes=["vqc-source-tabs-row"]):
-            gr.HTML('<span class="vqc-source-label">Source:</span>')
-            tab_demo_btn = gr.Button(
-                "Live Demo",
-                elem_classes=["vqc-source-tab", "active"],
-                interactive=False,
-                scale=0,
-                variant="secondary",
-            )
-            tab_anim_btn = gr.Button(
-                "Animations",
-                elem_classes=["vqc-source-tab"],
-                scale=0,
-                variant="secondary",
-            )
-        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
-            gr.HTML('<span class="vqc-source-label">Links:</span>')
-            gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
-            gr.HTML(
-                _external_tab_html(
-                    "SLM Quickstart",
-                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
-                    "slm",
-                )
-            )
-            tab_claims_btn = gr.Button(
-                "Claims",
-                elem_classes=["vqc-source-tab"],
-                scale=0,
-                variant="secondary",
-            )
-            tab_newhere_btn = gr.Button(
-                "New here?",
-                elem_classes=["vqc-source-tab"],
-                scale=0,
-                variant="secondary",
-            )
+        with gr.Row(elem_classes=["vqc-optics-panel-header"]):
+            gr.HTML(OPTICS_LOGO_HTML)
+            with gr.Column(elem_classes=["vqc-optics-panel-nav"], scale=1):
+                with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-panel-source-row"]):
+                    gr.HTML('<span class="vqc-source-label">Source:</span>')
+                    tab_demo_btn = gr.Button(
+                        "Live Demo",
+                        elem_classes=["vqc-source-tab", "active"],
+                        interactive=False,
+                        scale=0,
+                        variant="secondary",
+                    )
+                    tab_anim_btn = gr.Button(
+                        "Animations",
+                        elem_classes=["vqc-source-tab"],
+                        scale=0,
+                        variant="secondary",
+                    )
+                with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
+                    gr.HTML('<span class="vqc-source-label">Links:</span>')
+                    gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
+                    gr.HTML(
+                        _external_tab_html(
+                            "SLM Quickstart",
+                            f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+                            "slm",
+                        )
+                    )
+                    tab_claims_btn = gr.Button(
+                        "Claims",
+                        elem_classes=["vqc-source-tab"],
+                        scale=0,
+                        variant="secondary",
+                    )
+                    tab_newhere_btn = gr.Button(
+                        "New here?",
+                        elem_classes=["vqc-source-tab"],
+                        scale=0,
+                        variant="secondary",
+                    )
         with gr.Column(visible=False, elem_classes=["vqc-links-panel"]) as panel_claims:
             with gr.Row(elem_classes=["vqc-panel-header-row"]):
                 gr.Markdown("### How this maps to VQC claims")
@@ -1680,9 +1723,8 @@ def build_app() -> gr.Blocks:
             gr.Markdown(ONBOARDING_MD)
         with gr.Column(visible=True) as page_demo:
             with gr.Group(elem_classes=["vqc-optics-panel"]):
-                gr.HTML(OPTICS_PANEL_FACE_HTML)
                 optics_terminal = gr.Textbox(
-                    label="Matrix status display",
+                    label="Matrix status display — selection menu · d-pad nav",
                     value=_optics_terminal_menu(0),
                     lines=12,
                     max_lines=16,
