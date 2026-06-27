@@ -14,9 +14,13 @@ if str(PROTO_ROOT) not in sys.path:
     sys.path.insert(0, str(PROTO_ROOT))
 
 from demo_core import (  # noqa: E402
+    EXAMPLE_PRESETS,
     PATENT_FIGURE1_PAYLOAD,
     export_slm_bundle,
+    get_animation_max_frames,
     get_build_label,
+    load_example_preset,
+    plot_orb_trajectory_3d,
     render_typehead_animation,
     run_pipeline,
 )
@@ -69,3 +73,29 @@ def test_get_build_label():
     label = get_build_label()
     assert label
     assert "commit" in label.lower() or "development" in label.lower()
+
+
+def test_example_presets_load():
+    assert len(EXAMPLE_PRESETS) >= 4
+    payload, orbs, gamma = load_example_preset("hello")
+    assert payload == "Hello OAM"
+    assert orbs == 2
+    assert gamma == 1.5
+
+
+def test_plot_orb_trajectory_3d(tmp_path):
+    _, encoded, _, _, _, _ = run_pipeline("Hi", 2, quick=True, seed=0)
+    path = plot_orb_trajectory_3d(encoded, tmp_path, "Hi")
+    assert path.is_file()
+    assert path.stat().st_size > 500
+
+
+def test_get_animation_max_frames_local_uncapped(monkeypatch):
+    monkeypatch.delenv("SPACE_ID", raising=False)
+    assert get_animation_max_frames(quick=True) is None
+
+
+def test_get_animation_max_frames_hf_capped(monkeypatch):
+    monkeypatch.setenv("SPACE_ID", "user/space")
+    assert get_animation_max_frames(quick=True) == 12
+    assert get_animation_max_frames(quick=False) == 20

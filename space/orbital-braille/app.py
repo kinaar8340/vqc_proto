@@ -12,10 +12,17 @@ from pathlib import Path
 import gradio as gr
 
 from demo_core import (
+    EXAMPLE_PRESETS,
+    ONBOARDING_MD,
     PATENT_FIGURE1_PAYLOAD,
+    SIMULATION_BANNER_MD,
     VQC_CLAIMS_MD,
     export_slm_bundle,
+    get_animation_max_frames,
     get_build_label,
+    is_hf_space,
+    load_example_preset,
+    plot_orb_trajectory_3d,
     plot_results,
     render_typehead_animation_bundle,
     run_pipeline,
@@ -152,7 +159,7 @@ footer {{ visibility: hidden; }}
 
 def load_patent_example() -> tuple[str, float, float]:
     """Auto-fill patent Figure 1 payload and recommended orb / BMGL settings."""
-    return PATENT_FIGURE1_PAYLOAD, 4, 1.5
+    return load_example_preset("patent")
 
 
 def run_demo(
@@ -162,12 +169,17 @@ def run_demo(
     seed: float,
     gamma_1: float,
     export_slm_frames: bool,
-) -> tuple[str, str | None, str, str | None, tuple | None]:
+    progress: gr.Progress = gr.Progress(track_tqdm=False),
+) -> tuple[str, str | None, str | None, str, str | None, tuple | None]:
     if not payload.strip():
         payload = DEFAULT_PAYLOAD
 
     try:
         quick = resolution.strip().lower() == "quick"
+        if is_hf_space() and export_slm_frames:
+            export_slm_frames = False
+
+        progress(0.05, desc="Encoding payload…")
         _, encoded, noisy, decoded, metrics, font_sep = run_pipeline(
             payload,
             int(num_orbs),
@@ -177,8 +189,13 @@ def run_demo(
         )
 
         out_dir = Path(tempfile.mkdtemp(prefix="vqc_gradio_"))
+        progress(0.45, desc="Rendering 6-panel figure…")
         fig_path = str(plot_results(encoded, noisy, decoded, out_dir, payload))
 
+        progress(0.65, desc="Building 3D orb trajectories…")
+        fig_3d_path = str(plot_orb_trajectory_3d(encoded, out_dir, payload))
+
+        progress(0.8, desc="Packaging SLM export…")
         slm_dir = Path(tempfile.mkdtemp(prefix="vqc_slm_"))
         zip_path, slm_summary = export_slm_bundle(
             encoded,
@@ -200,31 +217,42 @@ def run_demo(
             + ("\n- frames/ (PNG sequence)" if export_slm_frames else "")
         )
 
-        run_cache = (encoded, noisy, payload)
-        return metrics, fig_path, slm_info, str(zip_path), run_cache
+        run_cache = (encoded, noisy, payload, quick)
+        progress(1.0, desc="Done")
+        return metrics, fig_path, fig_3d_path, slm_info, str(zip_path), run_cache
     except Exception as exc:
         logger.exception("run_demo failed for payload=%r", payload)
         err = f"Error: {exc}\n\n{traceback.format_exc()}"
-        return err, None, SLM_PACKAGE_IDLE, None, None
+        return err, None, None, SLM_PACKAGE_IDLE, None, None
 
 
-def animate_typehead(run_cache: tuple | None) -> tuple[str | None, str | None, str]:
+def animate_typehead(
+    run_cache: tuple | None,
+    progress: gr.Progress = gr.Progress(track_tqdm=False),
+) -> tuple[str | None, str | None, str]:
     if run_cache is None:
         return None, None, "*Run **Run demo** first, then click **Animate typehead**.*"
 
-    encoded, noisy, payload = run_cache
+    encoded, noisy, payload, quick = run_cache
     try:
+        max_frames = get_animation_max_frames(quick=quick)
+        n_total = encoded.intensity_time.shape[0]
+        n_render = min(n_total, max_frames) if max_frames else n_total
+
+        progress(0.1, desc=f"Rendering {n_render} animation frames…")
         out_dir = Path(tempfile.mkdtemp(prefix="vqc_anim_"))
         gif_path, mp4_path = render_typehead_animation_bundle(
             encoded,
             noisy,
             payload,
             out_dir,
+            max_frames=max_frames,
         )
-        n = encoded.intensity_time.shape[0]
+        progress(1.0, desc="Animation ready")
         fmt = "MP4 + GIF" if mp4_path else "GIF"
+        cap_note = f" (capped to {n_render} on HF)" if max_frames and n_render < n_total else ""
         msg = (
-            f"**Animation ready** ({fmt}) — {n} frames · payload `{payload[:40]}`\n\n"
+            f"**Animation ready** ({fmt}) — {n_render} frames{cap_note} · payload `{payload[:40]}`\n\n"
             "Four panels: helical phase · OAM intensity · pyramidal pulse · PWM orbs with trails."
         )
         return (
@@ -238,6 +266,13 @@ def animate_typehead(run_cache: tuple | None) -> tuple[str | None, str | None, s
 
 
 def build_app() -> gr.Blocks:
+    on_hf = is_hf_space()
+    slm_frames_info = (
+        "Disabled on Hugging Face for speed — use local demo for PNG frame export"
+        if on_hf
+        else "Adds frames/ to zip; slower. Core zip always has manifest + phase_stack.npy"
+    )
+
     with gr.Blocks(
         title="Orbital Braille — VQC Typehead",
         analytics_enabled=False,
@@ -253,6 +288,9 @@ def build_app() -> gr.Blocks:
             f"[SLM quickstart]({GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md)\n\n"
             f"*{get_build_label()}*"
         )
+        gr.Markdown(SIMULATION_BANNER_MD)
+        with gr.Accordion("New here? 60-second guide (Selectric typeball → OAM)", open=False):
+            gr.Markdown(ONBOARDING_MD)
         with gr.Row():
             payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)
             num_orbs = gr.Slider(2, 6, value=4, step=1, label="Number of orbs")
@@ -261,7 +299,8 @@ def build_app() -> gr.Blocks:
                 choices=["Quick", "Full"],
                 value="Quick",
                 label="Resolution",
-                info="Quick = low grid (fast); Full = publication quality",
+                info="Quick = low grid (fast); Full = publication quality"
+                + (" — Full is slower on HF" if on_hf else ""),
             )
             seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
             gamma_1 = gr.Slider(
@@ -272,13 +311,18 @@ def build_app() -> gr.Blocks:
                 label="p-wave BMGL strength (γ₁)",
                 info="Higher γ₁ → stronger inhibition vs. phase noise (default 1.5)",
             )
+        gr.Markdown("**Example presets** — one click loads payload + orb count + γ₁:")
+        with gr.Row():
+            preset_buttons: dict[str, gr.Button] = {}
+            for key, preset in EXAMPLE_PRESETS.items():
+                preset_buttons[key] = gr.Button(preset["label"], variant="secondary", size="sm")
         with gr.Row():
             export_slm_frames = gr.Checkbox(
                 label="Include SLM-ready phase frames (PNG)",
                 value=False,
-                info="Adds frames/ to zip; slower. Core zip always has manifest + phase_stack.npy",
+                interactive=not on_hf,
+                info=slm_frames_info,
             )
-            load_paper_btn = gr.Button("Load example from paper", variant="secondary")
         with gr.Accordion("How this maps to VQC claims", open=False):
             gr.Markdown(VQC_CLAIMS_MD)
         with gr.Accordion("Example walkthrough (recorded demo)", open=False):
@@ -293,10 +337,6 @@ def build_app() -> gr.Blocks:
                 "same flow as **Run demo** → **Animate typehead**"
             )
         run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
-        gr.Markdown(
-            "**Example payloads:** `I live in Oregon` (4 orbs, patent Fig. 1) · "
-            "`VQC prototype` (4 orbs) · `Hello OAM` (2 orbs)"
-        )
         run_cache = gr.State(value=None)
         with gr.Row(equal_height=True):
             with gr.Column(scale=1):
@@ -307,6 +347,12 @@ def build_app() -> gr.Blocks:
                     type="filepath",
                     elem_classes=["vqc-figure-panel"],
                 )
+        figure_3d = gr.Image(
+            label="3D orb trajectories (x, y, time)",
+            type="filepath",
+            height=420,
+            elem_classes=["vqc-figure-panel"],
+        )
         animate_btn = gr.Button(
             "Animate typehead",
             variant="secondary",
@@ -338,14 +384,18 @@ def build_app() -> gr.Blocks:
         run_btn.click(
             run_demo,
             [payload, num_orbs, resolution, seed, gamma_1, export_slm_frames],
-            [metrics, figure, slm_info, slm_file, run_cache],
+            [metrics, figure, figure_3d, slm_info, slm_file, run_cache],
         )
         animate_btn.click(
             animate_typehead,
             inputs=[run_cache],
             outputs=[animation_video, animation_gif, animation_info],
         )
-        load_paper_btn.click(load_patent_example, outputs=[payload, num_orbs, gamma_1])
+        for key, btn in preset_buttons.items():
+            btn.click(
+                lambda k=key: load_example_preset(k),
+                outputs=[payload, num_orbs, gamma_1],
+            )
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
             f"[IP notice]({GITHUB_URL}/blob/main/IP_NOTICE.md)"

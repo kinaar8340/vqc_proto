@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import io
+import os
 import zipfile
 from pathlib import Path
+from typing import TypedDict
 
 import matplotlib
 
@@ -24,6 +26,81 @@ from orbital_braille import (
 from orbital_braille.slm_typehead import SLM_PRESETS, SLMConfig, export_hologram_package
 
 PATENT_FIGURE1_PAYLOAD = "I live in Oregon"
+
+HF_ANIM_MAX_FRAMES_QUICK = 12
+HF_ANIM_MAX_FRAMES_FULL = 20
+
+
+class ExamplePreset(TypedDict):
+    payload: str
+    orbs: int
+    gamma_1: float
+    label: str
+    blurb: str
+
+
+EXAMPLE_PRESETS: dict[str, ExamplePreset] = {
+    "patent": {
+        "payload": PATENT_FIGURE1_PAYLOAD,
+        "orbs": 4,
+        "gamma_1": 1.5,
+        "label": "Patent Fig. 1",
+        "blurb": "Paper example — 4 orbs, γ₁=1.5",
+    },
+    "vqc": {
+        "payload": "VQC prototype",
+        "orbs": 4,
+        "gamma_1": 1.5,
+        "label": "VQC prototype",
+        "blurb": "Short label — good for shard barcode check",
+    },
+    "hello": {
+        "payload": "Hello OAM",
+        "orbs": 2,
+        "gamma_1": 1.5,
+        "label": "Hello OAM",
+        "blurb": "Minimal 2-orb intro run",
+    },
+    "stress": {
+        "payload": "noise test",
+        "orbs": 6,
+        "gamma_1": 1.8,
+        "label": "6-orb stress",
+        "blurb": "Max orbs + stronger BMGL inhibition",
+    },
+}
+
+SIMULATION_BANNER_MD = """
+> **Simulation demo** — browser-based encode → turbulence → decode. Outputs are faithful to the
+> Orbital Braille model (OAM, PWM orbs, BMGL noise, FastICA decode), not live SLM hardware.
+> Use the **SLM package** zip for bench upload after a run.
+"""
+
+ONBOARDING_MD = """
+### Think IBM Selectric, but for light
+The **typeball** on a Selectric had raised characters on a spinning sphere — each character was a
+distinct mechanical glyph. Here, each **orb** is a PWM-gated OAM source on a ring: a "Braille dot"
+with topological charge ℓ. Your **payload** picks the glyph layout; **pyramidal FM pulses** barcode
+spectral shards; **p-wave BMGL** turbulence models phase noise; **FastICA** decodes the field back
+to a glyph index.
+
+### Three steps (60 seconds)
+1. **Pick a preset** or type a short message (≤ 32 chars works best).
+2. **Run demo** — watch the 6-panel figure: clean phase → noisy phase → intensity donut, plus pulse,
+   spectral shards, and orb layout. Check **shard fidelity** and **Fisher-Rao font separation** in metrics.
+3. **Animate typehead** — time-lapse of helical phase, intensity, pulse cursor, and PWM-gated orb trails.
+   Toggle **γ₁** to see BMGL inhibition; raise **noise** via seed rerolls.
+
+### What the metrics mean
+| Metric | Plain English |
+|--------|----------------|
+| **Font separation** | How distinct each glyph looks in Fisher-Rao geometry (higher → easier decode). |
+| **Shard fidelity** | Agreement between encoded and recovered spectral subcarriers. |
+| **Glyph fidelity** | Confidence in the decoded Braille glyph index. |
+| **Quaternion** | Compressed payload orientation used during encode. |
+
+**Tip:** Keep **Quick** resolution on Hugging Face for snappy runs; use **Full** locally for publication PNGs.
+"""
 
 QUICK_GRID_SIZE = 32
 QUICK_NUM_TIMES = 16
@@ -48,6 +125,24 @@ VQC_CLAIMS_MD = """
 
 Full mapping: [proto/README.md — Patent claim alignment](https://github.com/kinaar8340/vqc_proto/blob/main/proto/README.md#patent-claim-alignment)
 """
+
+
+def is_hf_space() -> bool:
+    """True when running inside a Hugging Face Space container."""
+    return bool(os.environ.get("SPACE_ID"))
+
+
+def get_animation_max_frames(*, quick: bool) -> int | None:
+    """Cap animation length on HF Spaces to reduce lag."""
+    if not is_hf_space():
+        return None
+    return HF_ANIM_MAX_FRAMES_QUICK if quick else HF_ANIM_MAX_FRAMES_FULL
+
+
+def load_example_preset(key: str) -> tuple[str, float, float]:
+    """Return (payload, num_orbs, gamma_1) for a named preset."""
+    preset = EXAMPLE_PRESETS.get(key, EXAMPLE_PRESETS["patent"])
+    return preset["payload"], float(preset["orbs"]), preset["gamma_1"]
 
 
 def get_build_label() -> str:
@@ -213,6 +308,45 @@ def plot_results(encoded, noisy, decoded, out_dir: Path, payload: str) -> Path:
     plt.tight_layout()
     path = out_dir / "orbital_braille_demo.png"
     fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def plot_orb_trajectory_3d(encoded, out_dir: Path, payload: str) -> Path:
+    """Helical orb paths in (x, y, time) — complements the 2D layout panel."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    n = encoded.intensity_time.shape[0]
+    t = encoded.t[:n]
+    t_ns = t * 1e9
+
+    fig = plt.figure(figsize=(10, 7), facecolor="#0a0818")
+    ax = fig.add_subplot(111, projection="3d", facecolor="#0a0818")
+
+    cmap = plt.cm.tab10
+    for i, orb in enumerate(encoded.orbs):
+        theta = orb.phase0 + orb.omega * t
+        x = orb.radius * np.cos(theta)
+        y = orb.radius * np.sin(theta)
+        color = cmap(i / max(len(encoded.orbs), 1))
+        ax.plot(x, y, t_ns, color=color, lw=2.0, alpha=0.85, label=f"ℓ={orb.ell}  r={orb.radius:.2f}")
+        ax.scatter(x[0], y[0], t_ns[0], c=[color], s=40, depthshade=False)
+        ax.scatter(x[-1], y[-1], t_ns[-1], c=[color], s=90, marker="*", depthshade=False)
+
+    short = payload[:28] + ("…" if len(payload) > 28 else "")
+    ax.set_title(f'3D typehead trajectories — "{short}"', color="#eee", fontsize=11, pad=12)
+    ax.set_xlabel("x", color="#aaa")
+    ax.set_ylabel("y", color="#aaa")
+    ax.set_zlabel("Time (ns)", color="#aaa")
+    ax.tick_params(colors="#888")
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.grid(True, alpha=0.25)
+    ax.legend(loc="upper left", fontsize=8, framealpha=0.6)
+    ax.view_init(elev=22, azim=-58)
+
+    path = out_dir / "orb_trajectory_3d.png"
+    fig.savefig(path, dpi=120, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
     return path
 
