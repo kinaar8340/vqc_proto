@@ -12,7 +12,9 @@ cp -r "$SRC/orbital_braille" "$DST/"
 cp "$SRC/demo_core.py" "$DST/"
 cp "$SRC/gradio_demo.py" "$DST/app.py"
 
-# HF Spaces expect requirements.txt at space root (not requirements-web.txt)
+# HF Spaces requirements — Gradio 5.12 + Python 3.12 (see space README frontmatter).
+# We stay on 5.12 (not 4.44.1): 4.44 hits HfFolder/huggingface_hub breakage and the
+# const/bool API schema bug. audioop-lts covers Python 3.13 if HF bumps the runtime.
 cat > "$DST/requirements.txt" <<'EOF'
 numpy>=1.24.0,<3.0.0
 scipy>=1.10.0
@@ -21,13 +23,9 @@ scikit-learn>=1.3.0
 Pillow>=10.0.0
 gradio==5.12.0
 requests>=2.31.0
+huggingface_hub>=0.23.0
+audioop-lts>=0.2.1; python_version >= "3.13"
 EOF
-# Note: Python 3.12 Docker image includes audioop; no pyaudioop needed
-
-# Docker SDK for HF (Python 3.12 pin)
-if [[ ! -f "$DST/Dockerfile" ]]; then
-  echo "WARN: space/orbital-braille/Dockerfile missing — create manually"
-fi
 
 echo "Synced → $DST"
 ls -la "$DST"

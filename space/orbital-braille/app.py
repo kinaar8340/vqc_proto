@@ -75,14 +75,20 @@ demo = build_app()
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+
+    on_hf = bool(os.environ.get("SPACE_ID"))
     port = int(os.environ.get("GRADIO_SERVER_PORT", "7860"))
-    demo.queue(default_concurrency_limit=2).launch(
-        server_name="0.0.0.0",
-        server_port=port,
-        show_api=False,
-        inbrowser=False,
-        share=False,
-    )
+
+    launch_kwargs: dict = {
+        "server_name": "0.0.0.0",
+        "server_port": port,
+        "show_error": True,
+        "show_api": False,
+        "inbrowser": False,
+        "share": False if on_hf else True,
+    }
+
+    demo.queue(default_concurrency_limit=2).launch(**launch_kwargs)
 
 
 if __name__ == "__main__":
