@@ -686,16 +686,6 @@ def build_app() -> gr.Blocks:
         )
         current_page = gr.State("demo")
         with gr.Row(elem_classes=["vqc-source-tabs-row"]):
-            gr.HTML('<span class="vqc-source-label">Links:</span>')
-            gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
-            gr.HTML(
-                _external_tab_html(
-                    "SLM Quickstart",
-                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
-                    "slm",
-                )
-            )
-        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
             gr.HTML('<span class="vqc-source-label">Source:</span>')
             tab_demo_btn = gr.Button(
                 "Live Demo",
@@ -709,6 +699,16 @@ def build_app() -> gr.Blocks:
                 elem_classes=["vqc-source-tab"],
                 scale=0,
                 variant="secondary",
+            )
+        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
+            gr.HTML('<span class="vqc-source-label">Links:</span>')
+            gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
+            gr.HTML(
+                _external_tab_html(
+                    "SLM Quickstart",
+                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+                    "slm",
+                )
             )
         gr.HTML(f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>')
 
