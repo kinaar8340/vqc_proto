@@ -12,19 +12,17 @@ cp -r "$SRC/orbital_braille" "$DST/"
 cp "$SRC/demo_core.py" "$DST/"
 cp "$SRC/gradio_demo.py" "$DST/app.py"
 
-# HF Spaces requirements — Gradio 5.12 + Python 3.12 (see space README frontmatter).
-# We stay on 5.12 (not 4.44.1): 4.44 hits HfFolder/huggingface_hub breakage.
-# Pin pydantic==2.10.6: newer pydantic emits bool JSON-schema nodes that crash
-# gradio_client get_api_info() ("argument of type 'bool' is not iterable").
-# audioop-lts covers Python 3.13 if HF bumps the runtime.
+# HF Spaces requirements — Gradio 5.27 + Python 3.12 (see space README frontmatter).
+# 5.27+ fixes gradio_client bool-schema crash; pydantic==2.10.6 is a belt-and-suspenders pin.
+# app.py also monkey-patches gradio_client before launch. audioop-lts for Python 3.13+.
 cat > "$DST/requirements.txt" <<'EOF'
 numpy>=1.24.0,<3.0.0
 scipy>=1.10.0
 matplotlib>=3.7.0
 scikit-learn>=1.3.0
 Pillow>=10.0.0
-gradio==5.12.0
 pydantic==2.10.6
+gradio==5.27.0
 requests>=2.31.0
 huggingface_hub>=0.23.0
 audioop-lts>=0.2.1; python_version >= "3.13"
@@ -37,7 +35,7 @@ emoji: 🔤
 colorFrom: blue
 colorTo: purple
 sdk: gradio
-sdk_version: 5.12.0
+sdk_version: 5.27.0
 python_version: 3.12
 app_file: app.py
 pinned: false

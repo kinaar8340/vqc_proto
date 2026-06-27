@@ -1,55 +1,56 @@
 #!/usr/bin/env bash
-# Deploy space/orbital-braille to Hugging Face Spaces.
-# Requires: pip install huggingface_hub && HF_TOKEN (write access)
-#
-# Usage:
-#   export HF_TOKEN=hf_...
-#   ./scripts/deploy_hf_space.sh
-#   ./scripts/deploy_hf_space.sh kinaar111/orbital-braille-vqc
-
+# Sync, commit, push GitHub, and deploy to HF Space (SSH git).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SPACE_ID="${1:-kinaar111/orbital-braille-vqc}"
-SPACE_DIR="$ROOT/space/orbital-braille"
+cd "$ROOT"
 
-"$ROOT/scripts/sync_hf_space.sh"
+echo "=== 1. Sync HF space bundle ==="
+bash scripts/sync_hf_space.sh
 
-if [[ -z "${HF_TOKEN:-${HUGGING_FACE_HUB_TOKEN:-}}" ]]; then
-  echo "ERROR: Set HF_TOKEN or HUGGING_FACE_HUB_TOKEN with write access."
-  echo "Create the Space at https://huggingface.co/new-space then re-run."
-  exit 1
+echo "=== 2. Git commit (vqc_proto) ==="
+git add -A
+git status --short
+if git diff --cached --quiet; then
+  echo "No staged changes"
+  GH_SHA="$(git rev-parse HEAD)"
+else
+  git commit -m "fix(hf-space): patch gradio_client bool schema crash, upgrade to 5.27"
+  GH_SHA="$(git rev-parse HEAD)"
+fi
+echo "GitHub SHA: $GH_SHA"
+
+echo "=== 3. Git push origin main ==="
+git push origin main
+
+echo "=== 4. Deploy to HF Space ==="
+HF_DIR="/tmp/hf-orbital-braille"
+rm -rf "$HF_DIR"
+git clone git@hf.co:spaces/kinaar111/orbital-braille-vqc "$HF_DIR"
+rsync -av --delete \
+  --exclude='.venv' \
+  --exclude='__pycache__' \
+  --exclude='*.pyc' \
+  "$ROOT/space/orbital-braille/" "$HF_DIR/"
+cd "$HF_DIR"
+git add -A
+git status --short
+if git diff --cached --quiet; then
+  echo "No HF changes to commit"
+  HF_SHA="$(git rev-parse HEAD)"
+  HF_PUSH="no changes"
+else
+  git commit -m "fix(hf-space): patch gradio_client bool schema crash, upgrade to 5.27"
+  HF_SHA="$(git rev-parse HEAD)"
+  git push origin main
+  HF_PUSH="OK"
 fi
 
-PYTHON="${ROOT}/.venv/bin/python"
-if [[ ! -x "$PYTHON" ]]; then
-  python3 -m venv "${ROOT}/.venv"
-  "${ROOT}/.venv/bin/pip" install -q huggingface_hub
-elif ! "$PYTHON" -c "import huggingface_hub" 2>/dev/null; then
-  "${ROOT}/.venv/bin/pip" install -q huggingface_hub
-fi
-
-"$PYTHON" - <<PY
-from huggingface_hub import HfApi
-
-api = HfApi()
-repo_id = "${SPACE_ID}"
-try:
-    api.create_repo(repo_id, repo_type="space", space_sdk="gradio", exist_ok=True)
-except Exception as e:
-    print(f"create_repo note: {e}")
-
-api.upload_folder(
-    folder_path="${SPACE_DIR}",
-    repo_id=repo_id,
-    repo_type="space",
-    commit_message="Deploy Orbital Braille Gradio demo",
-)
-print(f"Uploaded → https://huggingface.co/spaces/{repo_id}")
-
-try:
-    api.restart_space(repo_id, factory_reboot=True)
-    print("Factory reboot triggered")
-except Exception as e:
-    print(f"restart_space note: {e}")
-PY
+echo ""
+echo "=== RESULTS ==="
+echo "GITHUB_SHA=$GH_SHA"
+echo "HF_SHA=$HF_SHA"
+echo "HF_PUSH=$HF_PUSH"
+echo ""
+echo "=== Deployed requirements.txt (first 10 lines) ==="
+head -10 "$HF_DIR/requirements.txt"

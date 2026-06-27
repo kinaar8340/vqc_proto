@@ -14,6 +14,31 @@ import gradio as gr
 from demo_core import plot_results, run_pipeline
 
 logger = logging.getLogger(__name__)
+
+
+def _patch_gradio_client_bool_schema() -> None:
+    """Avoid gradio_client crash when JSON schema contains bare bool nodes."""
+    try:
+        from gradio_client import utils as client_utils
+
+        if getattr(client_utils, "_vqc_bool_patch", False):
+            return
+
+        orig_get_type = client_utils.get_type
+
+        def get_type(schema):  # noqa: ANN001
+            if isinstance(schema, bool):
+                return "boolean"
+            return orig_get_type(schema)
+
+        client_utils.get_type = get_type
+        client_utils._vqc_bool_patch = True
+        logger.info("Patched gradio_client bool JSON-schema handling")
+    except Exception:
+        logger.warning("Could not patch gradio_client", exc_info=True)
+
+
+_patch_gradio_client_bool_schema()
 DEFAULT_PAYLOAD = "I live in Oregon"
 HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
 GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
@@ -83,6 +108,12 @@ demo = build_app()
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+
+    try:
+        demo.get_api_info()
+        logger.info("Gradio API info check passed")
+    except Exception:
+        logger.exception("Gradio API info check failed")
 
     on_hf = bool(os.environ.get("SPACE_ID"))
     port = int(os.environ.get("GRADIO_SERVER_PORT", "7860"))

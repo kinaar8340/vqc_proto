@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="5541405f-9e7a-4bba-b5bf-a86d4ed715a0" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/pyProjectModel.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+    <list default="true" id="eef866b1-fce8-4bb8-87fa-2e4235843988" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vqc_sims_public.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vqc_proto_full.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/pyLspTools.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/pyProjectModel.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vqc_proto_full.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/gradio_demo.py" beforeDir="false" afterPath="$PROJECT_DIR$/proto/gradio_demo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/requirements-web.txt" beforeDir="false" afterPath="$PROJECT_DIR$/proto/requirements-web.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/deploy_hf_space.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/deploy_hf_space.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/sync_hf_space.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/sync_hf_space.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/space/orbital-braille/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/space/orbital-braille/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/space/orbital-braille/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/space/orbital-braille/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,10 +26,10 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 7,
+  "associatedIndex": 8,
   "fromUser": false
 }]]></component>
-  <component name="ProjectId" id="3FgzF1XEqFcw5AVVMpRd0KHtuw9" />
+  <component name="ProjectId" id="3FhUw22z7x4hMDZSDR1m8AzXUxt" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -29,29 +37,22 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.gradio_demo.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "feat/phase2b-hf-spaces",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+    "git-widget-placeholder": "main",
+    "nodejs_package_manager_path": "npm"
   }
 }]]></component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="5541405f-9e7a-4bba-b5bf-a86d4ed715a0" name="Changes" comment="" />
-      <created>1782511392679</created>
+      <changelist id="eef866b1-fce8-4bb8-87fa-2e4235843988" name="Changes" comment="" />
+      <created>1782527030025</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1782511392679</updated>
+      <updated>1782527030025</updated>
     </task>
     <servers />
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
   </component>
 </project>
