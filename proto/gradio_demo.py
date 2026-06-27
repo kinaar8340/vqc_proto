@@ -953,6 +953,14 @@ footer {{
     padding: 0 !important;
     margin: 0 !important;
 }}
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:hover,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:focus {{
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}}
 .gradio-container .vqc-source-label {{
     color: #e8e0f8 !important;
     font-size: 0.92rem !important;
@@ -961,40 +969,39 @@ footer {{
     line-height: 1.2 !important;
 }}
 .gradio-container .vqc-source-tab,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.4rem !important;
-    padding: 0.3rem 0.85rem !important;
-    border-radius: 999px !important;
-    border: 1px solid {_VQC_TAB_GREEN_BORDER} !important;
-    background: {_VQC_TAB_GREEN_BG} !important;
-    background-color: {_VQC_TAB_GREEN_BG} !important;
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab span {{
+    display: inline !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
     color: {_VQC_TAB_GREEN_TEXT} !important;
     -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
-    text-decoration: none !important;
+    text-decoration: underline !important;
+    text-underline-offset: 0.18em !important;
     font-weight: 600 !important;
     font-size: 0.92rem !important;
-    line-height: 1.2 !important;
+    line-height: 1.35 !important;
     letter-spacing: normal !important;
     text-transform: none !important;
     white-space: nowrap !important;
-    box-shadow: none !important;
     min-height: unset !important;
     height: auto !important;
     width: auto !important;
     margin: 0 !important;
-    opacity: 0.8 !important;
-    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    opacity: 1 !important;
+    transition: color 0.15s ease, opacity 0.15s ease;
 }}
 .gradio-container a.vqc-source-tab:hover,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover span {{
     color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
     -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
-    border-color: {_VQC_TAB_GREEN_BORDER} !important;
-    background: {_VQC_TAB_GREEN_BG_HOVER} !important;
-    background-color: {_VQC_TAB_GREEN_BG_HOVER} !important;
+    background: transparent !important;
+    text-decoration: underline !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
     cursor: pointer !important;
@@ -1002,45 +1009,41 @@ footer {{
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled:not(.active),
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled]:not(.active),
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled:not(.active) {{
-    opacity: 0.8 !important;
-    cursor: default !important;
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled:not(.active),
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled:not(.active) span,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled]:not(.active) span {{
+    cursor: pointer !important;
     color: {_VQC_TAB_GREEN_TEXT} !important;
     -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
-    border-color: {_VQC_TAB_GREEN_BORDER} !important;
-    background: {_VQC_TAB_GREEN_BG} !important;
-    background-color: {_VQC_TAB_GREEN_BG} !important;
-}}
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] {{
-    opacity: 0.8 !important;
-    cursor: default !important;
-    color: {_VQC_TAB_ORANGE_TEXT} !important;
-    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
-    border-color: {_VQC_TAB_ORANGE_BORDER} !important;
-    background: {_VQC_TAB_ORANGE_BG} !important;
-    background-color: {_VQC_TAB_ORANGE_BG} !important;
+    background: transparent !important;
+    text-decoration: underline !important;
 }}
 .gradio-container .vqc-source-tab.active,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active span,
 .gradio-container .vqc-source-tab.active:hover,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover span {{
     color: {_VQC_TAB_ORANGE_TEXT} !important;
     -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
-    border-color: {_VQC_TAB_ORANGE_BORDER} !important;
-    background: {_VQC_TAB_ORANGE_BG} !important;
-    background-color: {_VQC_TAB_ORANGE_BG} !important;
+    background: transparent !important;
+    text-decoration: underline !important;
     cursor: default !important;
-    opacity: 0.8 !important;
+    opacity: 1 !important;
+}}
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled],
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled span,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] span {{
+    color: {_VQC_TAB_ORANGE_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
+    background: transparent !important;
+    text-decoration: underline !important;
+    cursor: default !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active::before {{
-    content: "" !important;
-    width: 7px !important;
-    height: 7px !important;
-    border-radius: 50% !important;
-    background: {_VQC_TAB_ORANGE_TEXT} !important;
-    flex-shrink: 0 !important;
-    box-shadow: 0 0 6px rgba(253, 186, 116, 0.65) !important;
+    content: none !important;
+    display: none !important;
 }}
 .gradio-container a:hover,
 .gradio-container .markdown a:hover,
