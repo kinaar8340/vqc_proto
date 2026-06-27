@@ -143,6 +143,7 @@ _OPTICS_TERM_CHAR_DELAY_S = 0.014
 _OPTICS_TERM_NEWLINE_DELAY_S = 0.048
 _OPTICS_TERM_UPLINK_DELAY_S = 0.22
 _OPTICS_TERM_CURSOR = "▌"
+_OPTICS_TERM_LATCH_RELEASE_DELAY_S = 2.0
 
 
 def _strip_md_plain(text: str) -> str:
@@ -363,10 +364,19 @@ def _term_keypad_outputs(terminal_text: str, active: str) -> tuple:
     return (terminal_text, *_term_keypad_btn_updates(active), active)
 
 
+def _term_yield_stream_then_release(stream: Iterator[str], *, active: str) -> Iterator[tuple]:
+    """Stream terminal text, latch while typing, release latch after a short pause."""
+    last_partial = ""
+    for partial in stream:
+        last_partial = partial
+        yield _term_keypad_outputs(partial, active)
+    time.sleep(_OPTICS_TERM_LATCH_RELEASE_DELAY_S)
+    yield _term_keypad_outputs(last_partial, "")
+
+
 def _term_stream_with_latch(stream_fn: Callable[[], Iterator[str]], *, active: str) -> Iterator[tuple]:
     """Stream terminal text and latch matrix-green active state on the pressed key."""
-    for partial in stream_fn():
-        yield _term_keypad_outputs(partial, active)
+    yield from _term_yield_stream_then_release(stream_fn(), active=active)
 
 
 def _make_term_stream_click(active_key: str, stream_fn: Callable[[], Iterator[str]]):
@@ -378,8 +388,10 @@ def _make_term_stream_click(active_key: str, stream_fn: Callable[[], Iterator[st
 
 def _make_term_clear_click(active_key: str):
     def handler(current: str) -> Iterator[tuple]:
-        for partial in _stream_optics_terminal_clear(current):
-            yield _term_keypad_outputs(partial, active_key)
+        yield from _term_yield_stream_then_release(
+            _stream_optics_terminal_clear(current),
+            active=active_key,
+        )
 
     return handler
 
@@ -394,11 +406,13 @@ def _make_term_latch_click(active_key: str):
 
 
 def _make_term_home_momentary():
-    """Home — stream main page without changing latched selection (momentary)."""
+    """Home — momentary return; clears any latched key after the stream finishes."""
 
     def handler(current_active: str) -> Iterator[tuple]:
-        for partial in _stream_optics_terminal_home():
-            yield _term_keypad_outputs(partial, current_active)
+        yield from _term_yield_stream_then_release(
+            _stream_optics_terminal_home(),
+            active=current_active,
+        )
 
     return handler
 
@@ -1087,11 +1101,15 @@ footer {{
 .gradio-container .vqc-optics-panel button.vqc-optics-key.active,
 .gradio-container .vqc-optics-panel button.vqc-optics-key.active:hover {{
     background: {_VQC_MATRIX_GREEN} !important;
-    color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-stroke: 0.45px #020a04 !important;
     box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
-    text-shadow: 0 0 8px rgba(51, 255, 102, 0.75) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-key.active,
+.gradio-container .vqc-optics-panel button.vqc-optics-key.active:hover,
+.gradio-container .vqc-optics-panel button.vqc-optics-key.active span {{
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: none !important;
 }}
 .gradio-container .vqc-optics-panel .label-wrap span,
 .gradio-container .vqc-optics-panel label span {{
