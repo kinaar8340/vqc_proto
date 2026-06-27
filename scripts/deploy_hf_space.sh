@@ -28,6 +28,7 @@ HF_DIR="/tmp/hf-orbital-braille"
 rm -rf "$HF_DIR"
 git clone git@hf.co:spaces/kinaar111/orbital-braille-vqc "$HF_DIR"
 rsync -av --delete \
+  --exclude='.git' \
   --exclude='.venv' \
   --exclude='__pycache__' \
   --exclude='*.pyc' \
