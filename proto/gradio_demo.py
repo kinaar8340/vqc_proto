@@ -85,6 +85,11 @@ SLM_PACKAGE_IDLE = (
 _VQC_ACCENT = "#ea580c"  # matches slider / primary button orange
 _VQC_HF_RUNNING = "#1ed760"  # Hugging Face "Running" status green
 _VQC_FIELD_FILL = "rgba(10, 8, 24, 0.50)"
+_VQC_TAB_GREEN_BG = "#14532d"
+_VQC_TAB_GREEN_BG_HOVER = "#166534"
+_VQC_TAB_GREEN_BORDER = "#1ed760"
+_VQC_TAB_ORANGE_BG = "#7c2d12"
+_VQC_TAB_ORANGE_BORDER = "#ea580c"
 
 ANIMATIONS_INTRO_MD = (
     "Recorded end-to-end flow: pick a preset or **Run demo**, then **Animate typehead** — "
@@ -359,9 +364,9 @@ footer {{
     gap: 0.4rem !important;
     padding: 0.3rem 0.85rem !important;
     border-radius: 999px !important;
-    border: 1px solid rgba(30, 215, 96, 0.55) !important;
-    background: rgba(30, 215, 96, 0.14) !important;
-    background-color: rgba(30, 215, 96, 0.14) !important;
+    border: 1px solid {_VQC_TAB_GREEN_BORDER} !important;
+    background: {_VQC_TAB_GREEN_BG} !important;
+    background-color: {_VQC_TAB_GREEN_BG} !important;
     color: {_VQC_HF_RUNNING} !important;
     -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
     text-decoration: none !important;
@@ -383,9 +388,9 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover {{
     color: #5ef59a !important;
     -webkit-text-fill-color: #5ef59a !important;
-    border-color: rgba(30, 215, 96, 0.75) !important;
-    background: rgba(30, 215, 96, 0.22) !important;
-    background-color: rgba(30, 215, 96, 0.22) !important;
+    border-color: {_VQC_TAB_GREEN_BORDER} !important;
+    background: {_VQC_TAB_GREEN_BG_HOVER} !important;
+    background-color: {_VQC_TAB_GREEN_BG_HOVER} !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
     cursor: pointer !important;
@@ -398,9 +403,9 @@ footer {{
     cursor: default !important;
     color: {_VQC_HF_RUNNING} !important;
     -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
-    border-color: rgba(30, 215, 96, 0.55) !important;
-    background: rgba(30, 215, 96, 0.14) !important;
-    background-color: rgba(30, 215, 96, 0.14) !important;
+    border-color: {_VQC_TAB_GREEN_BORDER} !important;
+    background: {_VQC_TAB_GREEN_BG} !important;
+    background-color: {_VQC_TAB_GREEN_BG} !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] {{
@@ -408,9 +413,9 @@ footer {{
     cursor: default !important;
     color: {_VQC_ACCENT} !important;
     -webkit-text-fill-color: {_VQC_ACCENT} !important;
-    border-color: rgba(234, 88, 12, 0.55) !important;
-    background: rgba(234, 88, 12, 0.16) !important;
-    background-color: rgba(234, 88, 12, 0.16) !important;
+    border-color: {_VQC_TAB_ORANGE_BORDER} !important;
+    background: {_VQC_TAB_ORANGE_BG} !important;
+    background-color: {_VQC_TAB_ORANGE_BG} !important;
 }}
 .gradio-container .vqc-source-tab.active,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active,
@@ -418,8 +423,9 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover {{
     color: {_VQC_ACCENT} !important;
     -webkit-text-fill-color: {_VQC_ACCENT} !important;
-    border-color: rgba(234, 88, 12, 0.55) !important;
-    background: rgba(234, 88, 12, 0.16) !important;
+    border-color: {_VQC_TAB_ORANGE_BORDER} !important;
+    background: {_VQC_TAB_ORANGE_BG} !important;
+    background-color: {_VQC_TAB_ORANGE_BG} !important;
     cursor: default !important;
     opacity: 0.8 !important;
 }}
