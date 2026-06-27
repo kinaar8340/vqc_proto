@@ -74,13 +74,29 @@ SLM_PACKAGE_IDLE = (
     "- `frames/` — optional PNG sequence (enable checkbox above)"
 )
 
-# Panels/fields: 10% opacity. Buttons and sliders stay solid for usability.
+# Background: full hfb.png at 5% opacity (pseudo-layer). Panels stay lightly frosted.
 HFB_CSS = f"""
 .gradio-container {{
+    position: relative !important;
+    background-color: #0a0818 !important;
+}}
+.gradio-container::before {{
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
     background-image: url('{HFB_RAW_URL}') !important;
-    background-size: cover !important;
+    background-size: contain !important;
     background-position: center center !important;
-    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+    opacity: 0.05 !important;
+}}
+.gradio-container > .main,
+.gradio-container > .wrap,
+.gradio-container > .contain {{
+    position: relative !important;
+    z-index: 1 !important;
 }}
 .gradio-container .contain,
 .gradio-container .main,
