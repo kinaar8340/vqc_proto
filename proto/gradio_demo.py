@@ -109,9 +109,9 @@ def _source_tab_btn_update(*, active: bool) -> gr.Update:
 
 
 def _home_tab_update(*, on_demo_page: bool) -> gr.Update:
-    """Home tab (Live demo / Local app): always green; clickable only from Animations page."""
+    """Home tab (Live demo / Local app): orange on demo page, green link back from Animations."""
     if on_demo_page:
-        return gr.update(interactive=False, elem_classes=["vqc-source-tab"], variant="secondary")
+        return gr.update(interactive=False, elem_classes=["vqc-source-tab", "active"], variant="secondary")
     return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
 
 
@@ -397,10 +397,9 @@ footer {{
     cursor: pointer !important;
     font-family: inherit !important;
 }}
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled],
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled:not(.active),
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled]:not(.active),
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled:not(.active) {{
     opacity: 1 !important;
     cursor: default !important;
     color: {_VQC_HF_RUNNING} !important;
@@ -408,6 +407,16 @@ footer {{
     border-color: rgba(30, 215, 96, 0.55) !important;
     background: rgba(30, 215, 96, 0.14) !important;
     background-color: rgba(30, 215, 96, 0.14) !important;
+}}
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] {{
+    opacity: 1 !important;
+    cursor: default !important;
+    color: {_VQC_ACCENT} !important;
+    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    border-color: rgba(234, 88, 12, 0.55) !important;
+    background: rgba(234, 88, 12, 0.16) !important;
+    background-color: rgba(234, 88, 12, 0.16) !important;
 }}
 .gradio-container .vqc-source-tab.active,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active,
@@ -681,7 +690,7 @@ def build_app() -> gr.Blocks:
             )
             tab_demo_btn = gr.Button(
                 "Live demo",
-                elem_classes=["vqc-source-tab"],
+                elem_classes=["vqc-source-tab", "active"],
                 interactive=False,
                 visible=on_hf,
                 scale=0,
@@ -689,7 +698,7 @@ def build_app() -> gr.Blocks:
             )
             tab_local_btn = gr.Button(
                 "Local app",
-                elem_classes=["vqc-source-tab"],
+                elem_classes=["vqc-source-tab", "active"],
                 interactive=False,
                 visible=not on_hf,
                 scale=0,
