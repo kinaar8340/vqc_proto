@@ -124,7 +124,7 @@ def _build_vqc_theme() -> gr.themes.Base:
     )
 
 
-# hfb.png: fixed back layer. Gradio page chrome transparent; component blocks 5%.
+# hfb.png: #vqc-fixed-bg covers viewport (fixed, no scroll). Content scrolls above it.
 HFB_CSS = f"""
 :root, :root .dark {{
     --body-background-fill: transparent !important;
@@ -139,28 +139,43 @@ HFB_CSS = f"""
     --border-color-primary: rgba(255, 255, 255, 0.12) !important;
     color-scheme: dark;
 }}
-html, body {{
-    background-color: #0a0818 !important;
+html, body, #root, .app {{
+    background: transparent !important;
+    background-color: transparent !important;
     color: #e8e0f8 !important;
-    min-height: 100vh !important;
+    min-height: 100% !important;
+    height: auto !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
 }}
-body::before {{
-    content: "" !important;
+#vqc-fixed-bg {{
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
     z-index: 0 !important;
     pointer-events: none !important;
+    background-color: #0a0818 !important;
     background-image: url('{HFB_RAW_URL}') !important;
-    background-size: contain !important;
+    background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
 }}
-#root, .gradio-container, footer {{
+.gradio-container {{
+    position: relative !important;
+    z-index: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    background: transparent !important;
+    background-color: transparent !important;
+}}
+footer {{
     position: relative !important;
     z-index: 1 !important;
     background: transparent !important;
-    background-color: transparent !important;
 }}
 .gradio-container .main,
 .gradio-container .wrap,
@@ -178,6 +193,9 @@ body::before {{
     box-shadow: none !important;
 }}
 .gradio-container .block {{
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     background-color: {_VQC_FIELD_FILL} !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-radius: 10px !important;
@@ -224,31 +242,44 @@ body::before {{
     width: 100% !important;
 }}
 .gradio-container .main,
-.gradio-container .wrap,
-.gradio-container .contain {{
-    max-width: 100% !important;
-}}
-.gradio-container .vqc-animation-panel {{
+.gradio-container .wrap {{
     width: 100% !important;
-    min-height: 480px;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+}}
+.gradio-container .contain {{
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+}}
+.gradio-container .vqc-animation-panel,
+.gradio-container .vqc-figure-panel,
+.gradio-container .vqc-plot3d-panel {{
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
 }}
 .gradio-container .vqc-animation-panel video,
 .gradio-container .vqc-animation-panel .image-container,
-.gradio-container .vqc-animation-panel img {{
+.gradio-container .vqc-animation-panel img,
+.gradio-container .vqc-figure-panel .image-container,
+.gradio-container .vqc-figure-panel img {{
     width: 100% !important;
     max-width: 100% !important;
     object-fit: contain;
 }}
-.gradio-container .vqc-figure-panel .image-container,
-.gradio-container .vqc-figure-panel img {{
-    width: 100% !important;
-    object-fit: contain;
-}}
-.gradio-container .vqc-plot3d-panel,
-.gradio-container .vqc-plot3d-panel > div,
 .gradio-container .vqc-plot3d-panel .plot-container {{
     width: 100% !important;
-    min-height: 480px;
+    min-height: 360px;
+}}
+.gradio-container .gr-video .empty,
+.gradio-container .gr-image .empty,
+.gradio-container .gr-image .icon-wrap {{
+    min-height: 80px !important;
+    background: transparent !important;
 }}
 footer {{ visibility: hidden; }}
 """
@@ -379,6 +410,7 @@ def build_app() -> gr.Blocks:
         css=HFB_CSS,
         fill_width=True,
     ) as demo:
+        gr.HTML('<div id="vqc-fixed-bg" aria-hidden="true"></div>', container=False)
         gr.Markdown(
             "# Orbital Braille — VQC Typehead Prototype\n"
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
@@ -466,13 +498,11 @@ def build_app() -> gr.Blocks:
         )
         animation_video = gr.Video(
             label="Typehead animation (MP4)",
-            height=540,
             elem_classes=["vqc-animation-panel"],
         )
         animation_gif = gr.Image(
             label="Typehead animation (GIF download)",
             type="filepath",
-            height=360,
             elem_classes=["vqc-animation-panel"],
         )
         animation_info = gr.Markdown(
