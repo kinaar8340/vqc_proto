@@ -7,7 +7,9 @@ import logging
 import os
 import re
 import tempfile
+import time
 import traceback
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import gradio as gr
@@ -135,6 +137,10 @@ OPTICS_PANEL_FACE_HTML = """
 """
 
 _OPTICS_TERM_BAR = "─" * 48
+_OPTICS_TERM_CHAR_DELAY_S = 0.014
+_OPTICS_TERM_NEWLINE_DELAY_S = 0.048
+_OPTICS_TERM_UPLINK_DELAY_S = 0.22
+_OPTICS_TERM_CURSOR = "▌"
 
 
 def _strip_md_plain(text: str) -> str:
@@ -237,6 +243,62 @@ def _optics_terminal_help() -> str:
             ]
         ),
     )
+
+
+def _stream_optics_terminal_text(full_text: str) -> Iterator[str]:
+    """Reveal terminal text one character at a time — typewriter / uplink effect."""
+    shown = ""
+    for ch in full_text:
+        shown += ch
+        yield shown + _OPTICS_TERM_CURSOR
+        time.sleep(_OPTICS_TERM_NEWLINE_DELAY_S if ch == "\n" else _OPTICS_TERM_CHAR_DELAY_S)
+    yield shown
+
+
+def _optics_terminal_uplink_banner(mode: str) -> str:
+    stamp = time.strftime("%H:%M:%S", time.gmtime())
+    return f"> UPLINK {mode.upper()} @ {stamp} UTC…\n"
+
+
+def _optics_terminal_stream(builder: Callable[[], str], *, mode: str) -> Iterator[str]:
+    """Stream a keyed readout: uplink banner, then body character-by-character."""
+    banner = _optics_terminal_uplink_banner(mode)
+    yield banner + _OPTICS_TERM_CURSOR
+    time.sleep(_OPTICS_TERM_UPLINK_DELAY_S)
+    yield from _stream_optics_terminal_text(banner + builder())
+
+
+def _stream_optics_terminal_home() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_home, mode="home")
+
+
+def _stream_optics_terminal_status() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_status, mode="status")
+
+
+def _stream_optics_terminal_demo() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_demo, mode="demo")
+
+
+def _stream_optics_terminal_build() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_build, mode="build")
+
+
+def _stream_optics_terminal_help() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_help, mode="help")
+
+
+def _stream_optics_terminal_clear(current: str) -> Iterator[str]:
+    """Erase display in paced chunks — inverse of the typewriter feed."""
+    text = current or ""
+    if not text:
+        yield ""
+        return
+    chunk = max(1, len(text) // 36)
+    for end in range(len(text), -1, -chunk):
+        yield text[:end] + (_OPTICS_TERM_CURSOR if end else "")
+        time.sleep(0.01)
+    yield ""
 
 
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
@@ -1236,7 +1298,7 @@ def build_app() -> gr.Blocks:
                 gr.HTML(OPTICS_PANEL_FACE_HTML)
                 optics_terminal = gr.Textbox(
                     label="Matrix status display",
-                    value=_optics_terminal_home(),
+                    value="",
                     lines=10,
                     max_lines=14,
                     interactive=False,
@@ -1350,12 +1412,12 @@ def build_app() -> gr.Blocks:
                     info=slm_frames_info,
                     elem_classes=["vqc-slm-toggle"],
                 )
-            term_home_btn.click(_optics_terminal_home, outputs=[optics_terminal])
-            term_status_btn.click(_optics_terminal_status, outputs=[optics_terminal])
-            term_demo_btn.click(_optics_terminal_demo, outputs=[optics_terminal])
-            term_build_btn.click(_optics_terminal_build, outputs=[optics_terminal])
-            term_help_btn.click(_optics_terminal_help, outputs=[optics_terminal])
-            term_clr_btn.click(lambda: "", outputs=[optics_terminal])
+            term_home_btn.click(_stream_optics_terminal_home, outputs=[optics_terminal])
+            term_status_btn.click(_stream_optics_terminal_status, outputs=[optics_terminal])
+            term_demo_btn.click(_stream_optics_terminal_demo, outputs=[optics_terminal])
+            term_build_btn.click(_stream_optics_terminal_build, outputs=[optics_terminal])
+            term_help_btn.click(_stream_optics_terminal_help, outputs=[optics_terminal])
+            term_clr_btn.click(_stream_optics_terminal_clear, inputs=[optics_terminal], outputs=[optics_terminal])
 
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
             run_cache = gr.State(value=None)
@@ -1463,7 +1525,7 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
-        demo.load(_optics_terminal_home, outputs=[optics_terminal])
+        demo.load(_stream_optics_terminal_home, outputs=[optics_terminal])
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
