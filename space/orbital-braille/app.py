@@ -75,7 +75,65 @@ SLM_PACKAGE_IDLE = (
 )
 
 _VQC_ACCENT = "#ea580c"  # matches slider / primary button orange
+_VQC_HF_RUNNING = "#1ed760"  # Hugging Face "Running" status green
 _VQC_FIELD_FILL = "rgba(10, 8, 24, 0.50)"
+
+# Extend this list to add future Source bookmark tabs.
+SOURCE_TABS: list[dict[str, str | None]] = [
+    {"id": "github", "label": "GitHub", "url": GITHUB_URL},
+    {"id": "live-demo", "label": "Live demo", "url": HF_SPACE_URL},
+    {
+        "id": "slm",
+        "label": "SLM quickstart",
+        "url": f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+    },
+]
+
+
+def _active_source_tab() -> str:
+    """Which Source tab represents the current page/context."""
+    return "live-demo" if is_hf_space() else "local"
+
+
+def _source_tab_entries() -> list[dict[str, str | None]]:
+    """Tabs shown in the Source bar (append here for future bookmarks)."""
+    entries = list(SOURCE_TABS)
+    if not is_hf_space():
+        entries.append({"id": "local", "label": "Local app", "url": None})
+    return entries
+
+
+def _source_tabs_html() -> str:
+    """Bookmark-style Source tabs — active tab uses HF Running green."""
+    active = _active_source_tab()
+    parts = [
+        '<nav class="vqc-source-tabs" aria-label="Source bookmarks">',
+        '<span class="vqc-source-label">Source:</span>',
+    ]
+    for tab in _source_tab_entries():
+        tab_id = str(tab["id"])
+        label = str(tab["label"])
+        url = tab.get("url")
+        is_active = tab_id == active
+        if is_active and (not url or (tab_id == "live-demo" and is_hf_space())):
+            parts.append(
+                f'<span class="vqc-source-tab active" aria-current="page" data-tab="{tab_id}">'
+                f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}</span>'
+            )
+        else:
+            href = url or "#"
+            parts.append(
+                f'<a href="{href}" class="vqc-source-tab{" active" if is_active else ""}" '
+                f'data-tab="{tab_id}" target="_blank" rel="noopener noreferrer">'
+                + (
+                    f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}'
+                    if is_active
+                    else label
+                )
+                + "</a>"
+            )
+    parts.append("</nav>")
+    return "".join(parts)
 
 
 def _build_vqc_theme() -> gr.themes.Base:
@@ -272,24 +330,65 @@ footer {{
 .gradio-container .markdown p a,
 .gradio-container .prose a,
 .gradio-container .prose p a,
-.gradio-container .vqc-header-links a {{
+.gradio-container .vqc-source-tabs {{
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 0.45rem 0.65rem !important;
+    margin: 0.35rem 0 0.5rem 0 !important;
+}}
+.gradio-container .vqc-source-label {{
+    color: #e8e0f8 !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    margin-right: 0.15rem !important;
+}}
+.gradio-container .vqc-source-tab {{
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    padding: 0.3rem 0.85rem !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(234, 88, 12, 0.45) !important;
+    background: rgba(10, 8, 24, 0.35) !important;
     color: {_VQC_ACCENT} !important;
     -webkit-text-fill-color: {_VQC_ACCENT} !important;
-    text-decoration: underline !important;
-    text-underline-offset: 3px;
+    text-decoration: none !important;
     font-weight: 600 !important;
+    font-size: 0.92rem !important;
+    line-height: 1.2 !important;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}}
+.gradio-container a.vqc-source-tab:hover {{
+    color: #f97316 !important;
+    -webkit-text-fill-color: #f97316 !important;
+    border-color: rgba(249, 115, 22, 0.55) !important;
+    background: rgba(10, 8, 24, 0.5) !important;
+}}
+.gradio-container .vqc-source-tab.active {{
+    color: {_VQC_HF_RUNNING} !important;
+    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
+    border-color: rgba(30, 215, 96, 0.55) !important;
+    background: rgba(30, 215, 96, 0.14) !important;
+    cursor: default !important;
+}}
+.gradio-container a.vqc-source-tab.active:hover {{
+    color: {_VQC_HF_RUNNING} !important;
+    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
+}}
+.gradio-container .vqc-tab-dot {{
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    background: {_VQC_HF_RUNNING} !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 0 6px rgba(30, 215, 96, 0.65) !important;
 }}
 .gradio-container a:hover,
 .gradio-container .markdown a:hover,
-.gradio-container .prose a:hover,
-.gradio-container .vqc-header-links a:hover {{
+.gradio-container .prose a:hover {{
     color: #f97316 !important;
     -webkit-text-fill-color: #f97316 !important;
-}}
-.gradio-container .vqc-header-links {{
-    color: #e8e0f8 !important;
-    font-size: 1rem;
-    margin: 0.25rem 0 0.5rem 0;
 }}
 .gradio-container .vqc-build-label {{
     color: #a89ec8 !important;
@@ -500,16 +599,7 @@ def build_app() -> gr.Blocks:
             "Use **Quick** resolution for sub-second runs."
         )
         gr.HTML(
-            f'<p class="vqc-header-links">'
-            f"Source: "
-            f'<a href="{GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a>'
-            f" · "
-            f'<a href="{HF_SPACE_URL}" target="_blank" rel="noopener noreferrer">Live demo</a>'
-            f" · "
-            f'<a href="{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md" '
-            f'target="_blank" rel="noopener noreferrer">SLM quickstart</a>'
-            f"</p>"
-            f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
+            _source_tabs_html() + f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
         )
         gr.Markdown(SIMULATION_BANNER_MD)
         with gr.Accordion("New here? 60-second guide (Selectric typeball → OAM)", open=False):
