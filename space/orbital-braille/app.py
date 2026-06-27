@@ -195,7 +195,7 @@ TERM_DPAD_HOLD_KEYS: tuple[str, ...] = (
     "dpad_right",
 )
 TERM_NAV_DEFINED: dict[str, str] = {
-    "dpad_select": "Select — confirm menu item",
+    "dpad_select": "Enter — confirm menu item",
     "dpad_up": "Up — previous menu item",
     "dpad_down": "Down — next menu item",
     "dpad_left": "Left — previous menu item",
@@ -231,7 +231,7 @@ def _default_term_ui_state() -> dict:
 
 def _optics_terminal_menu(menu_index: int) -> str:
     lines = [
-        "▲▼ ◀▶ move highlight · SEL confirm · 01 Home",
+        "▲▼ ◀▶ move highlight · enter confirm · 01 Home",
         "",
     ]
     for index, (_action, keypad_key, label, _stream) in enumerate(_term_menu_items()):
@@ -311,7 +311,7 @@ def _optics_terminal_help() -> str:
         "KEYPAD REFERENCE",
         "\n".join(
             [
-                "D-pad TUI — ▲▼ ◀▶ move · SEL opens highlighted item",
+                "D-pad TUI — ▲▼ ◀▶ move · enter opens highlighted item",
                 "Prog keys 02–05 mirror menu items · 01 Home → menu",
                 "",
                 _optics_assigned_keypad_lines(),
@@ -1693,7 +1693,7 @@ def build_app() -> gr.Blocks:
                 term_ui_state = gr.State(_default_term_ui_state())
                 term_all_btns: dict[str, gr.Button] = {}
                 _dpad_row_labels = {
-                    "dpad_select": "SEL",
+                    "dpad_select": "enter",
                     "dpad_up": "▲",
                     "dpad_down": "▼",
                     "dpad_left": "◀",
