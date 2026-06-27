@@ -1029,30 +1029,14 @@ footer {{
     justify-content: stretch !important;
     width: 100% !important;
 }}
-.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key {{
-    min-height: 1.5rem !important;
-    height: 1.5rem !important;
-    max-height: 1.5rem !important;
-    aspect-ratio: auto !important;
-    padding: 0.1rem 0.12rem !important;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
-    font-size: 1.44rem !important;
-    line-height: 1 !important;
-}}
-.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad {{
-    font-size: 1.44rem !important;
-    font-weight: 800 !important;
-}}
-.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-clear {{
-    font-family: "Courier New", Courier, monospace !important;
-    font-size: 1.44rem !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key {{
+.gradio-container .vqc-optics-keypad button.vqc-optics-key {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
     min-height: 3rem !important;
-    aspect-ratio: 1 / 1 !important;
+    height: 3rem !important;
+    max-height: 3rem !important;
+    aspect-ratio: auto !important;
     background: #000000 !important;
     border: none !important;
     border-radius: 8px !important;
@@ -1065,6 +1049,12 @@ footer {{
     letter-spacing: 0.03em !important;
     padding: 0.28rem 0.1rem !important;
     box-shadow: none !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad {{
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
+    font-size: 1.44rem !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-clear {{
     text-transform: lowercase !important;
@@ -1504,7 +1494,7 @@ def build_app() -> gr.Blocks:
                 }
 
                 with gr.Column(elem_classes=["vqc-optics-keypad"]):
-                    with gr.Row(elem_classes=["vqc-optics-dpad-row"]):
+                    with gr.Row(elem_classes=["vqc-optics-dpad-row"], equal_height=True):
                         for nav_key in TERM_NAV_KEYS:
                             term_all_btns[nav_key] = gr.Button(
                                 _dpad_row_labels[nav_key],
@@ -1512,7 +1502,7 @@ def build_app() -> gr.Blocks:
                                 scale=1,
                                 variant="secondary",
                             )
-                    with gr.Row(elem_classes=["vqc-optics-prog-row"]):
+                    with gr.Row(elem_classes=["vqc-optics-prog-row"], equal_height=True):
                         for index in range(1, 13):
                             key_id = _term_key_id(index)
                             term_all_btns[key_id] = gr.Button(
@@ -1521,7 +1511,7 @@ def build_app() -> gr.Blocks:
                                 scale=1,
                                 variant="secondary",
                             )
-                    with gr.Row(elem_classes=["vqc-optics-prog-row"]):
+                    with gr.Row(elem_classes=["vqc-optics-prog-row"], equal_height=True):
                         for index in range(13, 25):
                             key_id = _term_key_id(index)
                             term_all_btns[key_id] = gr.Button(
