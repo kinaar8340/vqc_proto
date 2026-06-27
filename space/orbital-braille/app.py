@@ -301,6 +301,37 @@ def _stream_optics_terminal_clear(current: str) -> Iterator[str]:
     yield ""
 
 
+TERM_KEYPAD_KEYS: tuple[str, ...] = ("home", "status", "demo", "build", "help", "clr")
+TERM_KEYPAD_FILLER_COLS = 10
+
+
+def _term_key_btn_classes(key: str, active: str) -> list[str]:
+    """BlackBerry-style key cap classes; orange latch on the active key."""
+    classes = ["vqc-optics-calc-btn", "vqc-bb-key"]
+    if key == active:
+        classes.append("active")
+    return classes
+
+
+def _term_keypad_btn_updates(active: str) -> tuple:
+    return tuple(gr.update(elem_classes=_term_key_btn_classes(key, active)) for key in TERM_KEYPAD_KEYS)
+
+
+def _term_keypad_outputs(terminal_text: str, active: str) -> tuple:
+    return (terminal_text, *_term_keypad_btn_updates(active), active)
+
+
+def _term_stream_with_latch(stream_fn: Callable[[], Iterator[str]], *, mode: str) -> Iterator[tuple]:
+    """Stream terminal text and latch orange active state on the pressed key."""
+    for partial in stream_fn():
+        yield _term_keypad_outputs(partial, mode)
+
+
+def _term_clear_with_latch(current: str) -> Iterator[tuple]:
+    for partial in _stream_optics_terminal_clear(current):
+        yield _term_keypad_outputs(partial, "clr")
+
+
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
     """External Source bookmark — opens in a new tab."""
     return (
@@ -876,36 +907,82 @@ footer {{
     padding: 0.5rem 0.6rem 0.45rem !important;
     margin: 0 0 0.55rem 0 !important;
 }}
-.gradio-container .vqc-optics-panel .vqc-optics-calc-row {{
-    gap: 0.45rem !important;
+.gradio-container .vqc-optics-bb-keyboard {{
+    background: linear-gradient(180deg, #16120c 0%, #0a0806 100%) !important;
+    border: 2px inset #3d3020 !important;
+    border-radius: 10px !important;
+    padding: 0.42rem 0.38rem 0.48rem !important;
     margin: 0 0 0.65rem 0 !important;
-    justify-content: center !important;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.55) !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-calc-btn {{
+.gradio-container .vqc-optics-bb-keyboard > .block,
+.gradio-container .vqc-optics-bb-keyboard .block {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-calc-row {{
+    gap: 0.18rem !important;
+    margin: 0 0 0.18rem 0 !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-calc-row:last-child {{
+    margin-bottom: 0 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-bb-filler-row {{
+    opacity: 0.72 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-bb-space-row {{
+    margin-top: 0.22rem !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-calc-btn,
+.gradio-container .vqc-optics-panel button.vqc-bb-key {{
     flex: 1 1 0 !important;
-    min-width: 4.5rem !important;
-    max-width: 7.5rem !important;
-    background: linear-gradient(180deg, #1f3d1a 0%, #0a1a08 100%) !important;
-    border: 2px solid #2d6b3a !important;
-    color: #7dff9a !important;
-    -webkit-text-fill-color: #7dff9a !important;
-    border-radius: 6px !important;
-    font-family: "Courier New", Courier, monospace !important;
-    font-size: 0.72rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.08em !important;
-    padding: 0.38rem 0.35rem !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 1.65rem !important;
+    background: linear-gradient(180deg, #3a3428 0%, #221c14 52%, #14100a 100%) !important;
+    border: 1px solid #2d6b3a !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    border-radius: 4px !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    letter-spacing: 0 !important;
+    padding: 0 !important;
     box-shadow:
-        inset 0 1px 0 rgba(125, 255, 154, 0.12),
-        0 2px 4px rgba(0, 0, 0, 0.45) !important;
-    text-shadow: 0 0 6px rgba(125, 255, 154, 0.25) !important;
+        inset 0 1px 0 rgba(255, 240, 200, 0.07),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.45),
+        0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-calc-btn:hover {{
-    background: linear-gradient(180deg, #2d6b3a 0%, #143320 100%) !important;
+.gradio-container .vqc-optics-panel button.vqc-bb-key-filler {{
+    min-height: 1.35rem !important;
+    background: linear-gradient(180deg, #2e2820 0%, #1a1610 55%, #100c08 100%) !important;
+    border-color: #3a3024 !important;
+    opacity: 0.85 !important;
+    cursor: default !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-bb-key-space {{
+    min-height: 1.45rem !important;
+    flex: 10 1 0 !important;
+    border-radius: 5px !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-bb-key:not(.vqc-bb-key-filler):not(.active):hover {{
     border-color: #3dff7a !important;
-    color: #b8ffd0 !important;
-    -webkit-text-fill-color: #b8ffd0 !important;
-    box-shadow: 0 0 10px rgba(61, 255, 122, 0.25) !important;
+    background: linear-gradient(180deg, #454030 0%, #2a2418 52%, #18140c 100%) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-bb-key.active,
+.gradio-container .vqc-optics-panel button.vqc-bb-key.active:hover {{
+    border-color: {_VQC_TAB_ORANGE_BORDER} !important;
+    color: {_VQC_TAB_ORANGE_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
+    background: linear-gradient(180deg, #4a3018 0%, #2a1a0c 52%, #1a1008 100%) !important;
+    box-shadow:
+        inset 0 0 8px rgba(253, 186, 116, 0.18),
+        0 0 10px rgba(234, 88, 12, 0.35) !important;
 }}
 .gradio-container .vqc-optics-panel .label-wrap span,
 .gradio-container .vqc-optics-panel label span {{
@@ -1304,44 +1381,73 @@ def build_app() -> gr.Blocks:
                     interactive=False,
                     elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
                 )
-                with gr.Row(elem_classes=["vqc-optics-calc-row"]):
-                    term_home_btn = gr.Button(
-                        "HOME",
-                        size="sm",
-                        elem_classes=["vqc-optics-calc-btn"],
-                        variant="secondary",
-                    )
-                    term_status_btn = gr.Button(
-                        "STATUS",
-                        size="sm",
-                        elem_classes=["vqc-optics-calc-btn"],
-                        variant="secondary",
-                    )
-                    term_demo_btn = gr.Button(
-                        "DEMO",
-                        size="sm",
-                        elem_classes=["vqc-optics-calc-btn"],
-                        variant="secondary",
-                    )
-                with gr.Row(elem_classes=["vqc-optics-calc-row"]):
-                    term_build_btn = gr.Button(
-                        "BUILD",
-                        size="sm",
-                        elem_classes=["vqc-optics-calc-btn"],
-                        variant="secondary",
-                    )
-                    term_help_btn = gr.Button(
-                        "HELP",
-                        size="sm",
-                        elem_classes=["vqc-optics-calc-btn"],
-                        variant="secondary",
-                    )
-                    term_clr_btn = gr.Button(
-                        "CLR",
-                        size="sm",
-                        elem_classes=["vqc-optics-calc-btn"],
-                        variant="secondary",
-                    )
+                term_active_key = gr.State("home")
+                with gr.Column(elem_classes=["vqc-optics-bb-keyboard"]):
+                    for _ in range(2):
+                        with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-filler-row"]):
+                            for _col in range(TERM_KEYPAD_FILLER_COLS):
+                                gr.Button(
+                                    " ",
+                                    interactive=False,
+                                    elem_classes=["vqc-bb-key", "vqc-bb-key-filler"],
+                                    scale=1,
+                                    variant="secondary",
+                                )
+                    with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-action-row"]):
+                        term_home_btn = gr.Button(
+                            " ",
+                            elem_classes=_term_key_btn_classes("home", "home"),
+                            scale=1,
+                            variant="secondary",
+                        )
+                        term_status_btn = gr.Button(
+                            " ",
+                            elem_classes=_term_key_btn_classes("status", "home"),
+                            scale=1,
+                            variant="secondary",
+                        )
+                        term_demo_btn = gr.Button(
+                            " ",
+                            elem_classes=_term_key_btn_classes("demo", "home"),
+                            scale=1,
+                            variant="secondary",
+                        )
+                        term_build_btn = gr.Button(
+                            " ",
+                            elem_classes=_term_key_btn_classes("build", "home"),
+                            scale=1,
+                            variant="secondary",
+                        )
+                        term_help_btn = gr.Button(
+                            " ",
+                            elem_classes=_term_key_btn_classes("help", "home"),
+                            scale=1,
+                            variant="secondary",
+                        )
+                        term_clr_btn = gr.Button(
+                            " ",
+                            elem_classes=_term_key_btn_classes("clr", "home"),
+                            scale=1,
+                            variant="secondary",
+                        )
+                    with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-space-row"]):
+                        gr.Button(
+                            " ",
+                            interactive=False,
+                            elem_classes=["vqc-bb-key", "vqc-bb-key-filler", "vqc-bb-key-space"],
+                            scale=1,
+                            variant="secondary",
+                        )
+                term_keypad_outputs = [
+                    optics_terminal,
+                    term_home_btn,
+                    term_status_btn,
+                    term_demo_btn,
+                    term_build_btn,
+                    term_help_btn,
+                    term_clr_btn,
+                    term_active_key,
+                ]
                 with gr.Row(elem_classes=["vqc-optics-tune-row"]):
                     payload = gr.Textbox(
                         label="Payload",
@@ -1412,12 +1518,27 @@ def build_app() -> gr.Blocks:
                     info=slm_frames_info,
                     elem_classes=["vqc-slm-toggle"],
                 )
-            term_home_btn.click(_stream_optics_terminal_home, outputs=[optics_terminal])
-            term_status_btn.click(_stream_optics_terminal_status, outputs=[optics_terminal])
-            term_demo_btn.click(_stream_optics_terminal_demo, outputs=[optics_terminal])
-            term_build_btn.click(_stream_optics_terminal_build, outputs=[optics_terminal])
-            term_help_btn.click(_stream_optics_terminal_help, outputs=[optics_terminal])
-            term_clr_btn.click(_stream_optics_terminal_clear, inputs=[optics_terminal], outputs=[optics_terminal])
+            term_home_btn.click(
+                lambda: _term_stream_with_latch(_stream_optics_terminal_home, mode="home"),
+                outputs=term_keypad_outputs,
+            )
+            term_status_btn.click(
+                lambda: _term_stream_with_latch(_stream_optics_terminal_status, mode="status"),
+                outputs=term_keypad_outputs,
+            )
+            term_demo_btn.click(
+                lambda: _term_stream_with_latch(_stream_optics_terminal_demo, mode="demo"),
+                outputs=term_keypad_outputs,
+            )
+            term_build_btn.click(
+                lambda: _term_stream_with_latch(_stream_optics_terminal_build, mode="build"),
+                outputs=term_keypad_outputs,
+            )
+            term_help_btn.click(
+                lambda: _term_stream_with_latch(_stream_optics_terminal_help, mode="help"),
+                outputs=term_keypad_outputs,
+            )
+            term_clr_btn.click(_term_clear_with_latch, inputs=[optics_terminal], outputs=term_keypad_outputs)
 
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
             run_cache = gr.State(value=None)
@@ -1525,7 +1646,10 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
-        demo.load(_stream_optics_terminal_home, outputs=[optics_terminal])
+        demo.load(
+            lambda: _term_stream_with_latch(_stream_optics_terminal_home, mode="home"),
+            outputs=term_keypad_outputs,
+        )
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
