@@ -332,6 +332,26 @@ def _term_clear_with_latch(current: str) -> Iterator[tuple]:
         yield _term_keypad_outputs(partial, "clr")
 
 
+def _term_click_home() -> Iterator[tuple]:
+    yield from _term_stream_with_latch(_stream_optics_terminal_home, mode="home")
+
+
+def _term_click_status() -> Iterator[tuple]:
+    yield from _term_stream_with_latch(_stream_optics_terminal_status, mode="status")
+
+
+def _term_click_demo() -> Iterator[tuple]:
+    yield from _term_stream_with_latch(_stream_optics_terminal_demo, mode="demo")
+
+
+def _term_click_build() -> Iterator[tuple]:
+    yield from _term_stream_with_latch(_stream_optics_terminal_build, mode="build")
+
+
+def _term_click_help() -> Iterator[tuple]:
+    yield from _term_stream_with_latch(_stream_optics_terminal_help, mode="help")
+
+
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
     """External Source bookmark — opens in a new tab."""
     return (
@@ -1518,26 +1538,11 @@ def build_app() -> gr.Blocks:
                     info=slm_frames_info,
                     elem_classes=["vqc-slm-toggle"],
                 )
-            term_home_btn.click(
-                lambda: _term_stream_with_latch(_stream_optics_terminal_home, mode="home"),
-                outputs=term_keypad_outputs,
-            )
-            term_status_btn.click(
-                lambda: _term_stream_with_latch(_stream_optics_terminal_status, mode="status"),
-                outputs=term_keypad_outputs,
-            )
-            term_demo_btn.click(
-                lambda: _term_stream_with_latch(_stream_optics_terminal_demo, mode="demo"),
-                outputs=term_keypad_outputs,
-            )
-            term_build_btn.click(
-                lambda: _term_stream_with_latch(_stream_optics_terminal_build, mode="build"),
-                outputs=term_keypad_outputs,
-            )
-            term_help_btn.click(
-                lambda: _term_stream_with_latch(_stream_optics_terminal_help, mode="help"),
-                outputs=term_keypad_outputs,
-            )
+            term_home_btn.click(_term_click_home, outputs=term_keypad_outputs)
+            term_status_btn.click(_term_click_status, outputs=term_keypad_outputs)
+            term_demo_btn.click(_term_click_demo, outputs=term_keypad_outputs)
+            term_build_btn.click(_term_click_build, outputs=term_keypad_outputs)
+            term_help_btn.click(_term_click_help, outputs=term_keypad_outputs)
             term_clr_btn.click(_term_clear_with_latch, inputs=[optics_terminal], outputs=term_keypad_outputs)
 
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
@@ -1646,10 +1651,7 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
-        demo.load(
-            lambda: _term_stream_with_latch(_stream_optics_terminal_home, mode="home"),
-            outputs=term_keypad_outputs,
-        )
+        demo.load(_term_click_home, outputs=term_keypad_outputs)
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
