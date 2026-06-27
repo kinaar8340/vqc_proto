@@ -34,5 +34,8 @@ data/
 .idea/
 .DS_Store
 
+# Local copy for Gradio (canonical asset is repo-root hfb.png)
+proto/hfb.png
+
 # Nested clone guard (accidental duplicate repo)
 /vqc_proto/
