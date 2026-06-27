@@ -88,8 +88,11 @@ _VQC_FIELD_FILL = "rgba(10, 8, 24, 0.50)"
 _VQC_TAB_GREEN_BG = "#14532d"
 _VQC_TAB_GREEN_BG_HOVER = "#166534"
 _VQC_TAB_GREEN_BORDER = "#1ed760"
+_VQC_TAB_GREEN_TEXT = "#86efac"
+_VQC_TAB_GREEN_TEXT_HOVER = "#bbf7d0"
 _VQC_TAB_ORANGE_BG = "#7c2d12"
 _VQC_TAB_ORANGE_BORDER = "#ea580c"
+_VQC_TAB_ORANGE_TEXT = "#fdba74"
 
 ANIMATIONS_INTRO_MD = (
     "Recorded end-to-end flow: pick a preset or **Run demo**, then **Animate typehead** — "
@@ -367,8 +370,8 @@ footer {{
     border: 1px solid {_VQC_TAB_GREEN_BORDER} !important;
     background: {_VQC_TAB_GREEN_BG} !important;
     background-color: {_VQC_TAB_GREEN_BG} !important;
-    color: {_VQC_HF_RUNNING} !important;
-    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
+    color: {_VQC_TAB_GREEN_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
     text-decoration: none !important;
     font-weight: 600 !important;
     font-size: 0.92rem !important;
@@ -386,8 +389,8 @@ footer {{
 }}
 .gradio-container a.vqc-source-tab:hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:not(.active):hover {{
-    color: #5ef59a !important;
-    -webkit-text-fill-color: #5ef59a !important;
+    color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
+    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
     border-color: {_VQC_TAB_GREEN_BORDER} !important;
     background: {_VQC_TAB_GREEN_BG_HOVER} !important;
     background-color: {_VQC_TAB_GREEN_BG_HOVER} !important;
@@ -401,8 +404,8 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled:not(.active) {{
     opacity: 0.8 !important;
     cursor: default !important;
-    color: {_VQC_HF_RUNNING} !important;
-    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
+    color: {_VQC_TAB_GREEN_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
     border-color: {_VQC_TAB_GREEN_BORDER} !important;
     background: {_VQC_TAB_GREEN_BG} !important;
     background-color: {_VQC_TAB_GREEN_BG} !important;
@@ -411,8 +414,8 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] {{
     opacity: 0.8 !important;
     cursor: default !important;
-    color: {_VQC_ACCENT} !important;
-    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    color: {_VQC_TAB_ORANGE_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
     border-color: {_VQC_TAB_ORANGE_BORDER} !important;
     background: {_VQC_TAB_ORANGE_BG} !important;
     background-color: {_VQC_TAB_ORANGE_BG} !important;
@@ -421,8 +424,8 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active,
 .gradio-container .vqc-source-tab.active:hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover {{
-    color: {_VQC_ACCENT} !important;
-    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    color: {_VQC_TAB_ORANGE_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
     border-color: {_VQC_TAB_ORANGE_BORDER} !important;
     background: {_VQC_TAB_ORANGE_BG} !important;
     background-color: {_VQC_TAB_ORANGE_BG} !important;
@@ -434,9 +437,9 @@ footer {{
     width: 7px !important;
     height: 7px !important;
     border-radius: 50% !important;
-    background: {_VQC_ACCENT} !important;
+    background: {_VQC_TAB_ORANGE_TEXT} !important;
     flex-shrink: 0 !important;
-    box-shadow: 0 0 6px rgba(234, 88, 12, 0.65) !important;
+    box-shadow: 0 0 6px rgba(253, 186, 116, 0.65) !important;
 }}
 .gradio-container a:hover,
 .gradio-container .markdown a:hover,
