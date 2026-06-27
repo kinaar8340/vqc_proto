@@ -10,7 +10,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SPACE_ID="${1:-kinaar8340/orbital-braille-vqc}"
+SPACE_ID="${1:-kinaar111/orbital-braille-vqc}"
 SPACE_DIR="$ROOT/space/orbital-braille"
 
 "$ROOT/scripts/sync_hf_space.sh"
@@ -21,9 +21,15 @@ if [[ -z "${HF_TOKEN:-${HUGGING_FACE_HUB_TOKEN:-}}" ]]; then
   exit 1
 fi
 
-python3 -m pip install -q huggingface_hub
+PYTHON="${ROOT}/.venv/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+  python3 -m venv "${ROOT}/.venv"
+  "${ROOT}/.venv/bin/pip" install -q huggingface_hub
+elif ! "$PYTHON" -c "import huggingface_hub" 2>/dev/null; then
+  "${ROOT}/.venv/bin/pip" install -q huggingface_hub
+fi
 
-python3 - <<PY
+"$PYTHON" - <<PY
 from huggingface_hub import HfApi
 
 api = HfApi()
@@ -39,5 +45,11 @@ api.upload_folder(
     repo_type="space",
     commit_message="Deploy Orbital Braille Gradio demo",
 )
-print(f"Deployed → https://huggingface.co/spaces/{repo_id}")
+print(f"Uploaded → https://huggingface.co/spaces/{repo_id}")
+
+try:
+    api.restart_space(repo_id, factory_reboot=True)
+    print("Factory reboot triggered")
+except Exception as e:
+    print(f"restart_space note: {e}")
 PY

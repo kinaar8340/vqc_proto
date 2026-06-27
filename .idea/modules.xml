@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/vqc_sims_public.iml" filepath="$PROJECT_DIR$/.idea/vqc_sims_public.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vqc_proto_full.iml" filepath="$PROJECT_DIR$/.idea/vqc_proto_full.iml" />
     </modules>
   </component>
 </project>

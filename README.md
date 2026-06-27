@@ -3,7 +3,7 @@
 Ultra-high-density quantum data compression and transfer via OAM-flux qubits and quaternion encoding.
 
 [![Repository](https://img.shields.io/badge/GitHub-vqc__proto-blue)](https://github.com/kinaar8340/vqc_proto)
-[![HF Space](https://img.shields.io/badge/🤗%20Hugging%20Face-live%20demo-yellow)](https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc)
+[![HF Space](https://img.shields.io/badge/🤗%20Hugging%20Face-live%20demo-yellow)](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc)
 [![Parent](https://img.shields.io/badge/Parent-vqc__sims__public-lightgrey)](https://github.com/kinaar8340/vqc_sims_public)
 
 > **IP notice:** CC-BY-NC-SA-4.0 + patent restrictions — see [`IP_NOTICE.md`](IP_NOTICE.md) before commercial use.
@@ -12,7 +12,7 @@ Ultra-high-density quantum data compression and transfer via OAM-flux qubits and
 
 ## Try the live demo (zero install)
 
-**[🤗 Hugging Face Space — Orbital Braille VQC Typehead](https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc)**
+**[🤗 Hugging Face Space — Orbital Braille VQC Typehead](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc)**
 
 Run the prototype in your browser: enter a payload, pick orb count (2–6), toggle quick/full mode, get metrics + the 6-panel figure. No clone required.
 
@@ -26,7 +26,7 @@ Most visitors want the **VQC Typehead / Orbital Braille** demo first. Four ways 
 
 ### Option A — Live web demo (recommended)
 
-Open the **[Hugging Face Space](https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc)** or run locally:
+Open the **[Hugging Face Space](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc)** or run locally:
 
 ```bash
 cd proto && pip install -r requirements-web.txt && python gradio_demo.py

@@ -4,11 +4,12 @@ emoji: 🔤
 colorFrom: blue
 colorTo: purple
 sdk: gradio
-sdk_version: 4.44.1
+sdk_version: 5.12.0
+python_version: 3.12
 app_file: app.py
 pinned: false
 license: cc-by-nc-sa-4.0
-short_description: Try the Orbital Braille / VQC Typehead prototype in your browser
+short_description: Orbital Braille VQC Typehead — browser demo
 ---
 
 # Orbital Braille — VQC Typehead
@@ -19,7 +20,7 @@ Browser demo of the **Orbital Braille** prototype: *N* PWM-gated point sources w
 
 1. Enter a payload (default: `"I live in Oregon"`)
 2. Set orb count (2–6; **4** is the validated prototype sweet spot)
-3. Leave **Quick mode** on for sub-second runs; disable for publication-quality figures
+3. Choose **Quick** resolution for sub-second runs; **Full** for publication-quality figures
 4. Click **Run demo** — metrics + 6-panel figure
 
 ## Example payloads

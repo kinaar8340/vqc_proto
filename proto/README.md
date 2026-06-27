@@ -78,7 +78,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python gradio_demo.py
 
 # Live public demo (Hugging Face Space)
-# https://huggingface.co/spaces/kinaar8340/orbital-braille-vqc
+# https://huggingface.co/spaces/kinaar111/orbital-braille-vqc
 # Deploy: ../../scripts/deploy_hf_space.sh
 ```
 
