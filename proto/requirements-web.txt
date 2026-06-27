@@ -1,5 +1,4 @@
 -r requirements.txt
 pydantic==2.10.6
-gradio==5.27.0
 requests>=2.31.0
 huggingface_hub>=0.23.0
