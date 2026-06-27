@@ -325,6 +325,25 @@ def _render_animation_frame(
     return Image.open(buf).convert("RGB")
 
 
+def _build_animation_frames(
+    encoded,
+    payload: str,
+    *,
+    max_frames: int | None = None,
+) -> list["Image.Image"]:
+    from PIL import Image
+
+    n_frames = encoded.intensity_time.shape[0]
+    if max_frames is not None:
+        n_frames = min(n_frames, max_frames)
+
+    trail: list[list[tuple[float, float]]] = [[] for _ in encoded.orbs]
+    return [
+        _render_animation_frame(encoded, payload, i, n_frames, trail)
+        for i in range(n_frames)
+    ]
+
+
 def render_typehead_animation(
     encoded,
     noisy: np.ndarray,
@@ -335,18 +354,7 @@ def render_typehead_animation(
     max_frames: int | None = None,
 ) -> Path:
     """Build a shareable GIF from an encode result (unique per run/settings)."""
-    from PIL import Image
-
-    n_frames = encoded.intensity_time.shape[0]
-    if max_frames is not None:
-        n_frames = min(n_frames, max_frames)
-
-    trail: list[list[tuple[float, float]]] = [[] for _ in encoded.orbs]
-    frames = [
-        _render_animation_frame(encoded, payload, i, n_frames, trail)
-        for i in range(n_frames)
-    ]
-
+    frames = _build_animation_frames(encoded, payload, max_frames=max_frames)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     frames[0].save(
@@ -358,6 +366,82 @@ def render_typehead_animation(
         optimize=True,
     )
     return out_path
+
+
+def render_typehead_animation_mp4(
+    encoded,
+    payload: str,
+    out_path: Path,
+    *,
+    fps: float = 9.0,
+    max_frames: int | None = None,
+) -> Path | None:
+    """Encode animation frames to H.264 MP4 (smoother playback than GIF)."""
+    import shutil
+    import subprocess
+    import tempfile
+
+    if shutil.which("ffmpeg") is None:
+        return None
+
+    frames = _build_animation_frames(encoded, payload, max_frames=max_frames)
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(prefix="vqc_mp4_") as tmp:
+        tmp_path = Path(tmp)
+        for i, frame in enumerate(frames):
+            frame.save(tmp_path / f"frame_{i:03d}.png")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(tmp_path / "frame_%03d.png"),
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            str(out_path),
+        ]
+        subprocess.run(cmd, check=True)
+    return out_path
+
+
+def render_typehead_animation_bundle(
+    encoded,
+    noisy: np.ndarray,
+    payload: str,
+    out_dir: Path,
+    *,
+    duration_ms: int = 110,
+    max_frames: int | None = None,
+) -> tuple[Path, Path | None]:
+    """GIF + optional MP4 for a single run."""
+    out_dir = Path(out_dir)
+    gif_path = render_typehead_animation(
+        encoded,
+        noisy,
+        payload,
+        out_dir / "typehead_animation.gif",
+        duration_ms=duration_ms,
+        max_frames=max_frames,
+    )
+    mp4_path = render_typehead_animation_mp4(
+        encoded,
+        payload,
+        out_dir / "typehead_animation.mp4",
+        max_frames=max_frames,
+    )
+    return gif_path, mp4_path
 
 
 def run_pipeline(

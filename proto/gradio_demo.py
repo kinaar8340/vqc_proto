@@ -17,8 +17,12 @@ from demo_core import (
     export_slm_bundle,
     get_build_label,
     plot_results,
-    render_typehead_animation,
+    render_typehead_animation_bundle,
     run_pipeline,
+)
+
+DEMO_SCREENCAST_URL = (
+    "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast.mp4"
 )
 
 logger = logging.getLogger(__name__)
@@ -121,10 +125,16 @@ HFB_CSS = f"""
 .gradio-container .vqc-full-width {{
     width: 100% !important;
 }}
+.gradio-container .main,
+.gradio-container .wrap,
+.gradio-container .contain {{
+    max-width: 100% !important;
+}}
 .gradio-container .vqc-animation-panel {{
     width: 100% !important;
-    min-height: 420px;
+    min-height: 480px;
 }}
+.gradio-container .vqc-animation-panel video,
 .gradio-container .vqc-animation-panel .image-container,
 .gradio-container .vqc-animation-panel img {{
     width: 100% !important;
@@ -198,28 +208,33 @@ def run_demo(
         return err, None, SLM_PACKAGE_IDLE, None, None
 
 
-def animate_typehead(run_cache: tuple | None) -> tuple[str | None, str]:
+def animate_typehead(run_cache: tuple | None) -> tuple[str | None, str | None, str]:
     if run_cache is None:
-        return None, "*Run **Run demo** first, then click **Animate typehead**.*"
+        return None, None, "*Run **Run demo** first, then click **Animate typehead**.*"
 
     encoded, noisy, payload = run_cache
     try:
         out_dir = Path(tempfile.mkdtemp(prefix="vqc_anim_"))
-        gif_path = render_typehead_animation(
+        gif_path, mp4_path = render_typehead_animation_bundle(
             encoded,
             noisy,
             payload,
-            out_dir / "typehead_animation.gif",
+            out_dir,
         )
         n = encoded.intensity_time.shape[0]
+        fmt = "MP4 + GIF" if mp4_path else "GIF"
         msg = (
-            f"**Animation ready** — {n} frames · payload `{payload[:40]}`\n\n"
+            f"**Animation ready** ({fmt}) — {n} frames · payload `{payload[:40]}`\n\n"
             "Four panels: helical phase · OAM intensity · pyramidal pulse · PWM orbs with trails."
         )
-        return str(gif_path), msg
+        return (
+            str(mp4_path) if mp4_path else None,
+            str(gif_path),
+            msg,
+        )
     except Exception as exc:
         logger.exception("animate_typehead failed")
-        return None, f"Animation error: {exc}\n\n{traceback.format_exc()}"
+        return None, None, f"Animation error: {exc}\n\n{traceback.format_exc()}"
 
 
 def build_app() -> gr.Blocks:
@@ -227,6 +242,7 @@ def build_app() -> gr.Blocks:
         title="Orbital Braille — VQC Typehead",
         analytics_enabled=False,
         css=HFB_CSS,
+        fill_width=True,
     ) as demo:
         gr.Markdown(
             "# Orbital Braille — VQC Typehead Prototype\n"
@@ -265,7 +281,18 @@ def build_app() -> gr.Blocks:
             load_paper_btn = gr.Button("Load example from paper", variant="secondary")
         with gr.Accordion("How this maps to VQC claims", open=False):
             gr.Markdown(VQC_CLAIMS_MD)
-        run_btn = gr.Button("Run demo", variant="primary")
+        with gr.Accordion("Example walkthrough (recorded demo)", open=False):
+            gr.HTML(
+                f'<video src="{DEMO_SCREENCAST_URL}" controls playsinline '
+                f'style="width:100%;max-width:100%;border-radius:8px;" '
+                f'poster="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png">'
+                f"Your browser does not support video.</video>"
+            )
+            gr.Markdown(
+                f"[Direct MP4 link]({DEMO_SCREENCAST_URL}) · "
+                "same flow as **Run demo** → **Animate typehead**"
+            )
+        run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
         gr.Markdown(
             "**Example payloads:** `I live in Oregon` (4 orbs, patent Fig. 1) · "
             "`VQC prototype` (4 orbs) · `Hello OAM` (2 orbs)"
@@ -285,15 +312,20 @@ def build_app() -> gr.Blocks:
             variant="secondary",
             elem_classes=["vqc-full-width"],
         )
-        animation = gr.Image(
-            label="Typehead animation (GIF)",
+        animation_video = gr.Video(
+            label="Typehead animation (MP4)",
+            height=540,
+            elem_classes=["vqc-animation-panel"],
+        )
+        animation_gif = gr.Image(
+            label="Typehead animation (GIF download)",
             type="filepath",
-            height=520,
+            height=360,
             elem_classes=["vqc-animation-panel"],
         )
         animation_info = gr.Markdown(
-            "*After **Run demo**, click **Animate typehead** for a full-width per-run GIF "
-            "(phase · intensity · pulse · orb trails).*"
+            "*After **Run demo**, click **Animate typehead** for a full-width per-run animation "
+            "(MP4 player + GIF — phase · intensity · pulse · orb trails).*"
         )
         with gr.Accordion("SLM package download", open=False):
             slm_info = gr.Markdown(SLM_PACKAGE_IDLE)
@@ -308,7 +340,11 @@ def build_app() -> gr.Blocks:
             [payload, num_orbs, resolution, seed, gamma_1, export_slm_frames],
             [metrics, figure, slm_info, slm_file, run_cache],
         )
-        animate_btn.click(animate_typehead, inputs=[run_cache], outputs=[animation, animation_info])
+        animate_btn.click(
+            animate_typehead,
+            inputs=[run_cache],
+            outputs=[animation_video, animation_gif, animation_info],
+        )
         load_paper_btn.click(load_patent_example, outputs=[payload, num_orbs, gamma_1])
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "

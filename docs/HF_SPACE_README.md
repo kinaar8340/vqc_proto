@@ -27,10 +27,14 @@ The demo runs the full encode → turbulence → decode loop and shows a **6-pan
 ## Watch the typehead process
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/typehead_demo.gif" alt="Animated typehead: OAM intensity and PWM-gated orbs" width="100%" style="max-width: 820px; border-radius: 8px;" />
+  <video src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast.mp4" controls width="100%" style="max-width: 900px; border-radius: 8px;"></video>
 </p>
 
-*Left: intensity on the OAM carrier (donut + Braille lobes). Right: four PWM-gated orbs on circular tracks — orange = gate ON. Payload: patent Figure 1 `"I live in Oregon"`.*
+*Recorded walkthrough of the live Space: **Animate typehead** after **Run demo** — helical phase, OAM intensity, pyramidal pulse, PWM orbs (payload: `"I live in Oregon"`).*
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/typehead_demo.gif" alt="Animated typehead preview" width="100%" style="max-width: 820px; border-radius: 8px;" />
+</p>
 
 ---
 

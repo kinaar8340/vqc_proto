@@ -25,6 +25,8 @@ data/
 !proto/outputs/orbital_braille_demo.png
 *.gif
 !typehead_demo.gif
+*.mp4
+!docs/typehead_screencast.mp4
 *.csv
 *.jpg
 *.jpeg
