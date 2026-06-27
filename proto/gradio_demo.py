@@ -145,6 +145,7 @@ _OPTICS_TERM_NEWLINE_DELAY_S = 0.048
 _OPTICS_TERM_UPLINK_DELAY_S = 0.22
 _OPTICS_TERM_CURSOR = "▌"
 _OPTICS_TERM_LATCH_RELEASE_DELAY_S = 1.0
+_OPTICS_TERM_DPAD_RELEASE_DELAY_S = 0.5
 
 
 def _strip_md_plain(text: str) -> str:
@@ -377,13 +378,19 @@ def _term_keypad_outputs(terminal_text: str, active: str) -> tuple:
     return (terminal_text, *_term_keypad_btn_updates(active), active)
 
 
-def _term_yield_stream_then_release(stream: Iterator[str], *, active: str) -> Iterator[tuple]:
+def _term_yield_stream_then_release(
+    stream: Iterator[str],
+    *,
+    active: str,
+    release_delay: float | None = None,
+) -> Iterator[tuple]:
     """Stream terminal text, latch while typing, release latch after a short pause."""
+    delay = _OPTICS_TERM_LATCH_RELEASE_DELAY_S if release_delay is None else release_delay
     last_partial = ""
     for partial in stream:
         last_partial = partial
         yield _term_keypad_outputs(partial, active)
-    time.sleep(_OPTICS_TERM_LATCH_RELEASE_DELAY_S)
+    time.sleep(delay)
     yield _term_keypad_outputs(last_partial, "")
 
 
@@ -404,7 +411,19 @@ def _make_term_clear_click(active_key: str):
         yield from _term_yield_stream_then_release(
             _stream_optics_terminal_clear(current),
             active=active_key,
+            release_delay=_OPTICS_TERM_DPAD_RELEASE_DELAY_S,
         )
+
+    return handler
+
+
+def _make_term_momentary_click(active_key: str, *, release_delay: float):
+    """Brief latch flash — momentary, no maintained state."""
+
+    def handler(current: str) -> Iterator[tuple]:
+        yield _term_keypad_outputs(current, active_key)
+        time.sleep(release_delay)
+        yield _term_keypad_outputs(current, "")
 
     return handler
 
@@ -1659,7 +1678,10 @@ def build_app() -> gr.Blocks:
                 if nav_key == "clear":
                     continue
                 term_all_btns[nav_key].click(
-                    _make_term_latch_click(nav_key),
+                    _make_term_momentary_click(
+                        nav_key,
+                        release_delay=_OPTICS_TERM_DPAD_RELEASE_DELAY_S,
+                    ),
                     inputs=[optics_terminal],
                     outputs=term_keypad_outputs,
                 )
