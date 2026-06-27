@@ -639,6 +639,8 @@ def _nav_to_page(page: str) -> tuple:
         _home_tab_update(on_demo_page=on_demo),
         _source_tab_btn_update(active=not on_demo),
         *closed,
+        _home_tab_update(on_demo_page=on_demo),
+        _source_tab_btn_update(active=not on_demo),
         page,
     )
 
@@ -1095,8 +1097,15 @@ footer {{
         inset 0 2px 8px rgba(255, 220, 150, 0.08),
         inset 0 -4px 14px rgba(0, 0, 0, 0.55),
         0 8px 22px rgba(0, 0, 0, 0.45) !important;
-    padding: 0.85rem 1rem 1rem !important;
+    padding: 0 1rem 1rem !important;
     margin: 0.5rem 0 0.75rem 0 !important;
+    gap: 0 !important;
+}}
+.gradio-container .vqc-optics-panel > .gap {{
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }}
 .gradio-container .vqc-optics-panel > .block,
 .gradio-container .vqc-optics-panel .block {{
@@ -1109,12 +1118,15 @@ footer {{
     flex-wrap: wrap !important;
     align-items: center !important;
     gap: 0.75rem 1.1rem !important;
-    margin: 0.35rem 0 0.65rem 0 !important;
-    padding: 0.55rem 0.75rem 0.6rem !important;
-    border: 2px inset #4a3818 !important;
-    border-radius: 10px !important;
+    margin: 0 0 0 0 !important;
+    padding: 0.7rem 0.85rem 1.35rem !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(74, 56, 24, 0.65) !important;
+    border-radius: 10px 10px 0 0 !important;
     background: linear-gradient(180deg, #1f140a 0%, #0f0a06 100%) !important;
     box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.65) !important;
+    width: 100% !important;
+    min-height: 5.25rem !important;
 }}
 .gradio-container .vqc-optics-panel-header > .block,
 .gradio-container .vqc-optics-panel-header > .form,
@@ -1214,7 +1226,10 @@ footer {{
     border: 1px solid #1a4d2a !important;
     border-radius: 10px !important;
     padding: 0.5rem 0.6rem 0.45rem !important;
-    margin: 0 0 0.55rem 0 !important;
+    margin: 0.55rem 0 0.55rem 0 !important;
+}}
+.gradio-container .vqc-animations-nav-row {{
+    margin: 0.35rem 0 0.65rem 0 !important;
 }}
 .gradio-container .vqc-optics-panel .vqc-optics-terminal textarea {{
     min-height: 13.5rem !important;
@@ -1661,46 +1676,6 @@ def build_app() -> gr.Blocks:
         current_page = gr.State("demo")
         newhere_open = gr.State(False)
         claims_open = gr.State(False)
-        with gr.Row(elem_classes=["vqc-optics-panel-header"]):
-            gr.HTML(OPTICS_LOGO_HTML)
-            with gr.Column(elem_classes=["vqc-optics-panel-nav"], scale=1):
-                with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-panel-source-row"]):
-                    gr.HTML('<span class="vqc-source-label">Source:</span>')
-                    tab_demo_btn = gr.Button(
-                        "Live Demo",
-                        elem_classes=["vqc-source-tab", "active"],
-                        interactive=False,
-                        scale=0,
-                        variant="secondary",
-                    )
-                    tab_anim_btn = gr.Button(
-                        "Animations",
-                        elem_classes=["vqc-source-tab"],
-                        scale=0,
-                        variant="secondary",
-                    )
-                with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
-                    gr.HTML('<span class="vqc-source-label">Links:</span>')
-                    gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
-                    gr.HTML(
-                        _external_tab_html(
-                            "SLM Quickstart",
-                            f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
-                            "slm",
-                        )
-                    )
-                    tab_claims_btn = gr.Button(
-                        "Claims",
-                        elem_classes=["vqc-source-tab"],
-                        scale=0,
-                        variant="secondary",
-                    )
-                    tab_newhere_btn = gr.Button(
-                        "New here?",
-                        elem_classes=["vqc-source-tab"],
-                        scale=0,
-                        variant="secondary",
-                    )
         with gr.Column(visible=False, elem_classes=["vqc-links-panel"]) as panel_claims:
             with gr.Row(elem_classes=["vqc-panel-header-row"]):
                 gr.Markdown("### How this maps to VQC claims")
@@ -1723,6 +1698,46 @@ def build_app() -> gr.Blocks:
             gr.Markdown(ONBOARDING_MD)
         with gr.Column(visible=True) as page_demo:
             with gr.Group(elem_classes=["vqc-optics-panel"]):
+                with gr.Row(elem_classes=["vqc-optics-panel-header"]):
+                    gr.HTML(OPTICS_LOGO_HTML)
+                    with gr.Column(elem_classes=["vqc-optics-panel-nav"], scale=1):
+                        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-panel-source-row"]):
+                            gr.HTML('<span class="vqc-source-label">Source:</span>')
+                            tab_demo_btn = gr.Button(
+                                "Live Demo",
+                                elem_classes=["vqc-source-tab", "active"],
+                                interactive=False,
+                                scale=0,
+                                variant="secondary",
+                            )
+                            tab_anim_btn = gr.Button(
+                                "Animations",
+                                elem_classes=["vqc-source-tab"],
+                                scale=0,
+                                variant="secondary",
+                            )
+                        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
+                            gr.HTML('<span class="vqc-source-label">Links:</span>')
+                            gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
+                            gr.HTML(
+                                _external_tab_html(
+                                    "SLM Quickstart",
+                                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+                                    "slm",
+                                )
+                            )
+                            tab_claims_btn = gr.Button(
+                                "Claims",
+                                elem_classes=["vqc-source-tab"],
+                                scale=0,
+                                variant="secondary",
+                            )
+                            tab_newhere_btn = gr.Button(
+                                "New here?",
+                                elem_classes=["vqc-source-tab"],
+                                scale=0,
+                                variant="secondary",
+                            )
                 optics_terminal = gr.Textbox(
                     label="Matrix status display — selection menu · d-pad nav",
                     value=_optics_terminal_menu(0),
@@ -1964,6 +1979,21 @@ def build_app() -> gr.Blocks:
                 ).then(run_demo, inputs=run_inputs, outputs=run_outputs)
 
         with gr.Column(visible=False, elem_classes=["vqc-animations-page"]) as page_animations:
+            with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-animations-nav-row"]):
+                gr.HTML('<span class="vqc-source-label">Source:</span>')
+                anim_tab_demo_btn = gr.Button(
+                    "Live Demo",
+                    elem_classes=["vqc-source-tab"],
+                    scale=0,
+                    variant="secondary",
+                )
+                anim_tab_anim_btn = gr.Button(
+                    "Animations",
+                    elem_classes=["vqc-source-tab", "active"],
+                    interactive=False,
+                    scale=0,
+                    variant="secondary",
+                )
             gr.Markdown("## Animations")
             gr.Markdown(ANIMATIONS_INTRO_MD)
             gr.HTML(_screencast_grid_html())
@@ -1982,10 +2012,14 @@ def build_app() -> gr.Blocks:
             panel_claims,
             tab_claims_btn,
             claims_open,
+            anim_tab_demo_btn,
+            anim_tab_anim_btn,
             current_page,
         ]
         tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
         tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+        anim_tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
+        anim_tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
         tab_newhere_btn.click(_toggle_newhere, inputs=[newhere_open], outputs=newhere_outputs)
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
