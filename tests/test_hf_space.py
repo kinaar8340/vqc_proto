@@ -15,3 +15,5 @@ def test_hf_space_app_imports():
 
     assert app.demo is not None
     assert hasattr(app, "run_demo")
+    assert hasattr(app, "load_patent_example")
+    assert app.PATENT_FIGURE1_PAYLOAD == "I live in Oregon"
