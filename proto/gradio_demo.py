@@ -123,7 +123,7 @@ _VQC_TAB_ORANGE_TEXT = "#fdba74"
 _VQC_MATRIX_GREEN = "#33ff66"
 _VQC_MATRIX_GREEN_BG = "#0a1f12"
 _VQC_LOGO_GOLD = "#c9a227"
-_VQC_HOME_KEY_BG = "#454545"
+_VQC_HOME_KEY_BG = "#000000"
 
 ANIMATIONS_INTRO_MD = (
     "Recorded end-to-end flow: pick a preset or **Run demo**, then **Animate typehead** — "
@@ -1381,7 +1381,7 @@ footer {{
     text-shadow: 0 0 6px rgba(51, 255, 102, 0.35) !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
-    background: #525252 !important;
+    background: #141414 !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active),
 .gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active) span {{
