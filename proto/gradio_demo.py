@@ -424,6 +424,32 @@ footer {{
     font-size: 0.9rem;
     margin: 0 0 0.5rem 0;
 }}
+.gradio-container .vqc-animations-page .markdown h2 {{
+    font-size: 1.35rem !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
+}}
+.gradio-container .vqc-animations-page .markdown p {{
+    font-size: 0.92rem !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
+    line-height: 1.45 !important;
+}}
+.gradio-container .vqc-screencast-wrap {{
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: min(780px, 86vw) !important;
+    margin: 0.2rem auto 0.45rem !important;
+}}
+.gradio-container .vqc-screencast-video {{
+    width: 100% !important;
+    height: auto !important;
+    max-height: min(42vh, 400px) !important;
+    object-fit: contain !important;
+    border-radius: 8px !important;
+    display: block !important;
+    background: rgba(10, 8, 24, 0.35) !important;
+}}
 .gradio-container .markdown blockquote {{
     border-left-color: rgba(255, 180, 80, 0.5) !important;
     background: transparent !important;
@@ -787,14 +813,14 @@ def build_app() -> gr.Blocks:
                     outputs=[payload, num_orbs, gamma_1, noise_level],
                 ).then(run_demo, inputs=run_inputs, outputs=run_outputs)
 
-        with gr.Column(visible=False) as page_animations:
+        with gr.Column(visible=False, elem_classes=["vqc-animations-page"]) as page_animations:
             gr.Markdown("## Animations")
             gr.Markdown(ANIMATIONS_INTRO_MD)
             gr.HTML(
-                f'<video src="{DEMO_SCREENCAST_URL}" controls playsinline '
-                f'style="width:100%;max-width:100%;border-radius:8px;" '
+                f'<div class="vqc-screencast-wrap">'
+                f'<video class="vqc-screencast-video" src="{DEMO_SCREENCAST_URL}" controls playsinline '
                 f'poster="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png">'
-                f"Your browser does not support video.</video>"
+                f"Your browser does not support video.</video></div>"
             )
             gr.Markdown(
                 f"[Direct MP4 link]({DEMO_SCREENCAST_URL}) · "
