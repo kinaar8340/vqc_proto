@@ -17,6 +17,7 @@ from demo_core import (  # noqa: E402
     PATENT_FIGURE1_PAYLOAD,
     export_slm_bundle,
     get_build_label,
+    render_typehead_animation,
     run_pipeline,
 )
 
@@ -54,6 +55,14 @@ def test_export_slm_bundle_zip_contents():
             assert not any(n.startswith("frames/") for n in names)
         assert "Holoeye PLUTO-2" in readme
         assert "phase_stack.npy" in readme
+
+
+def test_render_typehead_animation(tmp_path):
+    _, encoded, noisy, _, _, _ = run_pipeline("Hi", 2, quick=True, seed=1)
+    out = tmp_path / "anim.gif"
+    render_typehead_animation(encoded, noisy, "Hi", out, max_frames=8)
+    assert out.is_file()
+    assert out.stat().st_size > 1000
 
 
 def test_get_build_label():

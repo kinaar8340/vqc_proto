@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import zipfile
 from pathlib import Path
 
@@ -214,6 +215,149 @@ def plot_results(encoded, noisy, decoded, out_dir: Path, payload: str) -> Path:
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     return path
+
+
+def _style_dark_axes(axes) -> None:
+    for ax in np.atleast_1d(axes).flat:
+        ax.set_facecolor("#0a0818")
+        ax.tick_params(colors="#aaa")
+        for spine in ax.spines.values():
+            spine.set_color("#444")
+
+
+def _render_animation_frame(
+    encoded,
+    payload: str,
+    frame_idx: int,
+    n_frames: int,
+    trail: list[list[tuple[float, float]]],
+) -> "Image.Image":
+    from PIL import Image
+
+    t_idx = min(frame_idx, encoded.intensity_time.shape[0] - 1)
+    t = float(encoded.t[t_idx])
+    t_max = float(encoded.t[-1])
+    extent = [-2.5, 2.5, -2.5, 2.5]
+    t_ns = encoded.t * 1e9
+
+    fig, axes = plt.subplots(2, 2, figsize=(9.2, 5.4), facecolor="#0a0818")
+    short_payload = payload[:28] + ("…" if len(payload) > 28 else "")
+    fig.suptitle(
+        f"Orbital Braille typehead  ·  \"{short_payload}\"  ·  "
+        f"frame {frame_idx + 1}/{n_frames}",
+        color="#f0e6ff",
+        fontsize=10,
+        fontweight="bold",
+    )
+    ax_phase, ax_int, ax_pulse, ax_orb = axes.flat
+    _style_dark_axes(axes)
+
+    im0 = ax_phase.imshow(
+        np.angle(encoded.field_time[t_idx]),
+        cmap="twilight",
+        extent=extent,
+        origin="lower",
+        vmin=-np.pi,
+        vmax=np.pi,
+    )
+    ax_phase.set_title("Helical phase (OAM carrier)", color="#ddd", fontsize=9)
+    plt.colorbar(im0, ax=ax_phase, fraction=0.046)
+
+    im1 = ax_int.imshow(
+        encoded.intensity_time[t_idx],
+        cmap="inferno",
+        extent=extent,
+        origin="lower",
+    )
+    ax_int.set_title("Intensity — donut + Braille lobes", color="#ddd", fontsize=9)
+    plt.colorbar(im1, ax=ax_int, fraction=0.046)
+
+    ax_pulse.plot(t_ns, encoded.pulse, color="#6eb5ff", lw=1.8)
+    ax_pulse.fill_between(t_ns, 0, encoded.pulse, alpha=0.25, color="#6eb5ff")
+    ax_pulse.axvline(t_ns[t_idx], color="#ff8c42", lw=2, alpha=0.9)
+    ax_pulse.scatter([t_ns[t_idx]], [encoded.pulse[t_idx]], c="#ff8c42", s=40, zorder=5)
+    ax_pulse.set_xlim(t_ns[0], t_ns[-1])
+    ax_pulse.set_ylim(0, max(float(encoded.pulse.max()) * 1.1, 0.1))
+    ax_pulse.set_title("Pyramidal FM pulse", color="#ddd", fontsize=9)
+    ax_pulse.set_xlabel("Time (ns)", color="#aaa")
+    ax_pulse.grid(True, alpha=0.2, color="#555")
+
+    for i, orb in enumerate(encoded.orbs):
+        theta = orb.phase0 + orb.omega * t
+        x0 = orb.radius * np.cos(theta)
+        y0 = orb.radius * np.sin(theta)
+        trail[i].append((x0, y0))
+        if len(trail[i]) > 8:
+            trail[i] = trail[i][-8:]
+
+        ring = plt.Circle((0, 0), orb.radius, fill=False, linestyle="--", alpha=0.3, color="#888")
+        ax_orb.add_patch(ring)
+
+        for age, (tx, ty) in enumerate(trail[i][:-1]):
+            alpha = 0.15 + 0.07 * age
+            ax_orb.scatter(tx, ty, s=30, c="#8888aa", alpha=alpha, zorder=1)
+
+        pwm_on = (np.sin(2 * np.pi * orb.omega * t / t_max) + 1) / 2 < orb.pwm_duty
+        color = "#ff8c42" if pwm_on else "#4a5568"
+        ax_orb.scatter(x0, y0, s=160, c=color, edgecolors="white", linewidths=0.7, zorder=3)
+        ax_orb.annotate(f"ℓ={orb.ell}", (x0, y0), fontsize=7, ha="center", va="bottom", color="#eee")
+
+    ax_orb.set_xlim(-1.15, 1.15)
+    ax_orb.set_ylim(-1.15, 1.15)
+    ax_orb.set_aspect("equal")
+    ax_orb.set_title("PWM-gated orbs (orange = ON)", color="#ddd", fontsize=9)
+    ax_orb.grid(True, alpha=0.2, color="#555")
+
+    fig.text(
+        0.5,
+        0.01,
+        f"BMGL phase snapshot frame {t_idx + 1}  ·  shard carrier evolving in time",
+        ha="center",
+        fontsize=7,
+        color="#999",
+    )
+
+    plt.tight_layout(rect=[0, 0.02, 1, 0.96])
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=100, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    buf.seek(0)
+    return Image.open(buf).convert("RGB")
+
+
+def render_typehead_animation(
+    encoded,
+    noisy: np.ndarray,
+    payload: str,
+    out_path: Path,
+    *,
+    duration_ms: int = 110,
+    max_frames: int | None = None,
+) -> Path:
+    """Build a shareable GIF from an encode result (unique per run/settings)."""
+    from PIL import Image
+
+    n_frames = encoded.intensity_time.shape[0]
+    if max_frames is not None:
+        n_frames = min(n_frames, max_frames)
+
+    trail: list[list[tuple[float, float]]] = [[] for _ in encoded.orbs]
+    frames = [
+        _render_animation_frame(encoded, payload, i, n_frames, trail)
+        for i in range(n_frames)
+    ]
+
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    frames[0].save(
+        out_path,
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration_ms,
+        loop=0,
+        optimize=True,
+    )
+    return out_path
 
 
 def run_pipeline(

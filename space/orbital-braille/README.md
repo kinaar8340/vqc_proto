@@ -96,7 +96,8 @@ flowchart TB
 5. Adjust **γ₁** (p-wave BMGL strength) — higher = stronger noise inhibition in the model.
 6. Optionally check **Include SLM-ready phase frames** for PNG sequences in the zip.
 7. Click **Run demo** → read **Metrics**, view the **6-panel output**.
-8. Expand **SLM package download** → file list + `slm_package.zip`.
+8. Click **Animate typehead** → per-run GIF (phase · intensity · pulse · orb trails) — unique to your payload/settings.
+9. Expand **SLM package download** → file list + `slm_package.zip`.
 
 ---
 

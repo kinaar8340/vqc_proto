@@ -17,6 +17,7 @@ from demo_core import (
     export_slm_bundle,
     get_build_label,
     plot_results,
+    render_typehead_animation,
     run_pipeline,
 )
 
@@ -133,7 +134,7 @@ def run_demo(
     seed: float,
     gamma_1: float,
     export_slm_frames: bool,
-) -> tuple[str, str | None, str, str | None]:
+) -> tuple[str, str | None, str, str | None, tuple | None]:
     if not payload.strip():
         payload = DEFAULT_PAYLOAD
 
@@ -171,11 +172,36 @@ def run_demo(
             + ("\n- frames/ (PNG sequence)" if export_slm_frames else "")
         )
 
-        return metrics, fig_path, slm_info, str(zip_path)
+        run_cache = (encoded, noisy, payload)
+        return metrics, fig_path, slm_info, str(zip_path), run_cache
     except Exception as exc:
         logger.exception("run_demo failed for payload=%r", payload)
         err = f"Error: {exc}\n\n{traceback.format_exc()}"
-        return err, None, SLM_PACKAGE_IDLE, None
+        return err, None, SLM_PACKAGE_IDLE, None, None
+
+
+def animate_typehead(run_cache: tuple | None) -> tuple[str | None, str]:
+    if run_cache is None:
+        return None, "*Run **Run demo** first, then click **Animate typehead**.*"
+
+    encoded, noisy, payload = run_cache
+    try:
+        out_dir = Path(tempfile.mkdtemp(prefix="vqc_anim_"))
+        gif_path = render_typehead_animation(
+            encoded,
+            noisy,
+            payload,
+            out_dir / "typehead_animation.gif",
+        )
+        n = encoded.intensity_time.shape[0]
+        msg = (
+            f"**Animation ready** — {n} frames · payload `{payload[:40]}`\n\n"
+            "Four panels: helical phase · OAM intensity · pyramidal pulse · PWM orbs with trails."
+        )
+        return str(gif_path), msg
+    except Exception as exc:
+        logger.exception("animate_typehead failed")
+        return None, f"Animation error: {exc}\n\n{traceback.format_exc()}"
 
 
 def build_app() -> gr.Blocks:
@@ -226,9 +252,17 @@ def build_app() -> gr.Blocks:
             "**Example payloads:** `I live in Oregon` (4 orbs, patent Fig. 1) · "
             "`VQC prototype` (4 orbs) · `Hello OAM` (2 orbs)"
         )
+        run_cache = gr.State(value=None)
         with gr.Row():
             metrics = gr.Textbox(label="Metrics", lines=12)
             figure = gr.Image(label="6-panel output", type="filepath")
+        with gr.Row():
+            animate_btn = gr.Button("Animate typehead", variant="secondary")
+            animation = gr.Image(label="Typehead animation (GIF)", type="filepath")
+        animation_info = gr.Markdown(
+            "*After **Run demo**, click **Animate typehead** for a per-run GIF "
+            "(phase · intensity · pulse · orb trails).*"
+        )
         with gr.Accordion("SLM package download", open=False):
             slm_info = gr.Markdown(SLM_PACKAGE_IDLE)
             slm_file = gr.File(
@@ -240,8 +274,9 @@ def build_app() -> gr.Blocks:
         run_btn.click(
             run_demo,
             [payload, num_orbs, resolution, seed, gamma_1, export_slm_frames],
-            [metrics, figure, slm_info, slm_file],
+            [metrics, figure, slm_info, slm_file, run_cache],
         )
+        animate_btn.click(animate_typehead, inputs=[run_cache], outputs=[animation, animation_info])
         load_paper_btn.click(load_patent_example, outputs=[payload, num_orbs, gamma_1])
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
