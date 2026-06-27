@@ -301,55 +301,104 @@ def _stream_optics_terminal_clear(current: str) -> Iterator[str]:
     yield ""
 
 
-TERM_KEYPAD_KEYS: tuple[str, ...] = ("home", "status", "demo", "build", "help", "clr")
-TERM_KEYPAD_FILLER_COLS = 10
+TERM_KEYPAD_COLS = 6
+TERM_KEYPAD_ROWS = 3
+TERM_KEYPAD_COUNT = TERM_KEYPAD_COLS * TERM_KEYPAD_ROWS
+TERM_KEYPAD_DEFINED: dict[int, str] = {
+    1: "home",
+    2: "status",
+    3: "demo",
+    4: "build",
+    5: "help",
+    6: "clr",
+}
+TERM_KEYPAD_STREAMERS: dict[str, Callable[[], Iterator[str]]] = {}
 
 
-def _term_key_btn_classes(key: str, active: str) -> list[str]:
-    """BlackBerry-style key cap classes; orange latch on the active key."""
+def _term_key_id(index: int) -> str:
+    return f"key{index}"
+
+
+TERM_KEYPAD_KEYS: tuple[str, ...] = tuple(_term_key_id(i) for i in range(1, TERM_KEYPAD_COUNT + 1))
+
+
+def _term_keypad_label(index: int) -> str:
+    """Defined keys show keypad_keyN; undefined slots stay blank."""
+    if index in TERM_KEYPAD_DEFINED:
+        return f"keypad_key{index}"
+    return " "
+
+
+def _term_key_btn_classes(key: str, active: str, *, blank: bool = False) -> list[str]:
+    """Green off-state caps; orange text + border latch on the active key."""
     classes = ["vqc-optics-calc-btn", "vqc-bb-key"]
+    if blank:
+        classes.append("vqc-bb-key-blank")
     if key == active:
         classes.append("active")
     return classes
 
 
 def _term_keypad_btn_updates(active: str) -> tuple:
-    return tuple(gr.update(elem_classes=_term_key_btn_classes(key, active)) for key in TERM_KEYPAD_KEYS)
+    return tuple(
+        gr.update(
+            elem_classes=_term_key_btn_classes(
+                _term_key_id(index),
+                active,
+                blank=index not in TERM_KEYPAD_DEFINED,
+            )
+        )
+        for index in range(1, TERM_KEYPAD_COUNT + 1)
+    )
 
 
 def _term_keypad_outputs(terminal_text: str, active: str) -> tuple:
     return (terminal_text, *_term_keypad_btn_updates(active), active)
 
 
-def _term_stream_with_latch(stream_fn: Callable[[], Iterator[str]], *, mode: str) -> Iterator[tuple]:
+def _term_stream_with_latch(stream_fn: Callable[[], Iterator[str]], *, active: str) -> Iterator[tuple]:
     """Stream terminal text and latch orange active state on the pressed key."""
     for partial in stream_fn():
-        yield _term_keypad_outputs(partial, mode)
+        yield _term_keypad_outputs(partial, active)
 
 
-def _term_clear_with_latch(current: str) -> Iterator[tuple]:
-    for partial in _stream_optics_terminal_clear(current):
-        yield _term_keypad_outputs(partial, "clr")
+def _make_term_stream_click(active_key: str, stream_fn: Callable[[], Iterator[str]]):
+    def handler() -> Iterator[tuple]:
+        yield from _term_stream_with_latch(stream_fn, active=active_key)
+
+    return handler
 
 
-def _term_click_home() -> Iterator[tuple]:
-    yield from _term_stream_with_latch(_stream_optics_terminal_home, mode="home")
+def _make_term_clear_click(active_key: str):
+    def handler(current: str) -> Iterator[tuple]:
+        for partial in _stream_optics_terminal_clear(current):
+            yield _term_keypad_outputs(partial, active_key)
+
+    return handler
 
 
-def _term_click_status() -> Iterator[tuple]:
-    yield from _term_stream_with_latch(_stream_optics_terminal_status, mode="status")
+def _make_term_latch_click(active_key: str):
+    """Undefined keypad slots — latch orange only, terminal unchanged."""
+
+    def handler(current: str) -> Iterator[tuple]:
+        yield _term_keypad_outputs(current, active_key)
+
+    return handler
 
 
-def _term_click_demo() -> Iterator[tuple]:
-    yield from _term_stream_with_latch(_stream_optics_terminal_demo, mode="demo")
+def _register_term_keypad_streamers() -> None:
+    TERM_KEYPAD_STREAMERS.update(
+        {
+            "home": _stream_optics_terminal_home,
+            "status": _stream_optics_terminal_status,
+            "demo": _stream_optics_terminal_demo,
+            "build": _stream_optics_terminal_build,
+            "help": _stream_optics_terminal_help,
+        }
+    )
 
 
-def _term_click_build() -> Iterator[tuple]:
-    yield from _term_stream_with_latch(_stream_optics_terminal_build, mode="build")
-
-
-def _term_click_help() -> Iterator[tuple]:
-    yield from _term_stream_with_latch(_stream_optics_terminal_help, mode="help")
+_register_term_keypad_streamers()
 
 
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
@@ -952,47 +1001,46 @@ footer {{
 .gradio-container .vqc-optics-panel .vqc-optics-calc-row:last-child {{
     margin-bottom: 0 !important;
 }}
-.gradio-container .vqc-optics-panel .vqc-bb-filler-row {{
-    opacity: 0.72 !important;
-}}
-.gradio-container .vqc-optics-panel .vqc-bb-space-row {{
-    margin-top: 0.22rem !important;
+.gradio-container .vqc-optics-panel .vqc-bb-grid-row {{
+    margin-bottom: 0.18rem !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-calc-btn,
 .gradio-container .vqc-optics-panel button.vqc-bb-key {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
-    min-height: 1.65rem !important;
+    min-height: 1.75rem !important;
     background: linear-gradient(180deg, #3a3428 0%, #221c14 52%, #14100a 100%) !important;
-    border: 1px solid #2d6b3a !important;
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
+    border: 1px solid {_VQC_TAB_GREEN_BORDER} !important;
+    color: {_VQC_TAB_GREEN_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
     border-radius: 4px !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-    letter-spacing: 0 !important;
-    padding: 0 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 0.56rem !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.02em !important;
+    padding: 0.3rem 0.12rem !important;
+    text-shadow: 0 0 4px rgba(125, 255, 154, 0.22) !important;
     box-shadow:
         inset 0 1px 0 rgba(255, 240, 200, 0.07),
         inset 0 -2px 3px rgba(0, 0, 0, 0.45),
         0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-bb-key-filler {{
-    min-height: 1.35rem !important;
-    background: linear-gradient(180deg, #2e2820 0%, #1a1610 55%, #100c08 100%) !important;
-    border-color: #3a3024 !important;
-    opacity: 0.85 !important;
-    cursor: default !important;
+.gradio-container .vqc-optics-panel button.vqc-bb-key-blank:not(.active) {{
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    font-size: 0 !important;
+    text-shadow: none !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-bb-key-space {{
-    min-height: 1.45rem !important;
-    flex: 10 1 0 !important;
-    border-radius: 5px !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-bb-key:not(.vqc-bb-key-filler):not(.active):hover {{
-    border-color: #3dff7a !important;
+.gradio-container .vqc-optics-panel button.vqc-bb-key:not(.active):hover {{
+    border-color: {_VQC_TAB_GREEN_BORDER} !important;
+    color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
+    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
     background: linear-gradient(180deg, #454030 0%, #2a2418 52%, #18140c 100%) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-bb-key-blank:not(.active):hover {{
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-bb-key.active,
 .gradio-container .vqc-optics-panel button.vqc-bb-key.active:hover {{
@@ -1003,6 +1051,13 @@ footer {{
     box-shadow:
         inset 0 0 8px rgba(253, 186, 116, 0.18),
         0 0 10px rgba(234, 88, 12, 0.35) !important;
+    text-shadow: 0 0 6px rgba(253, 186, 116, 0.35) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-bb-key-blank.active,
+.gradio-container .vqc-optics-panel button.vqc-bb-key-blank.active:hover {{
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: none !important;
 }}
 .gradio-container .vqc-optics-panel .label-wrap span,
 .gradio-container .vqc-optics-panel label span {{
@@ -1401,71 +1456,27 @@ def build_app() -> gr.Blocks:
                     interactive=False,
                     elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
                 )
-                term_active_key = gr.State("home")
+                term_active_key = gr.State("key1")
+                term_key_btns: dict[str, gr.Button] = {}
                 with gr.Column(elem_classes=["vqc-optics-bb-keyboard"]):
-                    for _ in range(2):
-                        with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-filler-row"]):
-                            for _col in range(TERM_KEYPAD_FILLER_COLS):
-                                gr.Button(
-                                    " ",
-                                    interactive=False,
-                                    elem_classes=["vqc-bb-key", "vqc-bb-key-filler"],
+                    for row in range(TERM_KEYPAD_ROWS):
+                        with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-grid-row"]):
+                            for col in range(TERM_KEYPAD_COLS):
+                                index = row * TERM_KEYPAD_COLS + col + 1
+                                key_id = _term_key_id(index)
+                                term_key_btns[key_id] = gr.Button(
+                                    _term_keypad_label(index),
+                                    elem_classes=_term_key_btn_classes(
+                                        key_id,
+                                        "key1",
+                                        blank=index not in TERM_KEYPAD_DEFINED,
+                                    ),
                                     scale=1,
                                     variant="secondary",
                                 )
-                    with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-action-row"]):
-                        term_home_btn = gr.Button(
-                            " ",
-                            elem_classes=_term_key_btn_classes("home", "home"),
-                            scale=1,
-                            variant="secondary",
-                        )
-                        term_status_btn = gr.Button(
-                            " ",
-                            elem_classes=_term_key_btn_classes("status", "home"),
-                            scale=1,
-                            variant="secondary",
-                        )
-                        term_demo_btn = gr.Button(
-                            " ",
-                            elem_classes=_term_key_btn_classes("demo", "home"),
-                            scale=1,
-                            variant="secondary",
-                        )
-                        term_build_btn = gr.Button(
-                            " ",
-                            elem_classes=_term_key_btn_classes("build", "home"),
-                            scale=1,
-                            variant="secondary",
-                        )
-                        term_help_btn = gr.Button(
-                            " ",
-                            elem_classes=_term_key_btn_classes("help", "home"),
-                            scale=1,
-                            variant="secondary",
-                        )
-                        term_clr_btn = gr.Button(
-                            " ",
-                            elem_classes=_term_key_btn_classes("clr", "home"),
-                            scale=1,
-                            variant="secondary",
-                        )
-                    with gr.Row(elem_classes=["vqc-optics-calc-row", "vqc-bb-space-row"]):
-                        gr.Button(
-                            " ",
-                            interactive=False,
-                            elem_classes=["vqc-bb-key", "vqc-bb-key-filler", "vqc-bb-key-space"],
-                            scale=1,
-                            variant="secondary",
-                        )
                 term_keypad_outputs = [
                     optics_terminal,
-                    term_home_btn,
-                    term_status_btn,
-                    term_demo_btn,
-                    term_build_btn,
-                    term_help_btn,
-                    term_clr_btn,
+                    *[term_key_btns[key_id] for key_id in TERM_KEYPAD_KEYS],
                     term_active_key,
                 ]
                 with gr.Row(elem_classes=["vqc-optics-tune-row"]):
@@ -1538,12 +1549,27 @@ def build_app() -> gr.Blocks:
                     info=slm_frames_info,
                     elem_classes=["vqc-slm-toggle"],
                 )
-            term_home_btn.click(_term_click_home, outputs=term_keypad_outputs)
-            term_status_btn.click(_term_click_status, outputs=term_keypad_outputs)
-            term_demo_btn.click(_term_click_demo, outputs=term_keypad_outputs)
-            term_build_btn.click(_term_click_build, outputs=term_keypad_outputs)
-            term_help_btn.click(_term_click_help, outputs=term_keypad_outputs)
-            term_clr_btn.click(_term_clear_with_latch, inputs=[optics_terminal], outputs=term_keypad_outputs)
+            for index in range(1, TERM_KEYPAD_COUNT + 1):
+                key_id = _term_key_id(index)
+                if index in TERM_KEYPAD_DEFINED:
+                    action = TERM_KEYPAD_DEFINED[index]
+                    if action == "clr":
+                        term_key_btns[key_id].click(
+                            _make_term_clear_click(key_id),
+                            inputs=[optics_terminal],
+                            outputs=term_keypad_outputs,
+                        )
+                    else:
+                        term_key_btns[key_id].click(
+                            _make_term_stream_click(key_id, TERM_KEYPAD_STREAMERS[action]),
+                            outputs=term_keypad_outputs,
+                        )
+                else:
+                    term_key_btns[key_id].click(
+                        _make_term_latch_click(key_id),
+                        inputs=[optics_terminal],
+                        outputs=term_keypad_outputs,
+                    )
 
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
             run_cache = gr.State(value=None)
@@ -1651,7 +1677,10 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
-        demo.load(_term_click_home, outputs=term_keypad_outputs)
+        demo.load(
+            _make_term_stream_click("key1", _stream_optics_terminal_home),
+            outputs=term_keypad_outputs,
+        )
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
