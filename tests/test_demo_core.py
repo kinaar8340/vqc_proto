@@ -21,7 +21,7 @@ from demo_core import (  # noqa: E402
     get_animation_max_frames,
     get_build_label,
     load_example_preset,
-    plot_orb_trajectory_3d,
+    build_orb_trajectory_3d_plotly,
     render_typehead_animation,
     run_pipeline,
 )
@@ -99,11 +99,11 @@ def test_run_pipeline_reports_noise_level():
     assert "Channel noise: 0.50" in metrics
 
 
-def test_plot_orb_trajectory_3d(tmp_path):
+def test_build_orb_trajectory_3d_plotly():
     _, encoded, _, _, _, _ = run_pipeline("Hi", 2, quick=True, seed=0)
-    path = plot_orb_trajectory_3d(encoded, tmp_path, "Hi")
-    assert path.is_file()
-    assert path.stat().st_size > 500
+    fig = build_orb_trajectory_3d_plotly(encoded, "Hi")
+    assert len(fig.data) >= 2
+    assert fig.layout.scene.zaxis.title.text == "Time (ns)"
 
 
 def test_get_animation_max_frames_local_uncapped(monkeypatch):

@@ -93,7 +93,8 @@ to a glyph index.
 ### Three steps (60 seconds)
 1. **Pick a preset** or type a short message (≤ 32 chars works best).
 2. **Run demo** — watch the 6-panel figure: clean phase → noisy phase → intensity donut, plus pulse,
-   spectral shards, and orb layout. Check **shard fidelity** and **Fisher-Rao font separation** in metrics.
+   spectral shards, and orb layout. **Drag/zoom the interactive 3D plot** to follow each orb's helical path.
+   Check **shard fidelity** and **Fisher-Rao font separation** in metrics.
 3. **Animate typehead** — time-lapse of helical phase, intensity, pulse cursor, and PWM-gated orb trails.
    Tune **channel noise** (0 = clean link, 1 = harsh turbulence) and **γ₁** for BMGL inhibition.
 
@@ -319,43 +320,123 @@ def plot_results(encoded, noisy, decoded, out_dir: Path, payload: str) -> Path:
     return path
 
 
-def plot_orb_trajectory_3d(encoded, out_dir: Path, payload: str) -> Path:
-    """Helical orb paths in (x, y, time) — complements the 2D layout panel."""
-    out_dir.mkdir(parents=True, exist_ok=True)
+_PLOTLY_ORB_COLORS = ("#636efa", "#ef553b", "#00cc96", "#ab63fa", "#ffa15a", "#19d3f3")
+
+
+def build_orb_trajectory_3d_plotly(encoded, payload: str):
+    """Interactive Plotly 3D: PWM-gated orb helices in (x, y, time)."""
+    import plotly.graph_objects as go
+
     n = encoded.intensity_time.shape[0]
     t = encoded.t[:n]
     t_ns = t * 1e9
+    t_max = float(t[-1]) if len(t) else 1.0
 
-    fig = plt.figure(figsize=(10, 7), facecolor="#0a0818")
-    ax = fig.add_subplot(111, projection="3d", facecolor="#0a0818")
+    fig = go.Figure()
+    theta_ring = np.linspace(0, 2 * np.pi, 72)
 
-    cmap = plt.cm.tab10
     for i, orb in enumerate(encoded.orbs):
+        color = _PLOTLY_ORB_COLORS[i % len(_PLOTLY_ORB_COLORS)]
         theta = orb.phase0 + orb.omega * t
         x = orb.radius * np.cos(theta)
         y = orb.radius * np.sin(theta)
-        color = cmap(i / max(len(encoded.orbs), 1))
-        ax.plot(x, y, t_ns, color=color, lw=2.0, alpha=0.85, label=f"ℓ={orb.ell}  r={orb.radius:.2f}")
-        ax.scatter(x[0], y[0], t_ns[0], c=[color], s=40, depthshade=False)
-        ax.scatter(x[-1], y[-1], t_ns[-1], c=[color], s=90, marker="*", depthshade=False)
+        pwm_on = ((np.sin(2 * np.pi * orb.omega * t / t_max) + 1) / 2) < orb.pwm_duty
+        hover = [
+            (
+                f"ℓ={orb.ell}<br>"
+                f"r={orb.radius:.2f}<br>"
+                f"t={tn:.2f} ns<br>"
+                f"PWM={'ON' if on else 'off'}<br>"
+                f"x={xv:.3f}  y={yv:.3f}"
+            )
+            for tn, xv, yv, on in zip(t_ns, x, y, pwm_on)
+        ]
+        name = f"ℓ={orb.ell}  r={orb.radius:.2f}  d={orb.pwm_duty:.2f}"
+
+        fig.add_trace(
+            go.Scatter3d(
+                x=x,
+                y=y,
+                z=t_ns,
+                mode="lines+markers",
+                name=name,
+                legendgroup=name,
+                line=dict(color=color, width=5),
+                marker=dict(size=3, color=color, opacity=0.85),
+                text=hover,
+                hoverinfo="text",
+                hovertemplate="%{text}<extra></extra>",
+            )
+        )
+        fig.add_trace(
+            go.Scatter3d(
+                x=[x[0]],
+                y=[y[0]],
+                z=[t_ns[0]],
+                mode="markers",
+                name=f"{name} start",
+                legendgroup=name,
+                showlegend=False,
+                marker=dict(size=6, color=color, symbol="circle", line=dict(width=1, color="#fff")),
+                hoverinfo="skip",
+            )
+        )
+        fig.add_trace(
+            go.Scatter3d(
+                x=[x[-1]],
+                y=[y[-1]],
+                z=[t_ns[-1]],
+                mode="markers",
+                name=f"{name} end",
+                legendgroup=name,
+                showlegend=False,
+                marker=dict(size=9, color=color, symbol="diamond", line=dict(width=1, color="#fff")),
+                hoverinfo="skip",
+            )
+        )
+        fig.add_trace(
+            go.Scatter3d(
+                x=orb.radius * np.cos(theta_ring),
+                y=orb.radius * np.sin(theta_ring),
+                z=np.full_like(theta_ring, t_ns[0]),
+                mode="lines",
+                name=f"{name} ring",
+                legendgroup=name,
+                showlegend=False,
+                line=dict(color=color, width=1, dash="dot"),
+                opacity=0.35,
+                hoverinfo="skip",
+            )
+        )
 
     short = payload[:28] + ("…" if len(payload) > 28 else "")
-    ax.set_title(f'3D typehead trajectories — "{short}"', color="#eee", fontsize=11, pad=12)
-    ax.set_xlabel("x", color="#aaa")
-    ax.set_ylabel("y", color="#aaa")
-    ax.set_zlabel("Time (ns)", color="#aaa")
-    ax.tick_params(colors="#888")
-    ax.xaxis.pane.fill = False
-    ax.yaxis.pane.fill = False
-    ax.zaxis.pane.fill = False
-    ax.grid(True, alpha=0.25)
-    ax.legend(loc="upper left", fontsize=8, framealpha=0.6)
-    ax.view_init(elev=22, azim=-58)
-
-    path = out_dir / "orb_trajectory_3d.png"
-    fig.savefig(path, dpi=120, bbox_inches="tight", facecolor=fig.get_facecolor())
-    plt.close(fig)
-    return path
+    fig.update_layout(
+        title=dict(
+            text=f'3D typehead trajectories — "{short}"',
+            x=0.5,
+            xanchor="center",
+            font=dict(size=14, color="#f0e6ff"),
+        ),
+        paper_bgcolor="#0a0818",
+        plot_bgcolor="#0a0818",
+        font=dict(color="#c9b8ff"),
+        legend=dict(
+            bgcolor="rgba(10, 8, 24, 0.6)",
+            bordercolor="rgba(255,255,255,0.15)",
+            borderwidth=1,
+        ),
+        margin=dict(l=0, r=0, t=48, b=0),
+        height=480,
+        scene=dict(
+            xaxis=dict(title="x", backgroundcolor="#0a0818", gridcolor="#333", zerolinecolor="#444"),
+            yaxis=dict(title="y", backgroundcolor="#0a0818", gridcolor="#333", zerolinecolor="#444"),
+            zaxis=dict(title="Time (ns)", backgroundcolor="#0a0818", gridcolor="#333", zerolinecolor="#444"),
+            bgcolor="#0a0818",
+            aspectmode="data",
+            camera=dict(eye=dict(x=1.45, y=-1.65, z=0.85)),
+        ),
+    )
+    return fig
 
 
 def _style_dark_axes(axes) -> None:

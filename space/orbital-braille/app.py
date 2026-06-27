@@ -23,7 +23,7 @@ from demo_core import (
     get_build_label,
     is_hf_space,
     load_example_preset,
-    plot_orb_trajectory_3d,
+    build_orb_trajectory_3d_plotly,
     plot_results,
     render_typehead_animation_bundle,
     run_pipeline,
@@ -154,6 +154,12 @@ HFB_CSS = f"""
     width: 100% !important;
     object-fit: contain;
 }}
+.gradio-container .vqc-plot3d-panel,
+.gradio-container .vqc-plot3d-panel > div,
+.gradio-container .vqc-plot3d-panel .plot-container {{
+    width: 100% !important;
+    min-height: 480px;
+}}
 footer {{ visibility: hidden; }}
 """
 
@@ -172,7 +178,7 @@ def run_demo(
     noise_level: float,
     export_slm_frames: bool,
     progress: gr.Progress = gr.Progress(track_tqdm=False),
-) -> tuple[str, str | None, str | None, str, str | None, tuple | None]:
+) -> tuple[str, str | None, object | None, str, str | None, tuple | None]:
     if not payload.strip():
         payload = DEFAULT_PAYLOAD
 
@@ -195,8 +201,8 @@ def run_demo(
         progress(0.45, desc="Rendering 6-panel figure…")
         fig_path = str(plot_results(encoded, noisy, decoded, out_dir, payload))
 
-        progress(0.65, desc="Building 3D orb trajectories…")
-        fig_3d_path = str(plot_orb_trajectory_3d(encoded, out_dir, payload))
+        progress(0.65, desc="Building interactive 3D orb trajectories…")
+        fig_3d = build_orb_trajectory_3d_plotly(encoded, payload)
 
         progress(0.8, desc="Packaging SLM export…")
         slm_dir = Path(tempfile.mkdtemp(prefix="vqc_slm_"))
@@ -222,7 +228,7 @@ def run_demo(
 
         run_cache = (encoded, noisy, payload, quick)
         progress(1.0, desc="Done")
-        return metrics, fig_path, fig_3d_path, slm_info, str(zip_path), run_cache
+        return metrics, fig_path, fig_3d, slm_info, str(zip_path), run_cache
     except Exception as exc:
         logger.exception("run_demo failed for payload=%r", payload)
         err = f"Error: {exc}\n\n{traceback.format_exc()}"
@@ -358,11 +364,9 @@ def build_app() -> gr.Blocks:
                     type="filepath",
                     elem_classes=["vqc-figure-panel"],
                 )
-        figure_3d = gr.Image(
-            label="3D orb trajectories (x, y, time)",
-            type="filepath",
-            height=420,
-            elem_classes=["vqc-figure-panel"],
+        figure_3d = gr.Plot(
+            label="3D orb trajectories — drag to rotate · scroll to zoom",
+            elem_classes=["vqc-plot3d-panel"],
         )
         animate_btn = gr.Button(
             "Animate typehead",
