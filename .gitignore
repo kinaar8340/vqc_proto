@@ -26,7 +26,8 @@ data/
 *.gif
 !typehead_demo.gif
 *.mp4
-!docs/typehead_screencast.mp4
+!docs/typehead_screencast_1.mp4
+!docs/typehead_screencast_2.mp4
 *.csv
 *.jpg
 *.jpeg

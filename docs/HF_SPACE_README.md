@@ -30,7 +30,7 @@ The demo runs the full encode → turbulence → decode loop and shows a **6-pan
 
 Open the **Animations** tab in the app (Source bar) for the full recorded screencast — preset or **Run demo** → **Animate typehead** (helical phase, OAM intensity, pyramidal pulse, PWM orbs; payload: `"I live in Oregon"`).
 
-[Direct MP4](https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast.mp4)
+[Screencast 1](https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast_1.mp4) · [Screencast 2](https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast_2.mp4)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/typehead_demo.gif" alt="Animated typehead preview" width="100%" style="max-width: 820px; border-radius: 8px;" />

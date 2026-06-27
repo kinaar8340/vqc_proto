@@ -30,9 +30,21 @@ from demo_core import (
     run_pipeline,
 )
 
-DEMO_SCREENCAST_URL = (
-    "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast.mp4"
+DEMO_SCREENCAST_BASE = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs"
+DEMO_SCREENCAST_URLS = (
+    f"{DEMO_SCREENCAST_BASE}/typehead_screencast_1.mp4",
+    f"{DEMO_SCREENCAST_BASE}/typehead_screencast_2.mp4",
 )
+
+
+def _screencast_dual_html() -> str:
+    """Side-by-side recorded demo clips on the Animations page."""
+    clips = "".join(
+        f'<video class="vqc-screencast-video" src="{url}" controls playsinline '
+        f'poster="{HFB_RAW_URL}">Your browser does not support video.</video>'
+        for url in DEMO_SCREENCAST_URLS
+    )
+    return f'<div class="vqc-screencast-wrap">{clips}</div>'
 
 logger = logging.getLogger(__name__)
 
@@ -485,14 +497,19 @@ footer {{
 }}
 .gradio-container .vqc-screencast-wrap {{
     display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
     justify-content: center !important;
-    align-items: center !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
     width: 100% !important;
-    max-width: min(780px, 86vw) !important;
+    max-width: min(1040px, 92vw) !important;
     margin: 0.2rem auto 0.45rem !important;
 }}
 .gradio-container .vqc-screencast-video {{
-    width: 100% !important;
+    flex: 1 1 280px !important;
+    min-width: 0 !important;
+    width: calc(50% - 0.35rem) !important;
     height: auto !important;
     max-height: min(42vh, 400px) !important;
     object-fit: contain !important;
@@ -870,14 +887,10 @@ def build_app() -> gr.Blocks:
         with gr.Column(visible=False, elem_classes=["vqc-animations-page"]) as page_animations:
             gr.Markdown("## Animations")
             gr.Markdown(ANIMATIONS_INTRO_MD)
-            gr.HTML(
-                f'<div class="vqc-screencast-wrap">'
-                f'<video class="vqc-screencast-video" src="{DEMO_SCREENCAST_URL}" controls playsinline '
-                f'poster="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png">'
-                f"Your browser does not support video.</video></div>"
-            )
+            gr.HTML(_screencast_dual_html())
             gr.Markdown(
-                f"[Direct MP4 link]({DEMO_SCREENCAST_URL}) · "
+                f"[Screencast 1]({DEMO_SCREENCAST_URLS[0]}) · "
+                f"[Screencast 2]({DEMO_SCREENCAST_URLS[1]}) · "
                 "same flow as **Run demo** → **Animate typehead** on the **Live Demo** tab."
             )
 
