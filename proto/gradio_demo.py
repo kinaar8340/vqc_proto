@@ -144,7 +144,7 @@ _OPTICS_TERM_CHAR_DELAY_S = 0.014
 _OPTICS_TERM_NEWLINE_DELAY_S = 0.048
 _OPTICS_TERM_UPLINK_DELAY_S = 0.22
 _OPTICS_TERM_CURSOR = "▌"
-_OPTICS_TERM_LATCH_RELEASE_DELAY_S = 2.0
+_OPTICS_TERM_LATCH_RELEASE_DELAY_S = 1.0
 
 
 def _strip_md_plain(text: str) -> str:
@@ -338,6 +338,16 @@ def _term_keypad_label(index: int) -> str:
     return f"{index:02d}"
 
 
+def _term_key_is_defined_prog(key: str) -> bool:
+    """True for assigned prog keys (02–24) that have a real function."""
+    for index in TERM_KEYPAD_DEFINED:
+        if index == 1:
+            continue
+        if _term_key_id(index) == key:
+            return True
+    return False
+
+
 def _term_key_btn_classes(key: str, active: str) -> list[str]:
     """Black/white idle caps; matrix-green latch on active keys (never home)."""
     classes = ["vqc-optics-key"]
@@ -349,6 +359,8 @@ def _term_key_btn_classes(key: str, active: str) -> list[str]:
         classes.append("vqc-optics-key-dpad")
     if key == "clear":
         classes.append("vqc-optics-key-clear")
+    if _term_key_is_defined_prog(key):
+        classes.append("vqc-optics-key-defined")
     if key == active and key != TERM_KEYPAD_HOME_KEY:
         classes.append("active")
     return classes
@@ -1096,10 +1108,24 @@ footer {{
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
     background: #525252 !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):hover {{
+.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active),
+.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active) span {{
+    color: {_VQC_ACCENT} !important;
+    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    text-shadow: 0 0 6px rgba(234, 88, 12, 0.25) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover,
+.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover span {{
+    color: {_VQC_TAB_ORANGE_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):not(.vqc-optics-key-defined):hover {{
     background: #141414 !important;
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover {{
+    background: #141414 !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key.active,
 .gradio-container .vqc-optics-panel button.vqc-optics-key.active:hover {{
