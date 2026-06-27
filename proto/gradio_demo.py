@@ -123,7 +123,6 @@ def main() -> None:
         "server_port": port,
         "show_error": True,
         "show_api": False,
-        "ssr": False,
         "inbrowser": False,
         "share": False if on_hf else True,
     }

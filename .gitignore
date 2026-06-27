@@ -1,14 +1,24 @@
-<<<<<<< HEAD
+# Virtual environments
+.venv/
+.venv*/
+venv/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .pytest_cache/
+*.egg-info/
+
+# Generated outputs (keep checked-in demo figure under proto/)
 outputs/
 !proto/outputs/
 !proto/outputs/orbital_braille_demo.png
 proto/outputs/profile/
 data/
+
+# Binary / media artifacts
 *.pdf
 *.png
 !proto/outputs/orbital_braille_demo.png
@@ -16,11 +26,12 @@ data/
 *.csv
 *.jpg
 *.jpeg
-=======
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-*.egg-info/
+*.raw
+*.npy
+
+# IDE / OS
+.idea/
 .DS_Store
->>>>>>> 6f61b64 (feat: Orbital Braille VQC typehead prototype (local root layout))
+
+# Nested clone guard (accidental duplicate repo)
+/vqc_proto/

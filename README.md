@@ -60,7 +60,7 @@ Reproduces the validated metrics below (Fisher-Rao **0.989 rad**, shard FID **0.
 
 ![Orbital Braille Demo — 4-orb layout, multi-lobe phase, OAM donut + Braille dots, pyramidal pulse, spectral shards](proto/outputs/orbital_braille_demo.png)
 
-**Next steps:** [`proto/README.md`](proto/README.md) · [`GLOSSARY.md`](GLOSSARY.md) · [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) · [`ROADMAP.md`](ROADMAP.md) · Jupyter [`proto/notebooks/orbital_braille_demo.ipynb`](proto/notebooks/orbital_braille_demo.ipynb)
+**Next steps:** [`proto/README.md`](proto/README.md) · [`GLOSSARY.md`](GLOSSARY.md) · [`proto/SLM_QUICKSTART.md`](proto/SLM_QUICKSTART.md) · [`ROADMAP.md`](ROADMAP.md) · Jupyter [`proto/notebooks/orbital_braille_demo.ipynb`](proto/notebooks/orbital_braille_demo.ipynb)
 
 **Web demos:** `python proto/gradio_demo.py` (port 7860) · `streamlit run analysis/dashboard.py` (proto tab auto-loads latest output)
 
@@ -137,42 +137,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python sweep_orbs.py
 
 # Optional: grid search over orbs × γ₁ × r₀ + SLM hologram export
-=======
-# vqc_proto — Orbital Braille Typehead Prototype
-=======
-# Orbital Braille — VQC Typehead Prototype
->>>>>>> bf4d9a6 (docs: align standalone README with vqc_proto repo docs)
-
-Working simulation of the **VQC Typehead / Orbital Braille** embodiment. This is the **standalone layout** of the code in [`kinaar8340/vqc_proto`](https://github.com/kinaar8340/vqc_proto) (integrated layout lives in that repo's `proto/` subdirectory).
-
-The **Vortex Quaternion Conduit (VQC)** multiplexes data into orthogonal OAM modes per DWDM channel, compresses shards via quaternion encoding, and propagates through nested helical beams with BMGL/QEC. Full spec: [VQC Non-Provisional (draft)](https://github.com/kinaar8340/qvpic/blob/main/docs/VQC_NonProvisional_Patent_Application.md).
-
----
-
-## Demo
-
-![Orbital Braille demo](outputs/orbital_braille_demo.png)
-
-**Payload:** `"I live in Oregon"` · **4 orbs** · **92.9% shard fidelity** after p-wave BMGL turbulence
-
-**Full technical doc:** see the expanded [`proto/README.md`](https://github.com/kinaar8340/vqc_proto/blob/main/proto/README.md) on GitHub.
-
----
-
-## Quick start
-
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-
-.venv/bin/python run_demo.py --payload "I live in Oregon" --num-orbs 4
-.venv/bin/python sweep_orbs.py
->>>>>>> 6f61b64 (feat: Orbital Braille VQC typehead prototype (local root layout))
 .venv/bin/python meta_optimize_orbital.py
-.venv/bin/python generate_slm_holograms.py
+.venv/bin/python generate_slm_holograms.py --num-orbs 4
 ```
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 **Docker:** `docker compose run --rm proto-quick` from repo root.
 
 ### Orb count trade-off (current results)
@@ -197,16 +165,16 @@ This simulation constitutes **reduction-to-practice** of the multi-orb point-sou
 
 | Enablement element | Where implemented |
 |--------------------|-------------------|
-| Pyramidal FM pulse → spectral shards | `typehead.py` + Welch PSD in `run_demo.py` |
+| Pyramidal FM pulse → spectral shards | `proto/orbital_braille/typehead.py` + Welch PSD in `proto/run_demo.py` |
 | Quaternion shard compression | `quaternion_codec.py` (Rodrigues-compatible) |
 | OAM Laguerre-Gaussian carrier | `lg_modes.py` |
 | Stable codeword font (emergent constants) | `stable_fonts.py` (350/π, κ, braiding 0.084) |
 | p-wave BMGL error inhibition | `altermagnetic.py` (γ₁ = 1.5) |
-| SLM virtual typehead (no moving parts) | `slm_typehead.py`, `generate_slm_holograms.py` |
+| SLM virtual typehead (no moving parts) | `proto/orbital_braille/slm_typehead.py`, `proto/generate_slm_holograms.py` |
 
-> **Provenance:** Developed June 2026 as sibling repo [`vqc_proto`](https://github.com/kinaar8340/vqc_proto), extending [`vqc_sims_public`](https://github.com/kinaar8340/vqc_sims_public). Reproducible via `run_demo.py` with fixed seed (42). Full claim mapping in [`proto/README.md`](proto/README.md).
+> **Provenance:** Developed June 2026 as sibling repo [`vqc_proto`](https://github.com/kinaar8340/vqc_proto), extending [`vqc_sims_public`](https://github.com/kinaar8340/vqc_sims_public). Reproducible via `proto/run_demo.py` with fixed seed (42). Full claim mapping in [`proto/README.md`](proto/README.md).
 
-**SLM virtual typehead (ready):** [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md) · `python proto/generate_slm_holograms.py --device holoeye_pluto_2`
+**SLM virtual typehead (ready):** [`proto/SLM_QUICKSTART.md`](proto/SLM_QUICKSTART.md) · `python proto/generate_slm_holograms.py --device holoeye_pluto_2`
 
 **Future work (high priority):** SLM bench validation · `meta_optimize_invariants.py` integration · fs-laser helical masks + laser array PoC.
 
@@ -450,46 +418,3 @@ See [`IP_NOTICE.md`](IP_NOTICE.md) · [`LICENSE`](LICENSE) · [`CONTRIBUTING.md`
 **Contact:** [kinaar0@protonmail.com](mailto:kinaar0@protonmail.com)
 
 **Suggested GitHub topics:** `quantum-computing` `photonics` `oam` `optical-communication` `simulation` `prototype`
-=======
-## Modules
-=======
----
->>>>>>> bf4d9a6 (docs: align standalone README with vqc_proto repo docs)
-
-## Orb sweep
-
-| Orbs | Fisher-Rao sep | Shard FID | Glyph FID | Verdict |
-|------|----------------|-----------|-----------|---------|
-| 2 | 0.787 | 0.937 | 0.999 | Cramped alphabet |
-| **4** | **0.989** | **0.929** | 0.868 | **Sweet spot** |
-| 6 | 1.027 | 0.920 | 0.804 | Harder demux |
-
-### Why 4 orbs?
-
-Near-ideal Fisher-Rao glyph separation (~1 rad), >92% shard fidelity through BMGL, extended Braille analog, and feasible SLM/mechanical hardware mapping. See [proto/README.md on GitHub](https://github.com/kinaar8340/vqc_proto/blob/main/proto/README.md) for full rationale and patent alignment.
-
----
-
-## Repository
-
-| Repo / branch | URL |
-|---------------|-----|
-| **vqc_proto** (integrated) | https://github.com/kinaar8340/vqc_proto |
-| Standalone backup branch | https://github.com/kinaar8340/vqc_sims_public/tree/vqc_proto-standalone |
-| Parent simulations | https://github.com/kinaar8340/vqc_sims_public |
-
-```bash
-git clone git@github.com:kinaar8340/vqc_proto.git
-cd vqc_proto/proto   # integrated layout
-```
-
----
-
-## License
-
-<<<<<<< HEAD
-Same as parent repository (see vqc_sims_public).
->>>>>>> 6f61b64 (feat: Orbital Braille VQC typehead prototype (local root layout))
-=======
-CC-BY-NC-SA-4.0 with patent restrictions (see parent [LICENSE](https://github.com/kinaar8340/vqc_proto/blob/main/LICENSE)).
->>>>>>> bf4d9a6 (docs: align standalone README with vqc_proto repo docs)
