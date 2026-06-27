@@ -147,28 +147,71 @@ def _home_tab_update(*, on_demo_page: bool) -> gr.Update:
     return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
 
 
+def _close_links_panels() -> tuple:
+    """Hide both Links-bar panels and reset their tab highlights."""
+    return (
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
+    )
+
+
 def _nav_to_page(page: str) -> tuple:
     """Switch between demo and animations screens; refresh Source tab highlights."""
     on_demo = page == "demo"
+    closed = _close_links_panels()
     return (
         gr.update(visible=on_demo),
         gr.update(visible=not on_demo),
         _home_tab_update(on_demo_page=on_demo),
         _source_tab_btn_update(active=not on_demo),
-        gr.update(visible=False),
-        _source_tab_btn_update(active=False),
-        False,
+        *closed,
         page,
     )
 
 
 def _toggle_newhere(is_open: bool) -> tuple:
-    """Expand/collapse the beginner guide panel below the Links bar."""
+    """Expand/collapse the beginner guide; close Claims if opening New here?."""
     show = not is_open
     return (
         gr.update(visible=show),
         _source_tab_btn_update(active=show),
         show,
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
+    )
+
+
+def _toggle_claims(is_open: bool) -> tuple:
+    """Expand/collapse VQC claims; close New here? if opening Claims."""
+    show = not is_open
+    return (
+        gr.update(visible=show),
+        _source_tab_btn_update(active=show),
+        show,
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
+    )
+
+
+def _minimize_newhere() -> tuple:
+    return (
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
+    )
+
+
+def _minimize_claims() -> tuple:
+    return (
+        gr.update(visible=False),
+        _source_tab_btn_update(active=False),
+        False,
     )
 
 
@@ -372,14 +415,54 @@ footer {{
 .gradio-container .vqc-source-nav-row {{
     margin: 0 0 0.1rem 0 !important;
 }}
-.gradio-container .vqc-newhere-panel {{
+.gradio-container .vqc-links-panel {{
     margin: 0 0 0.35rem 0 !important;
     padding: 0.65rem 0.85rem !important;
 }}
-.gradio-container .vqc-newhere-panel .markdown h3 {{
-    margin: 0 0 0.35rem 0 !important;
+.gradio-container .vqc-links-panel .markdown h3 {{
+    margin: 0 !important;
     font-size: 1rem !important;
     color: #f0e6ff !important;
+}}
+.gradio-container .vqc-panel-header-row {{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    margin: 0 0 0.35rem 0 !important;
+}}
+.gradio-container .vqc-panel-header-row > .block,
+.gradio-container .vqc-panel-header-row > .form {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+}}
+.gradio-container button.vqc-panel-minimize {{
+    flex: 0 0 auto !important;
+    min-width: 2.1rem !important;
+    padding: 0.2rem 0.6rem !important;
+    border-radius: 999px !important;
+    border: 1px solid {_VQC_TAB_GREEN_BORDER} !important;
+    background: {_VQC_TAB_GREEN_BG} !important;
+    color: {_VQC_TAB_GREEN_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT} !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+    opacity: 0.8 !important;
+    cursor: pointer !important;
+}}
+.gradio-container button.vqc-panel-minimize:hover {{
+    border-color: {_VQC_TAB_ORANGE_BORDER} !important;
+    background: {_VQC_TAB_ORANGE_BG} !important;
+    color: {_VQC_TAB_ORANGE_TEXT} !important;
+    -webkit-text-fill-color: {_VQC_TAB_ORANGE_TEXT} !important;
 }}
 .gradio-container .vqc-source-tabs-row > .block,
 .gradio-container .vqc-source-tabs-row > .form,
@@ -742,6 +825,7 @@ def build_app() -> gr.Blocks:
         )
         current_page = gr.State("demo")
         newhere_open = gr.State(False)
+        claims_open = gr.State(False)
         with gr.Row(elem_classes=["vqc-source-tabs-row"]):
             gr.HTML('<span class="vqc-source-label">Source:</span>')
             tab_demo_btn = gr.Button(
@@ -767,14 +851,37 @@ def build_app() -> gr.Blocks:
                     "slm",
                 )
             )
+            tab_claims_btn = gr.Button(
+                "Claims",
+                elem_classes=["vqc-source-tab"],
+                scale=0,
+                variant="secondary",
+            )
             tab_newhere_btn = gr.Button(
                 "New here?",
                 elem_classes=["vqc-source-tab"],
                 scale=0,
                 variant="secondary",
             )
-        with gr.Column(visible=False, elem_classes=["vqc-newhere-panel"]) as panel_newhere:
-            gr.Markdown("### New here? 60-second guide (Selectric typeball → OAM)")
+        with gr.Column(visible=False, elem_classes=["vqc-links-panel"]) as panel_claims:
+            with gr.Row(elem_classes=["vqc-panel-header-row"]):
+                gr.Markdown("### How this maps to VQC claims")
+                claims_minimize_btn = gr.Button(
+                    "▲",
+                    elem_classes=["vqc-panel-minimize"],
+                    scale=0,
+                    variant="secondary",
+                )
+            gr.Markdown(VQC_CLAIMS_MD)
+        with gr.Column(visible=False, elem_classes=["vqc-links-panel"]) as panel_newhere:
+            with gr.Row(elem_classes=["vqc-panel-header-row"]):
+                gr.Markdown("### New here? 60-second guide (Selectric typeball → OAM)")
+                newhere_minimize_btn = gr.Button(
+                    "▲",
+                    elem_classes=["vqc-panel-minimize"],
+                    scale=0,
+                    variant="secondary",
+                )
             gr.Markdown(ONBOARDING_MD)
         gr.HTML(f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>')
 
@@ -820,8 +927,6 @@ def build_app() -> gr.Blocks:
                     interactive=not on_hf,
                     info=slm_frames_info,
                 )
-            with gr.Accordion("How this maps to VQC claims", open=False):
-                gr.Markdown(VQC_CLAIMS_MD)
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
             run_cache = gr.State(value=None)
             with gr.Row(equal_height=True):
@@ -907,6 +1012,8 @@ def build_app() -> gr.Blocks:
             gr.HTML(_screencast_grid_html())
             gr.Markdown(_screencast_links_md())
 
+        newhere_outputs = [panel_newhere, tab_newhere_btn, newhere_open, panel_claims, tab_claims_btn, claims_open]
+        claims_outputs = [panel_claims, tab_claims_btn, claims_open, panel_newhere, tab_newhere_btn, newhere_open]
         nav_outputs = [
             page_demo,
             page_animations,
@@ -915,11 +1022,17 @@ def build_app() -> gr.Blocks:
             panel_newhere,
             tab_newhere_btn,
             newhere_open,
+            panel_claims,
+            tab_claims_btn,
+            claims_open,
             current_page,
         ]
         tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
         tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
-        tab_newhere_btn.click(_toggle_newhere, inputs=[newhere_open], outputs=nav_outputs[4:7])
+        tab_newhere_btn.click(_toggle_newhere, inputs=[newhere_open], outputs=newhere_outputs)
+        tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
+        newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
+        claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
