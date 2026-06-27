@@ -74,7 +74,7 @@ SLM_PACKAGE_IDLE = (
     "- `frames/` — optional PNG sequence (enable checkbox above)"
 )
 
-_VQC_FIELD_FILL = "rgba(10, 8, 24, 0.20)"
+_VQC_FIELD_FILL = "rgba(10, 8, 24, 0.40)"
 
 
 def _build_vqc_theme() -> gr.themes.Base:
