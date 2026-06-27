@@ -155,29 +155,38 @@ def _optics_terminal_frame(title: str, body: str) -> str:
     return f"{title}\n{_OPTICS_TERM_BAR}\n{body}"
 
 
+TERM_KEYPAD_COLS = 6
+TERM_KEYPAD_ROWS = 3
+TERM_KEYPAD_COUNT = TERM_KEYPAD_COLS * TERM_KEYPAD_ROWS
+TERM_KEYPAD_DEFINED: dict[int, str] = {
+    1: "home",
+    2: "status",
+    3: "demo",
+    4: "build",
+    5: "help",
+    6: "clr",
+}
+TERM_KEYPAD_DESCRIPTIONS: dict[int, str] = {
+    1: "Home — boot / keypad legend (this view)",
+    2: "Status — pipeline & environment",
+    3: "Demo — simulation scope (encode→decode)",
+    4: "Build — last updated / commit",
+    5: "Help — keypad reference",
+    6: "Clear — blank display",
+}
+
+
+def _optics_keypad_description_lines() -> str:
+    """Numeric programmable-button legend for the 6×3 keypad."""
+    lines = []
+    for index in range(1, TERM_KEYPAD_COUNT + 1):
+        desc = TERM_KEYPAD_DESCRIPTIONS.get(index, "Unassigned — programmable")
+        lines.append(f"  [{index:2d}]  {desc}")
+    return "\n".join(lines)
+
+
 def _optics_terminal_home() -> str:
-    build = get_build_label().replace("`", "")
-    demo_line = _strip_md_plain(SIMULATION_BANNER_MD).split("\n")[0]
-    return _optics_terminal_frame(
-        "ORBITAL BRAILLE · OPTICS CONTROL PANEL",
-        "\n".join(
-            [
-                "CLI readout online. Use keypad for verbose status.",
-                "",
-                "  HOME   — boot screen (this view)",
-                "  STATUS — pipeline & environment",
-                "  DEMO   — simulation scope (encode→decode)",
-                "  BUILD  — last updated / commit",
-                "  HELP   — keypad legend",
-                "  CLR    — clear display",
-                "",
-                f"[BUILD] {build}",
-                f"[DEMO]  {demo_line}",
-                "",
-                "> Awaiting RUN DEMO…",
-            ]
-        ),
-    )
+    return _optics_terminal_frame("PROGRAMMABLE KEYPAD", _optics_keypad_description_lines())
 
 
 def _optics_terminal_status() -> str:
@@ -226,20 +235,14 @@ def _optics_terminal_build() -> str:
 
 def _optics_terminal_help() -> str:
     return _optics_terminal_frame(
-        "KEYPAD HELP",
+        "KEYPAD REFERENCE",
         "\n".join(
             [
-                "Calculator-style keys drive the matrix readout above.",
+                "6×3 programmable matrix · orange latch = selected · green = idle",
                 "",
-                "  HOME   Boot screen — combined BUILD + DEMO summary",
-                "  STATUS Runtime environment and pipeline notes",
-                "  DEMO   Full simulation-demo disclaimer (verbose)",
-                "  BUILD  Last updated timestamp and commit hash",
-                "  HELP   This legend",
-                "  CLR    Blank the display",
+                _optics_keypad_description_lines(),
                 "",
-                "Tuning knobs and preset keys below are unchanged.",
-                "RUN DEMO remains outside this panel.",
+                "Keys 7–18 reserved for future assignments.",
             ]
         ),
     )
@@ -301,17 +304,6 @@ def _stream_optics_terminal_clear(current: str) -> Iterator[str]:
     yield ""
 
 
-TERM_KEYPAD_COLS = 6
-TERM_KEYPAD_ROWS = 3
-TERM_KEYPAD_COUNT = TERM_KEYPAD_COLS * TERM_KEYPAD_ROWS
-TERM_KEYPAD_DEFINED: dict[int, str] = {
-    1: "home",
-    2: "status",
-    3: "demo",
-    4: "build",
-    5: "help",
-    6: "clr",
-}
 TERM_KEYPAD_STREAMERS: dict[str, Callable[[], Iterator[str]]] = {}
 
 
@@ -323,17 +315,13 @@ TERM_KEYPAD_KEYS: tuple[str, ...] = tuple(_term_key_id(i) for i in range(1, TERM
 
 
 def _term_keypad_label(index: int) -> str:
-    """Defined keys show keypad_keyN; undefined slots stay blank."""
-    if index in TERM_KEYPAD_DEFINED:
-        return f"keypad_key{index}"
-    return " "
+    """Numeric programmable-button labels (1–18)."""
+    return str(index)
 
 
-def _term_key_btn_classes(key: str, active: str, *, blank: bool = False) -> list[str]:
+def _term_key_btn_classes(key: str, active: str) -> list[str]:
     """Green off-state caps; orange text + border latch on the active key."""
     classes = ["vqc-optics-calc-btn", "vqc-bb-key"]
-    if blank:
-        classes.append("vqc-bb-key-blank")
     if key == active:
         classes.append("active")
     return classes
@@ -341,13 +329,7 @@ def _term_key_btn_classes(key: str, active: str, *, blank: bool = False) -> list
 
 def _term_keypad_btn_updates(active: str) -> tuple:
     return tuple(
-        gr.update(
-            elem_classes=_term_key_btn_classes(
-                _term_key_id(index),
-                active,
-                blank=index not in TERM_KEYPAD_DEFINED,
-            )
-        )
+        gr.update(elem_classes=_term_key_btn_classes(_term_key_id(index), active))
         for index in range(1, TERM_KEYPAD_COUNT + 1)
     )
 
@@ -1026,21 +1008,11 @@ footer {{
         inset 0 -2px 3px rgba(0, 0, 0, 0.45),
         0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-bb-key-blank:not(.active) {{
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
-    font-size: 0 !important;
-    text-shadow: none !important;
-}}
 .gradio-container .vqc-optics-panel button.vqc-bb-key:not(.active):hover {{
     border-color: {_VQC_TAB_GREEN_BORDER} !important;
     color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
     -webkit-text-fill-color: {_VQC_TAB_GREEN_TEXT_HOVER} !important;
     background: linear-gradient(180deg, #454030 0%, #2a2418 52%, #18140c 100%) !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-bb-key-blank:not(.active):hover {{
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-bb-key.active,
 .gradio-container .vqc-optics-panel button.vqc-bb-key.active:hover {{
@@ -1052,12 +1024,6 @@ footer {{
         inset 0 0 8px rgba(253, 186, 116, 0.18),
         0 0 10px rgba(234, 88, 12, 0.35) !important;
     text-shadow: 0 0 6px rgba(253, 186, 116, 0.35) !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-bb-key-blank.active,
-.gradio-container .vqc-optics-panel button.vqc-bb-key-blank.active:hover {{
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
-    text-shadow: none !important;
 }}
 .gradio-container .vqc-optics-panel .label-wrap span,
 .gradio-container .vqc-optics-panel label span {{
@@ -1466,11 +1432,7 @@ def build_app() -> gr.Blocks:
                                 key_id = _term_key_id(index)
                                 term_key_btns[key_id] = gr.Button(
                                     _term_keypad_label(index),
-                                    elem_classes=_term_key_btn_classes(
-                                        key_id,
-                                        "key1",
-                                        blank=index not in TERM_KEYPAD_DEFINED,
-                                    ),
+                                    elem_classes=_term_key_btn_classes(key_id, "key1"),
                                     scale=1,
                                     variant="secondary",
                                 )
