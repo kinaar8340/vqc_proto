@@ -1029,6 +1029,13 @@ footer {{
     justify-content: stretch !important;
     width: 100% !important;
 }}
+.gradio-container .vqc-optics-keypad button.vqc-optics-key,
+.gradio-container .vqc-optics-keypad button.vqc-optics-key span {{
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 1.44rem !important;
+    font-weight: 700 !important;
+    line-height: 1.1 !important;
+}}
 .gradio-container .vqc-optics-keypad button.vqc-optics-key {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
@@ -1042,18 +1049,15 @@ footer {{
     border-radius: 8px !important;
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
-    font-family: "Courier New", Courier, monospace !important;
-    font-size: 1.44rem !important;
-    font-weight: 700 !important;
-    line-height: 1.1 !important;
     letter-spacing: 0.03em !important;
     padding: 0.28rem 0.1rem !important;
     box-shadow: none !important;
 }}
-.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad {{
+.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad,
+.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad span {{
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
     font-size: 1.44rem !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     line-height: 1 !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-clear {{
@@ -1061,14 +1065,19 @@ footer {{
     letter-spacing: 0.06em !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home,
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
-    background: {_VQC_MATRIX_GREEN} !important;
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover,
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home span {{
+    background: transparent !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
-    box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
+    font-size: 1.44rem !important;
+    font-weight: 700 !important;
     text-shadow: none !important;
-    font-size: 1.05rem !important;
-    letter-spacing: 0.02em !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home,
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
+    background: {_VQC_MATRIX_GREEN} !important;
+    box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):hover {{
     background: #141414 !important;
