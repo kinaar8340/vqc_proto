@@ -1265,7 +1265,7 @@ footer {{
 }}
 .gradio-container .vqc-optics-panel .vqc-optics-terminal textarea,
 .gradio-container .vqc-optics-panel .vqc-optics-terminal input {{
-    background: rgba(2, 10, 4, 0.5) !important;
+    background: rgba(2, 10, 4, 0.1) !important;
     border: 2px inset #1a4d2a !important;
     color: #33ff66 !important;
     -webkit-text-fill-color: #33ff66 !important;
@@ -1285,7 +1285,7 @@ footer {{
     text-shadow: 0 0 6px rgba(61, 255, 122, 0.35) !important;
 }}
 .gradio-container .vqc-optics-panel .vqc-optics-terminal-wrap {{
-    background: rgba(2, 10, 4, 0.5) !important;
+    background: rgba(2, 10, 4, 0.1) !important;
     border: 1px solid #1a4d2a !important;
     border-radius: 10px !important;
     padding: 0.5rem 0.6rem 0.45rem !important;
