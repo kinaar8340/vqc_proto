@@ -15,6 +15,7 @@ from demo_core import (
     PATENT_FIGURE1_PAYLOAD,
     VQC_CLAIMS_MD,
     export_slm_bundle,
+    get_build_label,
     plot_results,
     run_pipeline,
 )
@@ -106,7 +107,8 @@ def build_app() -> gr.Blocks:
             "Use **Quick** resolution for sub-second runs.\n\n"
             f"Source: [{GITHUB_URL}]({GITHUB_URL}) · "
             f"[Live demo]({HF_SPACE_URL}) · "
-            f"[SLM quickstart]({GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md)"
+            f"[SLM quickstart]({GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md)\n\n"
+            f"*{get_build_label()}*"
         )
         with gr.Row():
             payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)

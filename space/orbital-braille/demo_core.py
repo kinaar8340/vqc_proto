@@ -32,20 +32,102 @@ QUICK_SLM_FRAMES = 16
 FULL_SLM_FRAMES = 32
 
 VQC_CLAIMS_MD = """
-| VQC claim element | What you see in this demo |
-|-------------------|---------------------------|
-| **Pyramidal FM pulses** | Bottom-left panel — triangular chirp envelope in time |
-| **Spectral shards** | Bottom-middle Welch PSD — discrete barcode peaks |
-| **Quaternion encoding** | Metrics block — unit quaternion from payload bytes |
-| **OAM mode multiplex** | Orb layout panel — ℓ charge per PWM-gated source |
-| **Nested helical shielding** | Encoded phase panel — concentric orbit geometry |
-| **p-wave BMGL (γ₁)** | Turbulent phase panel — inhibition strength via γ₁ slider |
-| **16-qubit QEC proxy** | Decoder majority-vote repetition in `altermagnetic.py` |
-| **SLM virtual typehead** | Download zip — `manifest.json` + `phase_stack.npy` (+ optional frames) |
+| VQC claim element | Demo shows… |
+|-------------------|-------------|
+| **Pyramidal FM pulses** | A triangular time-envelope chirp whose amplitude rises and falls symmetrically (bottom-left panel). |
+| **Spectral shards** | Discrete Welch PSD peaks that barcode the payload as frequency subcarriers (bottom-middle panel). |
+| **Quaternion encoding** | A unit quaternion derived from payload bytes, printed in the metrics block after each run. |
+| **OAM mode multiplex** | Distinct topological charges ℓ on each PWM-gated orb in the layout scatter plot (bottom-right). |
+| **Nested helical shielding** | Concentric orbit rings with differential phase structure in the clean encoded phase map (top-left). |
+| **p-wave BMGL (γ₁)** | Phase noise suppression that you can tune live — compare clean vs. turbulent phase panels (γ₁ slider). |
+| **16-qubit QEC proxy** | Majority-vote error correction during decode; higher shard fidelity after BMGL denoise (metrics). |
+| **SLM virtual typehead** | A hardware-ready zip with `manifest.json`, `phase_stack.npy`, and optional `frames/` PNG sequence. |
 
 **Patent Figure 1 payload:** `"I live in Oregon"` (4 orbs) — use **Load example from paper**.
 
 Full mapping: [proto/README.md — Patent claim alignment](https://github.com/kinaar8340/vqc_proto/blob/main/proto/README.md#patent-claim-alignment)
+"""
+
+
+def get_build_label() -> str:
+    """Return a short last-updated line for the Gradio footer."""
+    try:
+        from build_info import BUILD_COMMIT, BUILD_UPDATED_UTC  # noqa: WPS433
+
+        return f"Last updated: {BUILD_UPDATED_UTC} UTC · commit `{BUILD_COMMIT}`"
+    except ImportError:
+        pass
+
+    import subprocess
+
+    try:
+        root = Path(__file__).resolve().parent.parent
+        commit = (
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                cwd=root,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+            .strip()
+        )
+        if commit:
+            return f"Build: commit `{commit}` (local git)"
+    except (OSError, subprocess.CalledProcessError):
+        pass
+
+    return "Build: development"
+
+
+def _slm_readme_text(
+    *,
+    payload: str,
+    device_preset: str,
+    resolution: str,
+    bit_depth: int,
+    num_frames: int,
+    t_max_ns: float,
+    include_frames: bool,
+) -> str:
+    frame_period = t_max_ns / num_frames if num_frames else 0.0
+    frames_note = (
+        f"frames/phase_XXXX.png — {num_frames} 8-bit grayscale phase masks (linear, no gamma)"
+        if include_frames
+        else "frames/ — not included; re-run with 'Include SLM-ready phase frames' checked"
+    )
+    return f"""Orbital Braille — SLM upload package
+=====================================
+Payload: {payload!r}
+Device preset: {device_preset} ({resolution}, {bit_depth}-bit)
+Frames: {num_frames} over {t_max_ns:.2f} ns  (~{frame_period:.2f} ns per frame)
+
+FILES
+-----
+manifest.json      Orb radii, ℓ charges, PWM duties, quaternion, timing
+phase_stack.npy    NumPy array [frames, H, W] of phase in radians (0–2π)
+preview_montage.png  Quick visual check of the phase sequence
+LUT_calibration.txt  Linear gray→phase mapping notes; measure if deviation > 5%
+README.txt           This file
+{frames_note}
+
+QUICK START BY DRIVER
+---------------------
+Holoeye PLUTO-2:
+  Upload frames/phase_0000.png (or BMP) in phase-only mode.
+  Set refresh to match manifest t_max_ns / frames. Disable gamma correction.
+
+Meadowlark LCOS:
+  Load 16-bit TIFF if available; map full scale → 0–2π. Disable dithering.
+
+Thorlabs Exulus / 1080p LCOS:
+  8-bit BMP/PNG; lock min/max gray to 0–255. Match 6.4 µm pitch optics.
+
+Generic / custom:
+  Read phase_stack.npy in Python/NumPy, or frames/*.raw (uint8 little-endian).
+  Scale: gray = phase / (2π) × (2^bit_depth − 1).
+
+See SLM_QUICKSTART.md in the vqc_proto repo for bench setup and pitfalls.
+Repo: https://github.com/kinaar8340/vqc_proto/blob/main/proto/SLM_QUICKSTART.md
 """
 
 
@@ -226,12 +308,25 @@ def export_slm_bundle(
                 path.unlink()
             frames_dir.rmdir()
 
+    t_max_ns = float(encoded.t[-1]) * 1e9
+    (out_dir / "README.txt").write_text(
+        _slm_readme_text(
+            payload=payload,
+            device_preset=device_preset,
+            resolution=f"{slm_cfg.resolution_x}×{slm_cfg.resolution_y}",
+            bit_depth=slm_cfg.bit_depth,
+            num_frames=num_frames,
+            t_max_ns=t_max_ns,
+            include_frames=include_frames,
+        )
+    )
+
     zip_path = out_dir.parent / "slm_package.zip"
     if zip_path.exists():
         zip_path.unlink()
     _zip_directory(out_dir, zip_path)
 
-    contents = "manifest.json, phase_stack.npy, preview_montage.png, LUT_calibration.txt"
+    contents = "manifest.json, phase_stack.npy, preview_montage.png, LUT_calibration.txt, README.txt"
     if include_frames:
         contents += f", frames/ ({num_frames} phase PNGs)"
     summary = (
