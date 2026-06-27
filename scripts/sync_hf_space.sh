@@ -19,8 +19,15 @@ scipy>=1.10.0
 matplotlib>=3.7.0
 scikit-learn>=1.3.0
 Pillow>=10.0.0
-gradio>=4.44.0,<6.0.0
+gradio==5.12.0
+requests>=2.31.0
 EOF
+# Note: Python 3.12 Docker image includes audioop; no pyaudioop needed
+
+# Docker SDK for HF (Python 3.12 pin)
+if [[ ! -f "$DST/Dockerfile" ]]; then
+  echo "WARN: space/orbital-braille/Dockerfile missing — create manually"
+fi
 
 echo "Synced → $DST"
 ls -la "$DST"

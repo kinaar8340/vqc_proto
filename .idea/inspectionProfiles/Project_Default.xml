@@ -4,18 +4,7 @@
     <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredPackages">
         <list>
-          <option value="qutip" />
-          <option value="imageio" />
-          <option value="scipy" />
-          <option value="pyyaml" />
           <option value="cupy-cuda12x" />
-          <option value="pandas" />
-          <option value="matplotlib" />
-          <option value="numpy" />
-          <option value="pyscf" />
-          <option value="psutil" />
-          <option value="qutip-cupy" />
-          <option value="scikit-learn" />
         </list>
       </option>
     </inspection_tool>
