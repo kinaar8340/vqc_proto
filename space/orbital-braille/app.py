@@ -167,8 +167,9 @@ TERM_KEYPAD_DEFINED: dict[int, str] = {
     4: "build",
     5: "help",
 }
+TERM_KEYPAD_HOME_KEY = "key01"
 TERM_KEYPAD_DESCRIPTIONS: dict[int, str] = {
-    1: "Home — boot / keypad legend (this view)",
+    1: "Return to main page — momentary (Ctrl-C style)",
     2: "Status — pipeline & environment",
     3: "Demo — simulation scope (encode→decode)",
     4: "Build — last updated / commit",
@@ -195,7 +196,8 @@ def _optics_assigned_keypad_lines() -> str:
     """Only keys with real functions — omit latch-only / unassigned slots."""
     lines = []
     for index in sorted(TERM_KEYPAD_DEFINED):
-        lines.append(f"  [{index:02d}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
+        tag = "1 home" if index == 1 else f"{index:02d}"
+        lines.append(f"  [{tag}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
     for nav_key in TERM_NAV_KEYS:
         if nav_key in TERM_NAV_DEFINED:
             tag = "CLR" if nav_key == "clear" else nav_key.removeprefix("dpad_").upper()
@@ -328,18 +330,22 @@ def _term_key_id(index: int) -> str:
 
 
 def _term_keypad_label(index: int) -> str:
-    """Zero-padded programmable labels (01–24)."""
+    """Home key is '1 home'; other prog keys are zero-padded."""
+    if index == 1:
+        return "1 home"
     return f"{index:02d}"
 
 
 def _term_key_btn_classes(key: str, active: str) -> list[str]:
-    """Black/white idle caps; matrix-green latch on the active key."""
+    """Black/white idle caps; matrix-green latch on active keys (never home)."""
     classes = ["vqc-optics-key"]
-    if key.startswith("dpad_"):
+    if key == TERM_KEYPAD_HOME_KEY:
+        classes.append("vqc-optics-key-home")
+    elif key.startswith("dpad_"):
         classes.append("vqc-optics-key-dpad")
     if key == "clear":
         classes.append("vqc-optics-key-clear")
-    if key == active:
+    if key == active and key != TERM_KEYPAD_HOME_KEY:
         classes.append("active")
     return classes
 
@@ -383,6 +389,22 @@ def _make_term_latch_click(active_key: str):
         yield _term_keypad_outputs(current, active_key)
 
     return handler
+
+
+def _make_term_home_momentary():
+    """Home — stream main page without changing latched selection (momentary)."""
+
+    def handler(current_active: str) -> Iterator[tuple]:
+        for partial in _stream_optics_terminal_home():
+            yield _term_keypad_outputs(partial, current_active)
+
+    return handler
+
+
+def _term_boot_home() -> Iterator[tuple]:
+    """Initial boot — show home legend, no key latched."""
+    for partial in _stream_optics_terminal_home():
+        yield _term_keypad_outputs(partial, "")
 
 
 def _register_term_keypad_streamers() -> None:
@@ -1006,7 +1028,7 @@ footer {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
-    min-height: 2.55rem !important;
+    min-height: 3rem !important;
     aspect-ratio: 1 / 1 !important;
     background: #000000 !important;
     border: none !important;
@@ -1014,7 +1036,7 @@ footer {{
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     font-family: "Courier New", Courier, monospace !important;
-    font-size: 0.72rem !important;
+    font-size: 1.44rem !important;
     font-weight: 700 !important;
     line-height: 1.1 !important;
     letter-spacing: 0.03em !important;
@@ -1022,14 +1044,25 @@ footer {{
     box-shadow: none !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-dpad {{
-    font-size: 0.82rem !important;
+    font-size: 1.64rem !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-clear {{
     text-transform: lowercase !important;
-    font-size: 0.72rem !important;
+    font-size: 1.44rem !important;
     letter-spacing: 0.06em !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):hover {{
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home,
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
+    background: {_VQC_MATRIX_GREEN} !important;
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-stroke: 0.45px #020a04 !important;
+    box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
+    text-shadow: 0 0 8px rgba(51, 255, 102, 0.75) !important;
+    font-size: 1.1rem !important;
+    letter-spacing: 0.02em !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):hover {{
     background: #141414 !important;
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
@@ -1440,7 +1473,7 @@ def build_app() -> gr.Blocks:
                     interactive=False,
                     elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
                 )
-                term_active_key = gr.State("key01")
+                term_active_key = gr.State("")
                 term_all_btns: dict[str, gr.Button] = {}
                 _dpad_row_labels = {
                     "dpad_select": "SEL",
@@ -1456,7 +1489,7 @@ def build_app() -> gr.Blocks:
                         for nav_key in TERM_NAV_KEYS:
                             term_all_btns[nav_key] = gr.Button(
                                 _dpad_row_labels[nav_key],
-                                elem_classes=_term_key_btn_classes(nav_key, "key01"),
+                                elem_classes=_term_key_btn_classes(nav_key, ""),
                                 scale=1,
                                 variant="secondary",
                             )
@@ -1465,7 +1498,7 @@ def build_app() -> gr.Blocks:
                             key_id = _term_key_id(index)
                             term_all_btns[key_id] = gr.Button(
                                 _term_keypad_label(index),
-                                elem_classes=_term_key_btn_classes(key_id, "key01"),
+                                elem_classes=_term_key_btn_classes(key_id, ""),
                                 scale=1,
                                 variant="secondary",
                             )
@@ -1474,7 +1507,7 @@ def build_app() -> gr.Blocks:
                             key_id = _term_key_id(index)
                             term_all_btns[key_id] = gr.Button(
                                 _term_keypad_label(index),
-                                elem_classes=_term_key_btn_classes(key_id, "key01"),
+                                elem_classes=_term_key_btn_classes(key_id, ""),
                                 scale=1,
                                 variant="secondary",
                             )
@@ -1566,8 +1599,15 @@ def build_app() -> gr.Blocks:
                     inputs=[optics_terminal],
                     outputs=term_keypad_outputs,
                 )
+            term_all_btns[TERM_KEYPAD_HOME_KEY].click(
+                _make_term_home_momentary(),
+                inputs=[term_active_key],
+                outputs=term_keypad_outputs,
+            )
             for index in range(1, TERM_KEYPAD_COUNT + 1):
                 key_id = _term_key_id(index)
+                if index == 1:
+                    continue
                 if index in TERM_KEYPAD_DEFINED:
                     action = TERM_KEYPAD_DEFINED[index]
                     term_all_btns[key_id].click(
@@ -1687,10 +1727,7 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
-        demo.load(
-            _make_term_stream_click("key01", _stream_optics_terminal_home),
-            outputs=term_keypad_outputs,
-        )
+        demo.load(_term_boot_home, outputs=term_keypad_outputs)
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
