@@ -50,22 +50,24 @@ DEFAULT_PAYLOAD = PATENT_FIGURE1_PAYLOAD
 HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
 GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
 APP_DIR = Path(__file__).resolve().parent
+HFB_RAW_URL = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png"
 HFB_IMAGE = APP_DIR / "hfb.png"
 if not HFB_IMAGE.is_file():
     HFB_IMAGE = APP_DIR.parent / "hfb.png"
+HFB_SRC = str(HFB_IMAGE) if HFB_IMAGE.is_file() else HFB_RAW_URL
 
-HFB_CSS = """
-.gradio-container {
-    background-image: url('file=hfb.png') !important;
+HFB_CSS = f"""
+.gradio-container {{
+    background-image: url('{HFB_RAW_URL}') !important;
     background-size: cover !important;
     background-position: center center !important;
     background-attachment: fixed !important;
-}
-.contain, .main, .tabs, .tabitem, .form, .column, .row {
+}}
+.contain, .main, .tabs, .tabitem, .form, .column, .row {{
     background-color: rgba(10, 8, 24, 0.88) !important;
     border-radius: 10px;
-}
-footer { visibility: hidden; }
+}}
+footer {{ visibility: hidden; }}
 """
 
 
@@ -123,15 +125,14 @@ def build_app() -> gr.Blocks:
         analytics_enabled=False,
         css=HFB_CSS,
     ) as demo:
-        if HFB_IMAGE.is_file():
-            gr.Image(
-                value=str(HFB_IMAGE),
-                show_label=False,
-                show_download_button=False,
-                interactive=False,
-                container=False,
-                height=160,
-            )
+        gr.Image(
+            value=HFB_SRC,
+            show_label=False,
+            show_download_button=False,
+            interactive=False,
+            container=False,
+            height=160,
+        )
         gr.Markdown(
             "# Orbital Braille — VQC Typehead Prototype\n"
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "

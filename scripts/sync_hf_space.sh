@@ -22,8 +22,6 @@ cp -r "$SRC/orbital_braille" "$DST/"
 cp "$SRC/demo_core.py" "$DST/"
 cp "$SRC/build_info.py" "$DST/"
 cp "$SRC/gradio_demo.py" "$DST/app.py"
-cp "$ROOT/hfb.png" "$DST/hfb.png"
-
 # HF Spaces requirements — do NOT pin gradio here; HF installs gradio[oauth] from
 # README sdk_version automatically. Pinning gradio in requirements.txt causes
 # "Cannot install gradio==5.12.0 and gradio==5.27.0" build failures.
@@ -57,7 +55,7 @@ short_description: Orbital Braille VQC Typehead — browser demo
 # Orbital Braille — VQC Typehead
 
 <p align="center">
-  <img src="hfb.png" alt="Orbital Braille VQC — OAM phase background" width="100%" style="max-width: 720px; border-radius: 12px;" />
+  <img src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png" alt="Orbital Braille VQC — OAM phase background" width="100%" style="max-width: 720px; border-radius: 12px;" />
 </p>
 
 Browser demo of the **Orbital Braille** prototype: *N* PWM-gated point sources whose interference imprints **pyramidal spectral shards** on an **OAM/quaternion carrier**.

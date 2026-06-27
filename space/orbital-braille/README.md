@@ -15,7 +15,7 @@ short_description: Orbital Braille VQC Typehead — browser demo
 # Orbital Braille — VQC Typehead
 
 <p align="center">
-  <img src="hfb.png" alt="Orbital Braille VQC — OAM phase background" width="100%" style="max-width: 720px; border-radius: 12px;" />
+  <img src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png" alt="Orbital Braille VQC — OAM phase background" width="100%" style="max-width: 720px; border-radius: 12px;" />
 </p>
 
 Browser demo of the **Orbital Braille** prototype: *N* PWM-gated point sources whose interference imprints **pyramidal spectral shards** on an **OAM/quaternion carrier**.
