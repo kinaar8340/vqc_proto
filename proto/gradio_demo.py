@@ -51,7 +51,17 @@ HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
 GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
 HFB_RAW_URL = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png"
 
-# Panel fields: 60% transparent (alpha 0.4). Sliders/buttons: ~80% opaque for usability.
+SLM_PACKAGE_IDLE = (
+    "**Package files** (generated after **Run demo**):\n"
+    "- `manifest.json` — orb geometry, PWM duties, quaternion, timing\n"
+    "- `phase_stack.npy` — phase sequence array `[frames, H, W]`\n"
+    "- `preview_montage.png` — visual sanity check\n"
+    "- `LUT_calibration.txt` — gray→phase mapping notes\n"
+    "- `README.txt` — driver quick-start (Holoeye, Meadowlark, Thorlabs)\n"
+    "- `frames/` — optional PNG sequence (enable checkbox above)"
+)
+
+# Panels/fields: 50% opacity. Buttons and sliders stay solid for usability.
 HFB_CSS = f"""
 .gradio-container {{
     background-image: url('{HFB_RAW_URL}') !important;
@@ -73,41 +83,39 @@ HFB_CSS = f"""
 .gradio-container .input-container,
 .gradio-container input[type="text"],
 .gradio-container textarea,
-.gradio-container [data-testid="textbox"] {{
-    background-color: rgba(10, 8, 24, 0.4) !important;
+.gradio-container [data-testid="textbox"],
+.gradio-container .accordion,
+.gradio-container details,
+.gradio-container .file-preview,
+.gradio-container .gr-file,
+.gradio-container .image-container,
+.gradio-container .gr-image {{
+    background-color: rgba(10, 8, 24, 0.5) !important;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border-radius: 10px;
 }}
-.gradio-container .accordion,
-.gradio-container details {{
-    background-color: rgba(10, 8, 24, 0.4) !important;
-    backdrop-filter: blur(6px);
+.gradio-container label.wrap {{
+    background: transparent !important;
 }}
 .gradio-container button,
 .gradio-container .gr-button {{
-    background-color: rgba(28, 22, 48, 0.8) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background-color: rgba(28, 22, 48, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     opacity: 1 !important;
 }}
 .gradio-container button.primary,
 .gradio-container .primary {{
-    background-color: rgba(234, 88, 12, 0.85) !important;
-    border-color: rgba(255, 180, 80, 0.4) !important;
+    background-color: rgba(234, 88, 12, 0.95) !important;
+    border-color: rgba(255, 180, 80, 0.5) !important;
 }}
-.gradio-container input[type="range"],
-.gradio-container .gr-slider input[type="range"] {{
-    opacity: 0.8 !important;
+.gradio-container .gr-slider,
+.gradio-container .gr-slider * {{
+    background-color: rgba(28, 22, 48, 0.9) !important;
+    opacity: 1 !important;
 }}
-.gradio-container .gr-slider {{
-    background-color: rgba(10, 8, 24, 0.4) !important;
-}}
-.gradio-container label.wrap {{
-    background: transparent !important;
-}}
-.gradio-container .image-container,
-.gradio-container .gr-image {{
-    background: rgba(10, 8, 24, 0.35) !important;
+.gradio-container input[type="range"] {{
+    opacity: 1 !important;
 }}
 footer {{ visibility: hidden; }}
 """
@@ -125,7 +133,7 @@ def run_demo(
     seed: float,
     gamma_1: float,
     export_slm_frames: bool,
-) -> tuple[str, str | None, str | None]:
+) -> tuple[str, str | None, str, str | None]:
     if not payload.strip():
         payload = DEFAULT_PAYLOAD
 
@@ -152,13 +160,22 @@ def run_demo(
             include_frames=export_slm_frames,
             out_dir=slm_dir / "slm",
         )
-        metrics = f"{metrics}\n\n{slm_summary}"
+        slm_info = (
+            f"**Ready:** `slm_package.zip`\n\n{slm_summary}\n\n"
+            "**Files in zip:**\n"
+            "- manifest.json\n"
+            "- phase_stack.npy\n"
+            "- preview_montage.png\n"
+            "- LUT_calibration.txt\n"
+            "- README.txt"
+            + ("\n- frames/ (PNG sequence)" if export_slm_frames else "")
+        )
 
-        return metrics, fig_path, str(zip_path)
+        return metrics, fig_path, slm_info, str(zip_path)
     except Exception as exc:
         logger.exception("run_demo failed for payload=%r", payload)
         err = f"Error: {exc}\n\n{traceback.format_exc()}"
-        return err, None, None
+        return err, None, SLM_PACKAGE_IDLE, None
 
 
 def build_app() -> gr.Blocks:
@@ -212,14 +229,18 @@ def build_app() -> gr.Blocks:
         with gr.Row():
             metrics = gr.Textbox(label="Metrics", lines=12)
             figure = gr.Image(label="6-panel output", type="filepath")
-        slm_download = gr.DownloadButton(
-            "Download SLM package (manifest.json + phase stack)",
-            variant="secondary",
-        )
+        with gr.Accordion("SLM package download", open=False):
+            slm_info = gr.Markdown(SLM_PACKAGE_IDLE)
+            slm_file = gr.File(
+                label="slm_package.zip",
+                interactive=False,
+                file_count="single",
+                type="filepath",
+            )
         run_btn.click(
             run_demo,
             [payload, num_orbs, resolution, seed, gamma_1, export_slm_frames],
-            [metrics, figure, slm_download],
+            [metrics, figure, slm_info, slm_file],
         )
         load_paper_btn.click(load_patent_example, outputs=[payload, num_orbs, gamma_1])
         gr.Markdown(
