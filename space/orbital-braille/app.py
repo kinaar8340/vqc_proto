@@ -122,6 +122,7 @@ _VQC_TAB_ORANGE_BORDER = "#ea580c"
 _VQC_TAB_ORANGE_TEXT = "#fdba74"
 _VQC_MATRIX_GREEN = "#33ff66"
 _VQC_MATRIX_GREEN_BG = "#0a1f12"
+_VQC_HOME_KEY_BG = "#454545"
 
 ANIMATIONS_INTRO_MD = (
     "Recorded end-to-end flow: pick a preset or **Run demo**, then **Animate typehead** — "
@@ -197,7 +198,7 @@ def _optics_assigned_keypad_lines() -> str:
     """Only keys with real functions — omit latch-only / unassigned slots."""
     lines = []
     for index in sorted(TERM_KEYPAD_DEFINED):
-        tag = "01 Home" if index == 1 else f"{index:02d}"
+        tag = "Home 01" if index == 1 else f"{index:02d}"
         lines.append(f"  [{tag}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
     for nav_key in TERM_NAV_KEYS:
         if nav_key in TERM_NAV_DEFINED:
@@ -331,9 +332,9 @@ def _term_key_id(index: int) -> str:
 
 
 def _term_keypad_label(index: int) -> str:
-    """Home key is '01 Home'; other prog keys are zero-padded."""
+    """Home key is 'Home 01'; other prog keys are zero-padded."""
     if index == 1:
-        return "01 Home"
+        return "Home 01"
     return f"{index:02d}"
 
 
