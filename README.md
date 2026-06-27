@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="hfb.png" alt="Orbital Braille VQC — OAM phase background" width="100%" style="max-width: 720px; border-radius: 12px;" />
+</p>
+
 # Vortex Quaternion Conduit (VQC) — OAM Simulations
 
 Ultra-high-density quantum data compression and transfer via OAM-flux qubits and quaternion encoding.

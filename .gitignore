@@ -21,6 +21,7 @@ data/
 # Binary / media artifacts
 *.pdf
 *.png
+!hfb.png
 !proto/outputs/orbital_braille_demo.png
 *.gif
 *.csv

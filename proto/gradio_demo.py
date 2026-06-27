@@ -49,6 +49,24 @@ _patch_gradio_client_bool_schema()
 DEFAULT_PAYLOAD = PATENT_FIGURE1_PAYLOAD
 HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
 GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
+APP_DIR = Path(__file__).resolve().parent
+HFB_IMAGE = APP_DIR / "hfb.png"
+if not HFB_IMAGE.is_file():
+    HFB_IMAGE = APP_DIR.parent / "hfb.png"
+
+HFB_CSS = """
+.gradio-container {
+    background-image: url('file=hfb.png') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-attachment: fixed !important;
+}
+.contain, .main, .tabs, .tabitem, .form, .column, .row {
+    background-color: rgba(10, 8, 24, 0.88) !important;
+    border-radius: 10px;
+}
+footer { visibility: hidden; }
+"""
 
 
 def load_patent_example() -> tuple[str, float, float]:
@@ -100,7 +118,20 @@ def run_demo(
 
 
 def build_app() -> gr.Blocks:
-    with gr.Blocks(title="Orbital Braille — VQC Typehead", analytics_enabled=False) as demo:
+    with gr.Blocks(
+        title="Orbital Braille — VQC Typehead",
+        analytics_enabled=False,
+        css=HFB_CSS,
+    ) as demo:
+        if HFB_IMAGE.is_file():
+            gr.Image(
+                value=str(HFB_IMAGE),
+                show_label=False,
+                show_download_button=False,
+                interactive=False,
+                container=False,
+                height=160,
+            )
         gr.Markdown(
             "# Orbital Braille — VQC Typehead Prototype\n"
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
