@@ -196,7 +196,7 @@ def _optics_assigned_keypad_lines() -> str:
     """Only keys with real functions — omit latch-only / unassigned slots."""
     lines = []
     for index in sorted(TERM_KEYPAD_DEFINED):
-        tag = "1 home" if index == 1 else f"{index:02d}"
+        tag = "01 Home" if index == 1 else f"{index:02d}"
         lines.append(f"  [{tag}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
     for nav_key in TERM_NAV_KEYS:
         if nav_key in TERM_NAV_DEFINED:
@@ -330,9 +330,9 @@ def _term_key_id(index: int) -> str:
 
 
 def _term_keypad_label(index: int) -> str:
-    """Home key is '1 home'; other prog keys are zero-padded."""
+    """Home key is '01 Home'; other prog keys are zero-padded."""
     if index == 1:
-        return "1 home"
+        return "01 Home"
     return f"{index:02d}"
 
 
@@ -1063,12 +1063,11 @@ footer {{
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home,
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
     background: {_VQC_MATRIX_GREEN} !important;
-    color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-stroke: 0.45px #020a04 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
     box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
-    text-shadow: 0 0 8px rgba(51, 255, 102, 0.75) !important;
-    font-size: 1.1rem !important;
+    text-shadow: none !important;
+    font-size: 1.05rem !important;
     letter-spacing: 0.02em !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):hover {{
