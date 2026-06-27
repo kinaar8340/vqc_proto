@@ -198,7 +198,7 @@ def _optics_assigned_keypad_lines() -> str:
     """Only keys with real functions — omit latch-only / unassigned slots."""
     lines = []
     for index in sorted(TERM_KEYPAD_DEFINED):
-        tag = "Home 01" if index == 1 else f"{index:02d}"
+        tag = "01 Home" if index == 1 else f"{index:02d}"
         lines.append(f"  [{tag}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
     for nav_key in TERM_NAV_KEYS:
         if nav_key in TERM_NAV_DEFINED:
@@ -332,9 +332,9 @@ def _term_key_id(index: int) -> str:
 
 
 def _term_keypad_label(index: int) -> str:
-    """Home key is 'Home 01'; other prog keys are zero-padded."""
+    """Home key is '01 Home'; other prog keys are zero-padded."""
     if index == 1:
-        return "Home 01"
+        return "01 Home"
     return f"{index:02d}"
 
 
@@ -1080,19 +1080,21 @@ footer {{
     letter-spacing: 0.06em !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home,
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover,
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home span {{
-    background: transparent !important;
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    font-size: 1.44rem !important;
-    font-weight: 700 !important;
-    text-shadow: none !important;
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
+    background: {_VQC_HOME_KEY_BG} !important;
+    box-shadow: none !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home,
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover,
+.gradio-container .vqc-optics-panel button.vqc-optics-key-home span {{
+    color: {_VQC_MATRIX_GREEN} !important;
+    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
+    font-size: 1.44rem !important;
+    font-weight: 700 !important;
+    text-shadow: 0 0 6px rgba(51, 255, 102, 0.35) !important;
+}}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
-    background: {_VQC_MATRIX_GREEN} !important;
-    box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
+    background: #525252 !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):hover {{
     background: #141414 !important;
