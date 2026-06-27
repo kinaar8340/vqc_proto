@@ -124,7 +124,40 @@ def _build_vqc_theme() -> gr.themes.Base:
     )
 
 
-# hfb.png on body: cover + fixed (viewport-sized, no scroll). Content scrolls above.
+# Wallpaper: #vqc-wallpaper (body child) + body::before fallback — cover, fixed to viewport.
+WALLPAPER_HEAD = f"""
+<style id="vqc-wallpaper-style">
+#vqc-wallpaper {{
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: -9999 !important;
+    pointer-events: none !important;
+    background-color: #0a0818 !important;
+    background-image: url('{HFB_RAW_URL}') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+}}
+</style>
+<script>
+(function() {{
+    function mountWallpaper() {{
+        if (document.getElementById('vqc-wallpaper')) return;
+        var wp = document.createElement('div');
+        wp.id = 'vqc-wallpaper';
+        wp.setAttribute('aria-hidden', 'true');
+        document.body.insertBefore(wp, document.body.firstChild);
+    }}
+    if (document.body) mountWallpaper();
+    document.addEventListener('DOMContentLoaded', mountWallpaper);
+    window.addEventListener('load', mountWallpaper);
+}})();
+</script>
+"""
+
 HFB_CSS = f"""
 :root, :root .dark {{
     --body-background-fill: transparent !important;
@@ -144,16 +177,28 @@ html {{
     min-height: 100% !important;
 }}
 body {{
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #e8e0f8 !important;
+    min-height: 100vh !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+}}
+body::before {{
+    content: "" !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: -9998 !important;
+    pointer-events: none !important;
     background-color: #0a0818 !important;
     background-image: url('{HFB_RAW_URL}') !important;
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
-    color: #e8e0f8 !important;
-    min-height: 100vh !important;
-    width: 100% !important;
-    overflow-x: hidden !important;
 }}
 #root, .app {{
     background: transparent !important;
@@ -404,6 +449,7 @@ def build_app() -> gr.Blocks:
         title="Orbital Braille — VQC Typehead",
         analytics_enabled=False,
         theme=_build_vqc_theme(),
+        head=WALLPAPER_HEAD,
         css=HFB_CSS,
         fill_width=True,
     ) as demo:
