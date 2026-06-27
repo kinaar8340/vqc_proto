@@ -225,60 +225,92 @@ def _style_dark_axes(axes) -> None:
             spine.set_color("#444")
 
 
+_ANIM_FIGSIZE = (12.0, 6.8)
+_ANIM_DPI = 110
+_ANIM_SIZE = (int(_ANIM_FIGSIZE[0] * _ANIM_DPI), int(_ANIM_FIGSIZE[1] * _ANIM_DPI))
+
+
 def _render_animation_frame(
     encoded,
     payload: str,
     frame_idx: int,
     n_frames: int,
     trail: list[list[tuple[float, float]]],
+    *,
+    intensity_vmax: float,
+    pulse_ymax: float,
+    t_ns: np.ndarray,
+    pulse: np.ndarray,
+    t_max: float,
 ) -> "Image.Image":
     from PIL import Image
 
     t_idx = min(frame_idx, encoded.intensity_time.shape[0] - 1)
     t = float(encoded.t[t_idx])
-    t_max = float(encoded.t[-1])
     extent = [-2.5, 2.5, -2.5, 2.5]
-    t_ns = encoded.t * 1e9
 
-    fig, axes = plt.subplots(2, 2, figsize=(12.0, 6.8), facecolor="#0a0818")
+    fig, axes = plt.subplots(2, 2, figsize=_ANIM_FIGSIZE, facecolor="#0a0818")
+    # Fixed margins — never use tight_layout (it shifts panels frame-to-frame → jitter).
+    fig.subplots_adjust(left=0.06, right=0.97, top=0.90, bottom=0.10, wspace=0.22, hspace=0.30)
+
     short_payload = payload[:28] + ("…" if len(payload) > 28 else "")
-    fig.suptitle(
-        f"Orbital Braille typehead  ·  \"{short_payload}\"  ·  "
-        f"frame {frame_idx + 1}/{n_frames}",
+    fig.text(
+        0.5,
+        0.96,
+        f'Orbital Braille typehead  ·  "{short_payload}"',
+        ha="center",
+        va="top",
         color="#f0e6ff",
         fontsize=10,
         fontweight="bold",
     )
+    fig.text(
+        0.97,
+        0.96,
+        f"{frame_idx + 1:02d}/{n_frames:02d}",
+        ha="right",
+        va="top",
+        color="#c9b8ff",
+        fontsize=9,
+        family="monospace",
+    )
+
     ax_phase, ax_int, ax_pulse, ax_orb = axes.flat
     _style_dark_axes(axes)
 
-    im0 = ax_phase.imshow(
+    ax_phase.imshow(
         np.angle(encoded.field_time[t_idx]),
         cmap="twilight",
         extent=extent,
         origin="lower",
         vmin=-np.pi,
         vmax=np.pi,
+        interpolation="bilinear",
     )
-    ax_phase.set_title("Helical phase (OAM carrier)", color="#ddd", fontsize=9)
-    plt.colorbar(im0, ax=ax_phase, fraction=0.046)
+    ax_phase.set_title("Helical phase (OAM carrier)", color="#ddd", fontsize=9, pad=6)
+    ax_phase.set_xlim(extent[0], extent[1])
+    ax_phase.set_ylim(extent[2], extent[3])
 
-    im1 = ax_int.imshow(
+    ax_int.imshow(
         encoded.intensity_time[t_idx],
         cmap="inferno",
         extent=extent,
         origin="lower",
+        vmin=0.0,
+        vmax=intensity_vmax,
+        interpolation="bilinear",
     )
-    ax_int.set_title("Intensity — donut + Braille lobes", color="#ddd", fontsize=9)
-    plt.colorbar(im1, ax=ax_int, fraction=0.046)
+    ax_int.set_title("Intensity — donut + Braille lobes", color="#ddd", fontsize=9, pad=6)
+    ax_int.set_xlim(extent[0], extent[1])
+    ax_int.set_ylim(extent[2], extent[3])
 
-    ax_pulse.plot(t_ns, encoded.pulse, color="#6eb5ff", lw=1.8)
-    ax_pulse.fill_between(t_ns, 0, encoded.pulse, alpha=0.25, color="#6eb5ff")
+    ax_pulse.plot(t_ns, pulse, color="#6eb5ff", lw=1.8)
+    ax_pulse.fill_between(t_ns, 0, pulse, alpha=0.25, color="#6eb5ff")
     ax_pulse.axvline(t_ns[t_idx], color="#ff8c42", lw=2, alpha=0.9)
-    ax_pulse.scatter([t_ns[t_idx]], [encoded.pulse[t_idx]], c="#ff8c42", s=40, zorder=5)
-    ax_pulse.set_xlim(t_ns[0], t_ns[-1])
-    ax_pulse.set_ylim(0, max(float(encoded.pulse.max()) * 1.1, 0.1))
-    ax_pulse.set_title("Pyramidal FM pulse", color="#ddd", fontsize=9)
+    ax_pulse.scatter([t_ns[t_idx]], [pulse[t_idx]], c="#ff8c42", s=36, zorder=5)
+    ax_pulse.set_xlim(float(t_ns[0]), float(t_ns[-1]))
+    ax_pulse.set_ylim(0.0, pulse_ymax)
+    ax_pulse.set_title("Pyramidal FM pulse", color="#ddd", fontsize=9, pad=6)
     ax_pulse.set_xlabel("Time (ns)", color="#aaa")
     ax_pulse.grid(True, alpha=0.2, color="#555")
 
@@ -288,41 +320,49 @@ def _render_animation_frame(
         y0 = orb.radius * np.sin(theta)
         trail[i].append((x0, y0))
         if len(trail[i]) > 8:
-            trail[i] = trail[i][-8:]
+            trail[i].pop(0)
 
         ring = plt.Circle((0, 0), orb.radius, fill=False, linestyle="--", alpha=0.3, color="#888")
         ax_orb.add_patch(ring)
 
         for age, (tx, ty) in enumerate(trail[i][:-1]):
             alpha = 0.15 + 0.07 * age
-            ax_orb.scatter(tx, ty, s=30, c="#8888aa", alpha=alpha, zorder=1)
+            ax_orb.scatter(tx, ty, s=28, c="#8888aa", alpha=alpha, zorder=1)
 
         pwm_on = (np.sin(2 * np.pi * orb.omega * t / t_max) + 1) / 2 < orb.pwm_duty
         color = "#ff8c42" if pwm_on else "#4a5568"
-        ax_orb.scatter(x0, y0, s=160, c=color, edgecolors="white", linewidths=0.7, zorder=3)
-        ax_orb.annotate(f"ℓ={orb.ell}", (x0, y0), fontsize=7, ha="center", va="bottom", color="#eee")
+        ax_orb.scatter(x0, y0, s=150, c=color, edgecolors="white", linewidths=0.6, zorder=3)
 
     ax_orb.set_xlim(-1.15, 1.15)
     ax_orb.set_ylim(-1.15, 1.15)
-    ax_orb.set_aspect("equal")
-    ax_orb.set_title("PWM-gated orbs (orange = ON)", color="#ddd", fontsize=9)
+    ax_orb.set_aspect("equal", adjustable="box")
+    ax_orb.set_title("PWM-gated orbs (orange = ON)", color="#ddd", fontsize=9, pad=6)
     ax_orb.grid(True, alpha=0.2, color="#555")
 
     fig.text(
         0.5,
-        0.01,
-        f"BMGL phase snapshot frame {t_idx + 1}  ·  shard carrier evolving in time",
+        0.03,
+        f"shard carrier evolving in time  ·  frame {t_idx + 1} of {n_frames}",
         ha="center",
         fontsize=7,
         color="#999",
     )
 
-    plt.tight_layout(rect=[0, 0.02, 1, 0.96])
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=110, facecolor=fig.get_facecolor())
+    fig.savefig(
+        buf,
+        format="png",
+        dpi=_ANIM_DPI,
+        facecolor=fig.get_facecolor(),
+        bbox_inches=None,
+        pad_inches=0,
+    )
     plt.close(fig)
     buf.seek(0)
-    return Image.open(buf).convert("RGB")
+    img = Image.open(buf).convert("RGB")
+    if img.size != _ANIM_SIZE:
+        img = img.resize(_ANIM_SIZE, Image.Resampling.LANCZOS)
+    return img
 
 
 def _build_animation_frames(
@@ -331,15 +371,32 @@ def _build_animation_frames(
     *,
     max_frames: int | None = None,
 ) -> list["Image.Image"]:
-    from PIL import Image
-
     n_frames = encoded.intensity_time.shape[0]
     if max_frames is not None:
         n_frames = min(n_frames, max_frames)
 
+    intensity_vmax = float(np.max(encoded.intensity_time[:n_frames]))
+    if intensity_vmax <= 0:
+        intensity_vmax = 1.0
+    pulse = encoded.pulse[:n_frames]
+    pulse_ymax = max(float(pulse.max()) * 1.1, 0.1)
+    t_ns = encoded.t[:n_frames] * 1e9
+    t_max = float(encoded.t[n_frames - 1])
+
     trail: list[list[tuple[float, float]]] = [[] for _ in encoded.orbs]
     return [
-        _render_animation_frame(encoded, payload, i, n_frames, trail)
+        _render_animation_frame(
+            encoded,
+            payload,
+            i,
+            n_frames,
+            trail,
+            intensity_vmax=intensity_vmax,
+            pulse_ymax=pulse_ymax,
+            t_ns=t_ns,
+            pulse=pulse,
+            t_max=t_max,
+        )
         for i in range(n_frames)
     ]
 
@@ -363,7 +420,8 @@ def render_typehead_animation(
         append_images=frames[1:],
         duration=duration_ms,
         loop=0,
-        optimize=True,
+        optimize=False,
+        disposal=2,
     )
     return out_path
 
@@ -377,43 +435,8 @@ def render_typehead_animation_mp4(
     max_frames: int | None = None,
 ) -> Path | None:
     """Encode animation frames to H.264 MP4 (smoother playback than GIF)."""
-    import shutil
-    import subprocess
-    import tempfile
-
-    if shutil.which("ffmpeg") is None:
-        return None
-
     frames = _build_animation_frames(encoded, payload, max_frames=max_frames)
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with tempfile.TemporaryDirectory(prefix="vqc_mp4_") as tmp:
-        tmp_path = Path(tmp)
-        for i, frame in enumerate(frames):
-            frame.save(tmp_path / f"frame_{i:03d}.png")
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-framerate",
-            str(fps),
-            "-i",
-            str(tmp_path / "frame_%03d.png"),
-            "-vf",
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            "-c:v",
-            "libx264",
-            "-pix_fmt",
-            "yuv420p",
-            "-movflags",
-            "+faststart",
-            str(out_path),
-        ]
-        subprocess.run(cmd, check=True)
-    return out_path
+    return _encode_frames_mp4(frames, Path(out_path), fps=fps)
 
 
 def render_typehead_animation_bundle(
@@ -425,23 +448,63 @@ def render_typehead_animation_bundle(
     duration_ms: int = 110,
     max_frames: int | None = None,
 ) -> tuple[Path, Path | None]:
-    """GIF + optional MP4 for a single run."""
+    """GIF + optional MP4 for a single run (single frame build pass)."""
     out_dir = Path(out_dir)
-    gif_path = render_typehead_animation(
-        encoded,
-        noisy,
-        payload,
-        out_dir / "typehead_animation.gif",
-        duration_ms=duration_ms,
-        max_frames=max_frames,
+    out_dir.mkdir(parents=True, exist_ok=True)
+    frames = _build_animation_frames(encoded, payload, max_frames=max_frames)
+
+    gif_path = out_dir / "typehead_animation.gif"
+    frames[0].save(
+        gif_path,
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration_ms,
+        loop=0,
+        optimize=False,
+        disposal=2,
     )
-    mp4_path = render_typehead_animation_mp4(
-        encoded,
-        payload,
-        out_dir / "typehead_animation.mp4",
-        max_frames=max_frames,
-    )
+
+    mp4_path = _encode_frames_mp4(frames, out_dir / "typehead_animation.mp4", fps=1000 / duration_ms)
     return gif_path, mp4_path
+
+
+def _encode_frames_mp4(frames: list, out_path: Path, *, fps: float = 9.0) -> Path | None:
+    import shutil
+    import subprocess
+    import tempfile
+
+    if shutil.which("ffmpeg") is None:
+        return None
+
+    out_path = Path(out_path)
+    with tempfile.TemporaryDirectory(prefix="vqc_mp4_") as tmp:
+        tmp_path = Path(tmp)
+        for i, frame in enumerate(frames):
+            frame.save(tmp_path / f"frame_{i:03d}.png")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-framerate",
+            f"{fps:.3f}",
+            "-i",
+            str(tmp_path / "frame_%03d.png"),
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-vsync",
+            "cfr",
+            "-movflags",
+            "+faststart",
+            str(out_path),
+        ]
+        subprocess.run(cmd, check=True)
+    return out_path
 
 
 def run_pipeline(
