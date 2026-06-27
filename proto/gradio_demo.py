@@ -122,6 +122,7 @@ _VQC_TAB_ORANGE_BORDER = "#ea580c"
 _VQC_TAB_ORANGE_TEXT = "#fdba74"
 _VQC_MATRIX_GREEN = "#33ff66"
 _VQC_MATRIX_GREEN_BG = "#0a1f12"
+_VQC_LOGO_GOLD = "#c9a227"
 _VQC_HOME_KEY_BG = "#454545"
 
 ANIMATIONS_INTRO_MD = (
@@ -1030,23 +1031,23 @@ footer {{
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:hover span,
 .gradio-container a.vqc-source-tab.active {{
-    color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
-    text-decoration-color: {_VQC_MATRIX_GREEN} !important;
+    color: {_VQC_LOGO_GOLD} !important;
+    -webkit-text-fill-color: {_VQC_LOGO_GOLD} !important;
+    text-decoration-color: {_VQC_LOGO_GOLD} !important;
     background: transparent !important;
     text-decoration: underline !important;
     text-decoration-thickness: 2px !important;
     cursor: default !important;
     opacity: 1 !important;
-    text-shadow: 0 0 8px rgba(51, 255, 102, 0.45) !important;
+    text-shadow: 0 0 8px rgba(201, 162, 39, 0.45) !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled],
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active:disabled span,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active[disabled] span {{
-    color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
-    text-decoration-color: {_VQC_MATRIX_GREEN} !important;
+    color: {_VQC_LOGO_GOLD} !important;
+    -webkit-text-fill-color: {_VQC_LOGO_GOLD} !important;
+    text-decoration-color: {_VQC_LOGO_GOLD} !important;
     background: transparent !important;
     text-decoration: underline !important;
     text-decoration-thickness: 2px !important;
@@ -1239,7 +1240,7 @@ footer {{
 .gradio-container .vqc-optics-brand {{
     font-size: 0.62rem !important;
     letter-spacing: 0.28em !important;
-    color: #c9a227 !important;
+    color: {_VQC_LOGO_GOLD} !important;
     font-weight: 700 !important;
 }}
 .gradio-container .vqc-optics-panel-title {{
