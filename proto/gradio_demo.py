@@ -40,7 +40,7 @@ DEMO_SCREENCAST_URLS = (
 def _screencast_dual_html() -> str:
     """Side-by-side recorded demo clips on the Animations page."""
     clips = "".join(
-        f'<video class="vqc-screencast-video" src="{url}" controls playsinline '
+        f'<video class="vqc-screencast-video" src="{url}" controls playsinline loop '
         f'poster="{HFB_RAW_URL}">Your browser does not support video.</video>'
         for url in DEMO_SCREENCAST_URLS
     )
