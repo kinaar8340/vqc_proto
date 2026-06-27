@@ -42,11 +42,9 @@ The demo runs the full encode → turbulence → decode loop and shows a **6-pan
 
 ## Watch the typehead process
 
-<p align="center">
-  <video src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast.mp4" controls width="100%" style="max-width: 900px; border-radius: 8px;"></video>
-</p>
+Open the **Animations** tab in the app (Source bar) for the full recorded screencast — preset or **Run demo** → **Animate typehead** (helical phase, OAM intensity, pyramidal pulse, PWM orbs; payload: `"I live in Oregon"`).
 
-*Recorded walkthrough: preset or **Run demo** → **Animate typehead** — helical phase, OAM intensity, pyramidal pulse, PWM orbs (payload: `"I live in Oregon"`).*
+[Direct MP4](https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs/typehead_screencast.mp4)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/typehead_demo.gif" alt="Animated typehead preview" width="100%" style="max-width: 820px; border-radius: 8px;" />

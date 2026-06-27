@@ -95,7 +95,7 @@ pip install -r requirements-web.txt
 | **Interactive 3D** | `build_orb_trajectory_3d_plotly()` — Plotly `gr.Plot`, hover PWM/time |
 | **Animate typehead** | `render_typehead_animation_bundle()` — MP4 + GIF per run |
 | **SLM zip export** | `export_slm_bundle()` — manifest, `phase_stack.npy`, `README.txt` |
-| **In-app onboarding** | Selectric typeball guide, VQC claims table, screencast accordion |
+| **In-app onboarding** | Selectric typeball guide, VQC claims table, **Animations** screencast page |
 | **HF perf caps** | Animation frame cap + SLM PNG export disabled when `SPACE_ID` is set |
 
 Beginner-facing Space docs: [`../docs/HF_SPACE_README.md`](../docs/HF_SPACE_README.md) (synced to HF README by `sync_hf_space.sh`).

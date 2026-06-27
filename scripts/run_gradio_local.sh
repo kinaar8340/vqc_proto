@@ -21,9 +21,5 @@ fi
 "$VENV/bin/pip" install -q -U pip
 "$VENV/bin/pip" install -r "$ROOT/proto/requirements-web.txt"
 
-if [[ -f "$ROOT/hfb.png" ]]; then
-  cp "$ROOT/hfb.png" "$ROOT/proto/hfb.png"
-fi
-
 cd "$ROOT/proto"
 exec "$VENV/bin/python" gradio_demo.py

@@ -87,9 +87,16 @@ _VQC_HF_RUNNING = "#1ed760"  # Hugging Face "Running" status green
 _VQC_FIELD_FILL = "rgba(10, 8, 24, 0.50)"
 
 # Extend this list to add future Source bookmark tabs.
+# Tabs with "page" switch in-app screens; others open external URLs.
 SOURCE_TABS: list[dict[str, str | None]] = [
     {"id": "github", "label": "GitHub", "url": GITHUB_URL},
-    {"id": "live-demo", "label": "Live demo", "url": HF_SPACE_URL},
+    {"id": "live-demo", "label": "Live demo", "url": HF_SPACE_URL, "page": "demo"},
+    {
+        "id": "animations",
+        "label": "Animations",
+        "url": None,
+        "page": "animations",
+    },
     {
         "id": "slm",
         "label": "SLM quickstart",
@@ -97,9 +104,17 @@ SOURCE_TABS: list[dict[str, str | None]] = [
     },
 ]
 
+ANIMATIONS_INTRO_MD = (
+    "Recorded end-to-end flow: pick a preset or **Run demo**, then **Animate typehead** — "
+    "helical phase, OAM intensity, pyramidal pulse, and PWM orbs (payload: "
+    f'`"{DEFAULT_PAYLOAD}"`).'
+)
 
-def _active_source_tab() -> str:
-    """Which Source tab represents the current page/context."""
+
+def _active_source_tab_id(page: str = "demo") -> str:
+    """Which Source tab id is active for the given in-app page."""
+    if page == "animations":
+        return "animations"
     return "live-demo" if is_hf_space() else "local"
 
 
@@ -107,13 +122,14 @@ def _source_tab_entries() -> list[dict[str, str | None]]:
     """Tabs shown in the Source bar (append here for future bookmarks)."""
     entries = list(SOURCE_TABS)
     if not is_hf_space():
-        entries.append({"id": "local", "label": "Local app", "url": None})
+        entries.append({"id": "local", "label": "Local app", "url": None, "page": "demo"})
     return entries
 
 
-def _source_tabs_html() -> str:
+def _source_tabs_html(active_page: str = "demo") -> str:
     """Bookmark-style Source tabs — active tab uses HF Running green."""
-    active = _active_source_tab()
+    on_hf = is_hf_space()
+    active_id = _active_source_tab_id(active_page)
     parts = [
         '<nav class="vqc-source-tabs" aria-label="Source bookmarks">',
         '<span class="vqc-source-label">Source:</span>',
@@ -122,26 +138,35 @@ def _source_tabs_html() -> str:
         tab_id = str(tab["id"])
         label = str(tab["label"])
         url = tab.get("url")
-        is_active = tab_id == active
-        if is_active and (not url or (tab_id == "live-demo" and is_hf_space())):
+        page_key = tab.get("page")
+        is_active = tab_id == active_id
+        if is_active:
             parts.append(
                 f'<span class="vqc-source-tab active" aria-current="page" data-tab="{tab_id}">'
                 f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}</span>'
             )
-        else:
-            href = url or "#"
+        elif page_key and not (tab_id == "live-demo" and not on_hf):
             parts.append(
-                f'<a href="{href}" class="vqc-source-tab{" active" if is_active else ""}" '
-                f'data-tab="{tab_id}" target="_blank" rel="noopener noreferrer">'
-                + (
-                    f'<span class="vqc-tab-dot" aria-hidden="true"></span>{label}'
-                    if is_active
-                    else label
-                )
-                + "</a>"
+                f'<button type="button" class="vqc-source-tab" data-vqc-nav="{page_key}" '
+                f'data-tab="{tab_id}">{label}</button>'
+            )
+        elif url:
+            parts.append(
+                f'<a href="{url}" class="vqc-source-tab" data-tab="{tab_id}" '
+                f'target="_blank" rel="noopener noreferrer">{label}</a>'
             )
     parts.append("</nav>")
     return "".join(parts)
+
+
+def _nav_to_page(page: str) -> tuple:
+    """Switch between demo and animations screens; refresh Source tab highlights."""
+    return (
+        gr.update(visible=page == "demo"),
+        gr.update(visible=page == "animations"),
+        _source_tabs_html(page) + f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
+        page,
+    )
 
 
 def _build_vqc_theme() -> gr.themes.Base:
@@ -229,6 +254,20 @@ WALLPAPER_HEAD = f"""
     if (document.body) mountWallpaper();
     document.addEventListener('DOMContentLoaded', mountWallpaper);
     window.addEventListener('load', mountWallpaper);
+}})();
+(function() {{
+    function clickNav(page) {{
+        var wrap = document.getElementById('vqc-nav-' + page);
+        if (!wrap) return;
+        var btn = wrap.querySelector('button');
+        if (btn) btn.click();
+    }}
+    document.addEventListener('click', function(e) {{
+        var el = e.target.closest('[data-vqc-nav]');
+        if (!el) return;
+        e.preventDefault();
+        clickNav(el.getAttribute('data-vqc-nav'));
+    }});
 }})();
 </script>
 """
@@ -367,11 +406,24 @@ footer {{
     line-height: 1.2 !important;
     transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }}
-.gradio-container a.vqc-source-tab:hover {{
+.gradio-container a.vqc-source-tab:hover,
+.gradio-container button.vqc-source-tab:hover {{
     color: #f97316 !important;
     -webkit-text-fill-color: #f97316 !important;
     border-color: rgba(249, 115, 22, 0.55) !important;
     background: rgba(10, 8, 24, 0.5) !important;
+}}
+.gradio-container button.vqc-source-tab {{
+    cursor: pointer !important;
+    font-family: inherit !important;
+}}
+.gradio-container .vqc-nav-hidden {{
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }}
 .gradio-container .vqc-source-tab.active {{
     color: {_VQC_HF_RUNNING} !important;
@@ -609,55 +661,142 @@ def build_app() -> gr.Blocks:
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
             "Use **Quick** resolution for sub-second runs."
         )
-        gr.HTML(
-            _source_tabs_html() + f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
+        source_bar = gr.HTML(
+            _source_tabs_html("demo") + f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
         )
-        gr.Markdown(SIMULATION_BANNER_MD)
-        with gr.Accordion("New here? 60-second guide (Selectric typeball → OAM)", open=False):
-            gr.Markdown(ONBOARDING_MD)
-        with gr.Row():
-            payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)
-            num_orbs = gr.Slider(2, 6, value=4, step=1, label="Number of orbs")
-        with gr.Row():
-            resolution = gr.Radio(
-                choices=["Quick", "Full"],
-                value="Quick",
-                label="Resolution",
-                info="Quick = low grid (fast); Full = publication quality"
-                + (" — Full is slower on HF" if on_hf else ""),
+        current_page = gr.State("demo")
+        with gr.Row(elem_classes=["vqc-nav-hidden"]):
+            nav_demo_btn = gr.Button("Demo", elem_id="vqc-nav-demo")
+            nav_animations_btn = gr.Button("Animations", elem_id="vqc-nav-animations")
+
+        with gr.Column(visible=True) as page_demo:
+            gr.Markdown(SIMULATION_BANNER_MD)
+            with gr.Accordion("New here? 60-second guide (Selectric typeball → OAM)", open=False):
+                gr.Markdown(ONBOARDING_MD)
+            with gr.Row():
+                payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)
+                num_orbs = gr.Slider(2, 6, value=4, step=1, label="Number of orbs")
+            with gr.Row():
+                resolution = gr.Radio(
+                    choices=["Quick", "Full"],
+                    value="Quick",
+                    label="Resolution",
+                    info="Quick = low grid (fast); Full = publication quality"
+                    + (" — Full is slower on HF" if on_hf else ""),
+                )
+                seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
+                gamma_1 = gr.Slider(
+                    1.0,
+                    2.0,
+                    value=1.5,
+                    step=0.1,
+                    label="p-wave BMGL strength (γ₁)",
+                    info="Higher γ₁ → stronger inhibition vs. phase noise (default 1.5)",
+                )
+                noise_level = gr.Slider(
+                    0.0,
+                    1.0,
+                    value=DEFAULT_NOISE_LEVEL,
+                    step=0.05,
+                    label="Channel noise",
+                    info="0 = clean link · 0.35 = default turbulence · 1 = harsh",
+                )
+            gr.Markdown("**Example presets** — one click loads settings and **runs** the demo:")
+            with gr.Row():
+                preset_buttons: dict[str, gr.Button] = {}
+                for key, preset in EXAMPLE_PRESETS.items():
+                    preset_buttons[key] = gr.Button(preset["label"], variant="secondary", size="sm")
+            with gr.Row():
+                export_slm_frames = gr.Checkbox(
+                    label="Include SLM-ready phase frames (PNG)",
+                    value=False,
+                    interactive=not on_hf,
+                    info=slm_frames_info,
+                )
+            with gr.Accordion("How this maps to VQC claims", open=False):
+                gr.Markdown(VQC_CLAIMS_MD)
+            run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
+            run_cache = gr.State(value=None)
+            with gr.Row(equal_height=True):
+                with gr.Column(scale=1):
+                    metrics = gr.Textbox(label="Metrics", lines=14)
+                with gr.Column(scale=2):
+                    figure = gr.Image(
+                        label="6-panel output",
+                        type="filepath",
+                        elem_classes=["vqc-figure-panel"],
+                    )
+            figure_3d_static = gr.Image(
+                label="3D orb trajectories (static — all browsers)",
+                type="filepath",
+                elem_classes=["vqc-figure-panel"],
             )
-            seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
-            gamma_1 = gr.Slider(
-                1.0,
-                2.0,
-                value=1.5,
-                step=0.1,
-                label="p-wave BMGL strength (γ₁)",
-                info="Higher γ₁ → stronger inhibition vs. phase noise (default 1.5)",
+            with gr.Accordion("Interactive 3D — drag to rotate (WebGL)", open=False):
+                gr.Markdown(WEBGL_3D_NOTE)
+                figure_3d_plotly = gr.Plot(
+                    label="Plotly 3D",
+                    elem_classes=["vqc-plot3d-panel"],
+                )
+            animate_btn = gr.Button(
+                "Animate typehead",
+                variant="secondary",
+                elem_classes=["vqc-full-width"],
             )
-            noise_level = gr.Slider(
-                0.0,
-                1.0,
-                value=DEFAULT_NOISE_LEVEL,
-                step=0.05,
-                label="Channel noise",
-                info="0 = clean link · 0.35 = default turbulence · 1 = harsh",
+            animation_video = gr.Video(
+                label="Typehead animation (MP4)",
+                elem_classes=["vqc-animation-panel"],
             )
-        gr.Markdown("**Example presets** — one click loads settings and **runs** the demo:")
-        with gr.Row():
-            preset_buttons: dict[str, gr.Button] = {}
-            for key, preset in EXAMPLE_PRESETS.items():
-                preset_buttons[key] = gr.Button(preset["label"], variant="secondary", size="sm")
-        with gr.Row():
-            export_slm_frames = gr.Checkbox(
-                label="Include SLM-ready phase frames (PNG)",
-                value=False,
-                interactive=not on_hf,
-                info=slm_frames_info,
+            animation_gif = gr.Image(
+                label="Typehead animation (GIF download)",
+                type="filepath",
+                elem_classes=["vqc-animation-panel"],
             )
-        with gr.Accordion("How this maps to VQC claims", open=False):
-            gr.Markdown(VQC_CLAIMS_MD)
-        with gr.Accordion("Example walkthrough (recorded demo)", open=False):
+            animation_info = gr.Markdown(
+                "*After **Run demo**, click **Animate typehead** for a full-width per-run animation "
+                "(MP4 player + GIF — phase · intensity · pulse · orb trails).*"
+            )
+            with gr.Accordion("SLM package download", open=False):
+                slm_info = gr.Markdown(SLM_PACKAGE_IDLE)
+                slm_file = gr.File(
+                    label="slm_package.zip",
+                    interactive=False,
+                    file_count="single",
+                    type="filepath",
+                )
+            run_inputs = [
+                payload,
+                num_orbs,
+                resolution,
+                seed,
+                gamma_1,
+                noise_level,
+                export_slm_frames,
+            ]
+            run_outputs = [
+                metrics,
+                figure,
+                figure_3d_static,
+                figure_3d_plotly,
+                slm_info,
+                slm_file,
+                run_cache,
+            ]
+
+            run_btn.click(run_demo, run_inputs, run_outputs)
+            animate_btn.click(
+                animate_typehead,
+                inputs=[run_cache],
+                outputs=[animation_video, animation_gif, animation_info],
+            )
+            for key, btn in preset_buttons.items():
+                btn.click(
+                    lambda k=key: load_example_preset(k),
+                    outputs=[payload, num_orbs, gamma_1, noise_level],
+                ).then(run_demo, inputs=run_inputs, outputs=run_outputs)
+
+        with gr.Column(visible=False) as page_animations:
+            gr.Markdown("## Animations")
+            gr.Markdown(ANIMATIONS_INTRO_MD)
             gr.HTML(
                 f'<video src="{DEMO_SCREENCAST_URL}" controls playsinline '
                 f'style="width:100%;max-width:100%;border-radius:8px;" '
@@ -666,86 +805,13 @@ def build_app() -> gr.Blocks:
             )
             gr.Markdown(
                 f"[Direct MP4 link]({DEMO_SCREENCAST_URL}) · "
-                "same flow as **Run demo** → **Animate typehead**"
+                "same flow as **Run demo** → **Animate typehead** on the **Live demo** tab."
             )
-        run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
-        run_cache = gr.State(value=None)
-        with gr.Row(equal_height=True):
-            with gr.Column(scale=1):
-                metrics = gr.Textbox(label="Metrics", lines=14)
-            with gr.Column(scale=2):
-                figure = gr.Image(
-                    label="6-panel output",
-                    type="filepath",
-                    elem_classes=["vqc-figure-panel"],
-                )
-        figure_3d_static = gr.Image(
-            label="3D orb trajectories (static — all browsers)",
-            type="filepath",
-            elem_classes=["vqc-figure-panel"],
-        )
-        with gr.Accordion("Interactive 3D — drag to rotate (WebGL)", open=False):
-            gr.Markdown(WEBGL_3D_NOTE)
-            figure_3d_plotly = gr.Plot(
-                label="Plotly 3D",
-                elem_classes=["vqc-plot3d-panel"],
-            )
-        animate_btn = gr.Button(
-            "Animate typehead",
-            variant="secondary",
-            elem_classes=["vqc-full-width"],
-        )
-        animation_video = gr.Video(
-            label="Typehead animation (MP4)",
-            elem_classes=["vqc-animation-panel"],
-        )
-        animation_gif = gr.Image(
-            label="Typehead animation (GIF download)",
-            type="filepath",
-            elem_classes=["vqc-animation-panel"],
-        )
-        animation_info = gr.Markdown(
-            "*After **Run demo**, click **Animate typehead** for a full-width per-run animation "
-            "(MP4 player + GIF — phase · intensity · pulse · orb trails).*"
-        )
-        with gr.Accordion("SLM package download", open=False):
-            slm_info = gr.Markdown(SLM_PACKAGE_IDLE)
-            slm_file = gr.File(
-                label="slm_package.zip",
-                interactive=False,
-                file_count="single",
-                type="filepath",
-            )
-        run_inputs = [
-            payload,
-            num_orbs,
-            resolution,
-            seed,
-            gamma_1,
-            noise_level,
-            export_slm_frames,
-        ]
-        run_outputs = [
-            metrics,
-            figure,
-            figure_3d_static,
-            figure_3d_plotly,
-            slm_info,
-            slm_file,
-            run_cache,
-        ]
 
-        run_btn.click(run_demo, run_inputs, run_outputs)
-        animate_btn.click(
-            animate_typehead,
-            inputs=[run_cache],
-            outputs=[animation_video, animation_gif, animation_info],
-        )
-        for key, btn in preset_buttons.items():
-            btn.click(
-                lambda k=key: load_example_preset(k),
-                outputs=[payload, num_orbs, gamma_1, noise_level],
-            ).then(run_demo, inputs=run_inputs, outputs=run_outputs)
+        nav_outputs = [page_demo, page_animations, source_bar, current_page]
+        nav_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
+        nav_animations_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
             f"[IP notice]({GITHUB_URL}/blob/main/IP_NOTICE.md)"

@@ -30,8 +30,9 @@ Run the prototype in your browser — no clone required. The live app includes:
 | **Animate typehead** | Per-run MP4 + GIF (phase · intensity · pulse · orb trails) |
 | **SLM package zip** | `manifest.json`, `phase_stack.npy`, bench README — optional PNG frame export locally |
 | **In-app 60s guide** | Selectric typeball analogy, pipeline steps, metrics glossary |
+| **Animations tab** | Recorded screencast page (Source bar) — full **Run demo** → **Animate typehead** flow |
 
-**New to OAM or the typeball analogy?** The Space README includes a [beginner guide](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc/blob/main/README.md) with diagrams, OAM comparisons, and an animated typehead walkthrough ([`typehead_demo.gif`](typehead_demo.gif) · [`docs/typehead_screencast.mp4`](docs/typehead_screencast.mp4)).
+**New to OAM or the typeball analogy?** The Space README includes a [beginner guide](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc/blob/main/README.md) with diagrams, OAM comparisons, and preview media ([`typehead_demo.gif`](typehead_demo.gif) · **Animations** tab · [`docs/typehead_screencast.mp4`](docs/typehead_screencast.mp4)).
 
 Maintainers: `./scripts/sync_hf_space.sh` then `./scripts/deploy_hf_space.sh` (SSH git to HF, or `export HF_TOKEN=hf_...` for hub upload).
 
