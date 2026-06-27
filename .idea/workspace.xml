@@ -2,20 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="eef866b1-fce8-4bb8-87fa-2e4235843988" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/pyLspTools.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/pyProjectModel.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vqc_proto_full.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/gradio_demo.py" beforeDir="false" afterPath="$PROJECT_DIR$/proto/gradio_demo.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proto/requirements-web.txt" beforeDir="false" afterPath="$PROJECT_DIR$/proto/requirements-web.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/deploy_hf_space.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/deploy_hf_space.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/sync_hf_space.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/sync_hf_space.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/space/orbital-braille/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/space/orbital-braille/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/space/orbital-braille/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/space/orbital-braille/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/space/orbital-braille/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vqc_proto" beforeDir="false" afterPath="$PROJECT_DIR$/vqc_proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vqc_proto/proto/outputs/orbital_braille_demo.png" beforeDir="false" afterPath="$PROJECT_DIR$/vqc_proto/proto/outputs/orbital_braille_demo.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,6 +26,7 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
@@ -54,5 +43,8 @@
       <updated>1782527030025</updated>
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
 </project>
