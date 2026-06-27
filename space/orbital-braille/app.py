@@ -1168,6 +1168,54 @@ footer {{
 .gradio-container .vqc-optics-panel-nav .vqc-source-tabs-row {{
     margin: 0 !important;
 }}
+.gradio-container .vqc-nav-spreadsheet-row {{
+    display: grid !important;
+    grid-template-columns: 4.75rem repeat(5, minmax(4.5rem, 1fr)) !important;
+    gap: 0.2rem 0.45rem !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+.gradio-container .vqc-nav-spreadsheet-row > .block,
+.gradio-container .vqc-nav-spreadsheet-row > .form,
+.gradio-container .vqc-nav-spreadsheet-row > .column {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+}}
+.gradio-container .vqc-nav-row-label {{
+    justify-self: end !important;
+    align-self: center !important;
+    text-align: right !important;
+    padding-right: 0.15rem !important;
+}}
+.gradio-container .vqc-nav-cell,
+.gradio-container .vqc-nav-cell > .block,
+.gradio-container .vqc-nav-cell > .form {{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 1.55rem !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0.1rem 0.2rem !important;
+}}
+.gradio-container .vqc-nav-cell .html-container,
+.gradio-container .vqc-nav-cell .html-container p {{
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    width: 100% !important;
+}}
+.gradio-container .vqc-nav-cell-empty {{
+    visibility: hidden !important;
+}}
 .gradio-container .vqc-optics-logo {{
     display: flex !important;
     flex-direction: column !important;
@@ -1704,43 +1752,57 @@ def build_app() -> gr.Blocks:
                 with gr.Row(elem_classes=["vqc-optics-panel-header"]):
                     gr.HTML(OPTICS_LOGO_HTML)
                     with gr.Column(elem_classes=["vqc-optics-panel-nav"], scale=1):
-                        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-panel-source-row"]):
-                            gr.HTML('<span class="vqc-source-label">Source:</span>')
-                            tab_demo_btn = gr.Button(
-                                "Live Demo",
-                                elem_classes=["vqc-source-tab", "active"],
-                                interactive=False,
-                                scale=0,
-                                variant="secondary",
-                            )
-                            tab_anim_btn = gr.Button(
-                                "Animations",
-                                elem_classes=["vqc-source-tab"],
-                                scale=0,
-                                variant="secondary",
-                            )
-                        with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-source-nav-row"]):
-                            gr.HTML('<span class="vqc-source-label">Links:</span>')
-                            gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
-                            gr.HTML(
-                                _external_tab_html(
-                                    "SLM Quickstart",
-                                    f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
-                                    "slm",
+                        with gr.Row(elem_classes=["vqc-nav-spreadsheet-row"]):
+                            gr.HTML('<span class="vqc-source-label vqc-nav-row-label">Source:</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                tab_demo_btn = gr.Button(
+                                    "Live Demo",
+                                    elem_classes=["vqc-source-tab", "active"],
+                                    interactive=False,
+                                    scale=0,
+                                    variant="secondary",
                                 )
-                            )
-                            tab_claims_btn = gr.Button(
-                                "Claims",
-                                elem_classes=["vqc-source-tab"],
-                                scale=0,
-                                variant="secondary",
-                            )
-                            tab_newhere_btn = gr.Button(
-                                "New here?",
-                                elem_classes=["vqc-source-tab"],
-                                scale=0,
-                                variant="secondary",
-                            )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                tab_anim_btn = gr.Button(
+                                    "Animations",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                tab_claims_btn = gr.Button(
+                                    "Claims",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                tab_newhere_btn = gr.Button(
+                                    "New here?",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                        with gr.Row(elem_classes=["vqc-nav-spreadsheet-row"]):
+                            gr.HTML('<span class="vqc-source-label vqc-nav-row-label">Links:</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML(_external_tab_html("GitHub", GITHUB_URL, "github"))
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                gr.HTML(
+                                    _external_tab_html(
+                                        "SLM Quickstart",
+                                        f"{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+                                        "slm",
+                                    )
+                                )
                 optics_terminal = gr.Textbox(
                     label="Matrix status display — selection menu · d-pad nav",
                     value=_optics_terminal_menu(0),
