@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from orbital_braille import (
+    NOISE_LEVEL_REFERENCE,
     OrbitalTypehead,
     TypeheadConfig,
     PWaveBMGL,
@@ -22,6 +23,7 @@ from orbital_braille import (
     decode_field,
     build_stable_font,
     font_separation,
+    noise_level_to_scale,
 )
 from orbital_braille.slm_typehead import SLM_PRESETS, SLMConfig, export_hologram_package
 
@@ -29,14 +31,16 @@ PATENT_FIGURE1_PAYLOAD = "I live in Oregon"
 
 HF_ANIM_MAX_FRAMES_QUICK = 12
 HF_ANIM_MAX_FRAMES_FULL = 20
+DEFAULT_NOISE_LEVEL = NOISE_LEVEL_REFERENCE
 
 
-class ExamplePreset(TypedDict):
+class ExamplePreset(TypedDict, total=False):
     payload: str
     orbs: int
     gamma_1: float
     label: str
     blurb: str
+    noise_level: float
 
 
 EXAMPLE_PRESETS: dict[str, ExamplePreset] = {
@@ -58,6 +62,7 @@ EXAMPLE_PRESETS: dict[str, ExamplePreset] = {
         "payload": "Hello OAM",
         "orbs": 2,
         "gamma_1": 1.5,
+        "noise_level": 0.25,
         "label": "Hello OAM",
         "blurb": "Minimal 2-orb intro run",
     },
@@ -65,6 +70,7 @@ EXAMPLE_PRESETS: dict[str, ExamplePreset] = {
         "payload": "noise test",
         "orbs": 6,
         "gamma_1": 1.8,
+        "noise_level": 0.75,
         "label": "6-orb stress",
         "blurb": "Max orbs + stronger BMGL inhibition",
     },
@@ -89,7 +95,7 @@ to a glyph index.
 2. **Run demo** — watch the 6-panel figure: clean phase → noisy phase → intensity donut, plus pulse,
    spectral shards, and orb layout. Check **shard fidelity** and **Fisher-Rao font separation** in metrics.
 3. **Animate typehead** — time-lapse of helical phase, intensity, pulse cursor, and PWM-gated orb trails.
-   Toggle **γ₁** to see BMGL inhibition; raise **noise** via seed rerolls.
+   Tune **channel noise** (0 = clean link, 1 = harsh turbulence) and **γ₁** for BMGL inhibition.
 
 ### What the metrics mean
 | Metric | Plain English |
@@ -139,10 +145,11 @@ def get_animation_max_frames(*, quick: bool) -> int | None:
     return HF_ANIM_MAX_FRAMES_QUICK if quick else HF_ANIM_MAX_FRAMES_FULL
 
 
-def load_example_preset(key: str) -> tuple[str, float, float]:
-    """Return (payload, num_orbs, gamma_1) for a named preset."""
+def load_example_preset(key: str) -> tuple[str, float, float, float]:
+    """Return (payload, num_orbs, gamma_1, noise_level) for a named preset."""
     preset = EXAMPLE_PRESETS.get(key, EXAMPLE_PRESETS["patent"])
-    return preset["payload"], float(preset["orbs"]), preset["gamma_1"]
+    noise = preset.get("noise_level", DEFAULT_NOISE_LEVEL)
+    return preset["payload"], float(preset["orbs"]), preset["gamma_1"], float(noise)
 
 
 def get_build_label() -> str:
@@ -648,6 +655,7 @@ def run_pipeline(
     quick: bool = True,
     seed: int = 42,
     gamma_1: float = 1.5,
+    noise_level: float = DEFAULT_NOISE_LEVEL,
 ) -> tuple[TypeheadConfig, object, np.ndarray, object, str, float]:
     """Encode → turbulence → decode. Returns cfg, encoded, noisy, decoded, metrics, font_sep."""
     cfg = build_config(num_orbs, quick=quick, gamma_1=gamma_1)
@@ -655,7 +663,7 @@ def run_pipeline(
     font_sep = font_separation(build_stable_font(num_orbs, num_glyphs=16))
 
     encoded = typehead.encode(payload)
-    noisy = typehead.propagate_with_turbulence(encoded)
+    noisy = typehead.propagate_with_turbulence(encoded, noise_level=noise_level)
     decoded = decode_field(
         noisy,
         reference_intensity=encoded.intensity_time,
@@ -676,6 +684,7 @@ def run_pipeline(
             f"Payload: {payload!r}",
             f"Orbs: {num_orbs}",
             f"p-wave BMGL γ₁ = {bmgl.gamma_1:.2f}  inhibition boost = {bmgl.inhibition_boost:.4f}",
+            f"Channel noise: {noise_level:.2f}  (phase scale {noise_level_to_scale(noise_level):.2f})",
             f"Font separation: {font_sep:.4f} rad",
             f"Shard fidelity: {decoded.shard_fidelity:.4f}",
             f"Glyph: index={decoded.glyph_index}  fidelity={decoded.glyph_fidelity:.4f}",

@@ -3,7 +3,7 @@
 from .typehead import OrbitalTypehead, TypeheadConfig
 from .decoder import decode_field, DecodeResult
 from .lg_modes import lg_mode, lg_mode_full, project_oam_spectrum
-from .altermagnetic import PWaveBMGL, apply_turbulence
+from .altermagnetic import NOISE_LEVEL_REFERENCE, PWaveBMGL, apply_turbulence, noise_level_to_scale
 from .quaternion_codec import Quaternion, encode_shard, decode_shard
 from .stable_fonts import EmergentConstants, build_stable_font, font_separation
 from .font_optimizer import optimize_font, FontOptResult
@@ -29,8 +29,10 @@ __all__ = [
     "lg_mode",
     "lg_mode_full",
     "project_oam_spectrum",
+    "NOISE_LEVEL_REFERENCE",
     "PWaveBMGL",
     "apply_turbulence",
+    "noise_level_to_scale",
     "Quaternion",
     "encode_shard",
     "decode_shard",

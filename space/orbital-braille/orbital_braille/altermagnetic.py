@@ -26,15 +26,28 @@ class PWaveBMGL:
         return self.gamma_1 * self.inhibition_boost
 
 
+NOISE_LEVEL_REFERENCE = 0.35
+
+
+def noise_level_to_scale(level: float) -> float:
+    """Map UI noise slider [0, 1] to phase-noise multiplier; 0.35 ≈ legacy default."""
+    level = float(np.clip(level, 0.0, 1.0))
+    if level <= 0.0:
+        return 0.0
+    return level / NOISE_LEVEL_REFERENCE
+
+
 def apply_turbulence(
     field: np.ndarray,
     bmgl: PWaveBMGL,
     phi: np.ndarray | None = None,
     rng: np.random.Generator | None = None,
+    *,
+    noise_scale: float = 1.0,
 ) -> np.ndarray:
     """Apply phase noise with p-wave BMGL inhibition."""
     rng = rng or np.random.default_rng()
-    phase_noise = rng.normal(0, bmgl.detune_scale, field.shape)
+    phase_noise = rng.normal(0, bmgl.detune_scale * noise_scale, field.shape)
     phase_noise /= bmgl.effective_inhibition
 
     if phi is not None:

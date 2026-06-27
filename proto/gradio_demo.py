@@ -12,6 +12,7 @@ from pathlib import Path
 import gradio as gr
 
 from demo_core import (
+    DEFAULT_NOISE_LEVEL,
     EXAMPLE_PRESETS,
     ONBOARDING_MD,
     PATENT_FIGURE1_PAYLOAD,
@@ -157,7 +158,7 @@ footer {{ visibility: hidden; }}
 """
 
 
-def load_patent_example() -> tuple[str, float, float]:
+def load_patent_example() -> tuple[str, float, float, float]:
     """Auto-fill patent Figure 1 payload and recommended orb / BMGL settings."""
     return load_example_preset("patent")
 
@@ -168,6 +169,7 @@ def run_demo(
     resolution: str,
     seed: float,
     gamma_1: float,
+    noise_level: float,
     export_slm_frames: bool,
     progress: gr.Progress = gr.Progress(track_tqdm=False),
 ) -> tuple[str, str | None, str | None, str, str | None, tuple | None]:
@@ -186,6 +188,7 @@ def run_demo(
             quick=quick,
             seed=int(seed),
             gamma_1=float(gamma_1),
+            noise_level=float(noise_level),
         )
 
         out_dir = Path(tempfile.mkdtemp(prefix="vqc_gradio_"))
@@ -311,7 +314,15 @@ def build_app() -> gr.Blocks:
                 label="p-wave BMGL strength (γ₁)",
                 info="Higher γ₁ → stronger inhibition vs. phase noise (default 1.5)",
             )
-        gr.Markdown("**Example presets** — one click loads payload + orb count + γ₁:")
+            noise_level = gr.Slider(
+                0.0,
+                1.0,
+                value=DEFAULT_NOISE_LEVEL,
+                step=0.05,
+                label="Channel noise",
+                info="0 = clean link · 0.35 = default turbulence · 1 = harsh",
+            )
+        gr.Markdown("**Example presets** — one click loads settings and **runs** the demo:")
         with gr.Row():
             preset_buttons: dict[str, gr.Button] = {}
             for key, preset in EXAMPLE_PRESETS.items():
@@ -381,11 +392,18 @@ def build_app() -> gr.Blocks:
                 file_count="single",
                 type="filepath",
             )
-        run_btn.click(
-            run_demo,
-            [payload, num_orbs, resolution, seed, gamma_1, export_slm_frames],
-            [metrics, figure, figure_3d, slm_info, slm_file, run_cache],
-        )
+        run_inputs = [
+            payload,
+            num_orbs,
+            resolution,
+            seed,
+            gamma_1,
+            noise_level,
+            export_slm_frames,
+        ]
+        run_outputs = [metrics, figure, figure_3d, slm_info, slm_file, run_cache]
+
+        run_btn.click(run_demo, run_inputs, run_outputs)
         animate_btn.click(
             animate_typehead,
             inputs=[run_cache],
@@ -394,8 +412,8 @@ def build_app() -> gr.Blocks:
         for key, btn in preset_buttons.items():
             btn.click(
                 lambda k=key: load_example_preset(k),
-                outputs=[payload, num_orbs, gamma_1],
-            )
+                outputs=[payload, num_orbs, gamma_1, noise_level],
+            ).then(run_demo, inputs=run_inputs, outputs=run_outputs)
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
             f"[IP notice]({GITHUB_URL}/blob/main/IP_NOTICE.md)"

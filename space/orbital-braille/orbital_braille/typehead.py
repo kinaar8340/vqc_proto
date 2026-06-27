@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy.signal import chirp, welch
 
-from .altermagnetic import PWaveBMGL, apply_turbulence
+from .altermagnetic import PWaveBMGL, apply_turbulence, noise_level_to_scale
 from .lg_modes import lg_mode
 from .quaternion_codec import Quaternion, encode_shard, rodrigues_rotation
 from .stable_fonts import EmergentConstants, build_stable_font, glyph_for_byte
@@ -202,8 +202,14 @@ class OrbitalTypehead:
             payload=bytes(payload),
         )
 
-    def propagate_with_turbulence(self, encoded: EncodeResult) -> np.ndarray:
+    def propagate_with_turbulence(
+        self,
+        encoded: EncodeResult,
+        *,
+        noise_level: float | None = None,
+    ) -> np.ndarray:
         """Apply p-wave BMGL turbulence to encoded field."""
+        noise_scale = noise_level_to_scale(noise_level) if noise_level is not None else 1.0
         noisy = np.zeros_like(encoded.field_time)
         for ti in range(encoded.field_time.shape[0]):
             noisy[ti] = apply_turbulence(
@@ -211,5 +217,6 @@ class OrbitalTypehead:
                 self.config.bmgl,
                 phi=self.phi,
                 rng=self.rng,
+                noise_scale=noise_scale,
             )
         return noisy

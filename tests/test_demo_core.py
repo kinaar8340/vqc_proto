@@ -14,6 +14,7 @@ if str(PROTO_ROOT) not in sys.path:
     sys.path.insert(0, str(PROTO_ROOT))
 
 from demo_core import (  # noqa: E402
+    DEFAULT_NOISE_LEVEL,
     EXAMPLE_PRESETS,
     PATENT_FIGURE1_PAYLOAD,
     export_slm_bundle,
@@ -24,6 +25,7 @@ from demo_core import (  # noqa: E402
     render_typehead_animation,
     run_pipeline,
 )
+from orbital_braille import noise_level_to_scale  # noqa: E402
 
 
 def test_patent_figure1_payload():
@@ -77,10 +79,24 @@ def test_get_build_label():
 
 def test_example_presets_load():
     assert len(EXAMPLE_PRESETS) >= 4
-    payload, orbs, gamma = load_example_preset("hello")
+    payload, orbs, gamma, noise = load_example_preset("hello")
     assert payload == "Hello OAM"
     assert orbs == 2
     assert gamma == 1.5
+    assert noise == 0.25
+    _, _, _, stress_noise = load_example_preset("stress")
+    assert stress_noise == 0.75
+
+
+def test_noise_level_to_scale():
+    assert noise_level_to_scale(0.0) == 0.0
+    assert noise_level_to_scale(DEFAULT_NOISE_LEVEL) == pytest.approx(1.0)
+    assert noise_level_to_scale(1.0) > 1.0
+
+
+def test_run_pipeline_reports_noise_level():
+    _, _, _, _, metrics, _ = run_pipeline("Hi", 2, quick=True, seed=0, noise_level=0.5)
+    assert "Channel noise: 0.50" in metrics
 
 
 def test_plot_orb_trajectory_3d(tmp_path):
