@@ -74,38 +74,46 @@ SLM_PACKAGE_IDLE = (
     "- `frames/` — optional PNG sequence (enable checkbox above)"
 )
 
-# Background: full hfb.png at 5% opacity (pseudo-layer). Panels stay lightly frosted.
+# hfb.png: fixed bottom layer (full image). Page chrome transparent; fields/boxes 5%.
 HFB_CSS = f"""
+html, body, #root, footer {{
+    background: transparent !important;
+}}
 .gradio-container {{
     position: relative !important;
-    background-color: #0a0818 !important;
+    background: transparent !important;
+    isolation: isolate !important;
 }}
 .gradio-container::before {{
     content: "" !important;
     position: fixed !important;
     inset: 0 !important;
-    z-index: 0 !important;
+    z-index: -1 !important;
     pointer-events: none !important;
     background-image: url('{HFB_RAW_URL}') !important;
     background-size: contain !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    opacity: 0.05 !important;
+    background-attachment: fixed !important;
 }}
-.gradio-container > .main,
-.gradio-container > .wrap,
-.gradio-container > .contain {{
-    position: relative !important;
-    z-index: 1 !important;
-}}
-.gradio-container .contain,
 .gradio-container .main,
+.gradio-container .wrap,
+.gradio-container .contain,
 .gradio-container .tabs,
 .gradio-container .tabitem,
 .gradio-container .form,
 .gradio-container .column,
 .gradio-container .row,
 .gradio-container .block,
+.gradio-container .gr-group,
+.gradio-container .gr-markdown,
+.gradio-container .prose,
+.gradio-container label.wrap,
+.gradio-container .label-wrap {{
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}}
 .gradio-container .panel,
 .gradio-container .gr-panel,
 .gradio-container .gr-box,
@@ -115,17 +123,31 @@ HFB_CSS = f"""
 .gradio-container [data-testid="textbox"],
 .gradio-container .accordion,
 .gradio-container details,
+.gradio-container summary,
 .gradio-container .file-preview,
 .gradio-container .gr-file,
-.gradio-container .image-container,
-.gradio-container .gr-image {{
-    background-color: rgba(10, 8, 24, 0.1) !important;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+.gradio-container .gr-video,
+.gradio-container .gr-checkbox,
+.gradio-container .gr-radio,
+.gradio-container .gr-slider,
+.gradio-container .gr-dropdown,
+.gradio-container .vqc-figure-panel,
+.gradio-container .vqc-plot3d-panel,
+.gradio-container .vqc-animation-panel {{
+    background-color: rgba(10, 8, 24, 0.05) !important;
     border-radius: 10px;
 }}
-.gradio-container label.wrap {{
-    background: transparent !important;
+.gradio-container .image-container,
+.gradio-container .gr-image {{
+    background-color: rgba(10, 8, 24, 0.05) !important;
+    border-radius: 10px;
+}}
+.gradio-container .image-container img,
+.gradio-container .gr-image img,
+.gradio-container .vqc-figure-panel img,
+.gradio-container video {{
+    background-color: transparent !important;
+    opacity: 1 !important;
 }}
 .gradio-container button,
 .gradio-container .gr-button {{
@@ -138,13 +160,11 @@ HFB_CSS = f"""
     background-color: rgba(234, 88, 12, 0.95) !important;
     border-color: rgba(255, 180, 80, 0.5) !important;
 }}
-.gradio-container .gr-slider,
-.gradio-container .gr-slider * {{
-    background-color: rgba(28, 22, 48, 0.9) !important;
-    opacity: 1 !important;
-}}
 .gradio-container input[type="range"] {{
     opacity: 1 !important;
+}}
+.gradio-container .gr-slider input[type="range"] {{
+    background-color: transparent !important;
 }}
 .gradio-container .vqc-full-width {{
     width: 100% !important;
