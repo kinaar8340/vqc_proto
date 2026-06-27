@@ -74,7 +74,8 @@ SLM_PACKAGE_IDLE = (
     "- `frames/` — optional PNG sequence (enable checkbox above)"
 )
 
-_VQC_FIELD_FILL = "rgba(10, 8, 24, 0.40)"
+_VQC_ACCENT = "#ea580c"  # matches slider / primary button orange
+_VQC_FIELD_FILL = "rgba(10, 8, 24, 0.50)"
 
 
 def _build_vqc_theme() -> gr.themes.Base:
@@ -118,8 +119,16 @@ def _build_vqc_theme() -> gr.themes.Base:
             checkbox_label_background_fill_dark="transparent",
             checkbox_label_background_fill_hover="transparent",
             checkbox_label_background_fill_hover_dark="transparent",
-            slider_color="#ea580c",
-            slider_color_dark="#ea580c",
+            slider_color=_VQC_ACCENT,
+            slider_color_dark=_VQC_ACCENT,
+            link_text_color=_VQC_ACCENT,
+            link_text_color_dark=_VQC_ACCENT,
+            link_text_color_hover="#f97316",
+            link_text_color_hover_dark="#f97316",
+            link_text_color_active=_VQC_ACCENT,
+            link_text_color_active_dark=_VQC_ACCENT,
+            link_text_color_visited=_VQC_ACCENT,
+            link_text_color_visited_dark=_VQC_ACCENT,
         )
     )
 
@@ -170,6 +179,10 @@ HFB_CSS = f"""
     --block-label-text-color: #c9b8ff !important;
     --block-title-text-color: #f0e6ff !important;
     --border-color-primary: rgba(255, 255, 255, 0.12) !important;
+    --link-text-color: {_VQC_ACCENT} !important;
+    --link-text-color-hover: #f97316 !important;
+    --link-text-color-active: {_VQC_ACCENT} !important;
+    --link-text-color-visited: {_VQC_ACCENT} !important;
     color-scheme: dark;
 }}
 html {{
@@ -252,8 +265,17 @@ footer {{
 .gradio-container .markdown li {{
     color: #e8e0f8 !important;
 }}
-.gradio-container .markdown a {{
-    color: #ffb366 !important;
+.gradio-container a,
+.gradio-container .markdown a,
+.gradio-container .prose a,
+.gradio-container .markdown a:visited,
+.gradio-container .prose a:visited {{
+    color: {_VQC_ACCENT} !important;
+}}
+.gradio-container a:hover,
+.gradio-container .markdown a:hover,
+.gradio-container .prose a:hover {{
+    color: #f97316 !important;
 }}
 .gradio-container .markdown blockquote {{
     border-left-color: rgba(255, 180, 80, 0.5) !important;
