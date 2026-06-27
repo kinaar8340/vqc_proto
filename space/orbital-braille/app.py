@@ -124,6 +124,14 @@ ANIMATIONS_INTRO_MD = (
     f'`"{DEFAULT_PAYLOAD}"`).'
 )
 
+OPTICS_PANEL_FACE_HTML = """
+<div class="vqc-optics-receiver-face" aria-hidden="true">
+  <span class="vqc-optics-brand">ORBITAL BRAILLE</span>
+  <span class="vqc-optics-panel-title">Optics Control Panel</span>
+  <span class="vqc-optics-subtitle">TUNE · ENCODE · TRANSMIT</span>
+</div>
+"""
+
 
 def _external_tab_html(label: str, url: str, tab_id: str) -> str:
     """External Source bookmark — opens in a new tab."""
@@ -617,6 +625,174 @@ footer {{
     display: block !important;
     background: rgba(10, 8, 24, 0.35) !important;
 }}
+.gradio-container .vqc-optics-panel {{
+    background: linear-gradient(165deg, #2a1810 0%, #1a1008 38%, #120c06 100%) !important;
+    border: 3px solid #6b4f1d !important;
+    border-radius: 14px !important;
+    box-shadow:
+        inset 0 2px 8px rgba(255, 220, 150, 0.08),
+        inset 0 -4px 14px rgba(0, 0, 0, 0.55),
+        0 8px 22px rgba(0, 0, 0, 0.45) !important;
+    padding: 0.85rem 1rem 1rem !important;
+    margin: 0.5rem 0 0.75rem 0 !important;
+}}
+.gradio-container .vqc-optics-panel > .block,
+.gradio-container .vqc-optics-panel .block {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}}
+.gradio-container .vqc-optics-receiver-face {{
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.15rem !important;
+    margin: 0 0 0.75rem 0 !important;
+    padding: 0.55rem 0.75rem 0.65rem !important;
+    border: 2px inset #4a3818 !important;
+    border-radius: 10px !important;
+    background: linear-gradient(180deg, #1f140a 0%, #0f0a06 100%) !important;
+    box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.65) !important;
+}}
+.gradio-container .vqc-optics-brand {{
+    font-size: 0.62rem !important;
+    letter-spacing: 0.28em !important;
+    color: #c9a227 !important;
+    font-weight: 700 !important;
+}}
+.gradio-container .vqc-optics-panel-title {{
+    font-size: 1.15rem !important;
+    letter-spacing: 0.12em !important;
+    color: #f5e6c8 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    text-shadow: 0 0 10px rgba(255, 180, 80, 0.35) !important;
+}}
+.gradio-container .vqc-optics-subtitle {{
+    font-size: 0.68rem !important;
+    letter-spacing: 0.22em !important;
+    color: #9a8458 !important;
+}}
+.gradio-container .vqc-optics-panel .label-wrap span,
+.gradio-container .vqc-optics-panel label span {{
+    color: #e8d4a8 !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+}}
+.gradio-container .vqc-optics-panel .info {{
+    color: #9a8458 !important;
+    font-size: 0.72rem !important;
+    font-style: italic !important;
+}}
+.gradio-container .vqc-optics-panel input[type="text"],
+.gradio-container .vqc-optics-panel textarea {{
+    background: #120c06 !important;
+    border: 2px inset #5c4a1f !important;
+    color: #ffb347 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 0 10px rgba(255, 140, 40, 0.12) !important;
+}}
+.gradio-container .vqc-optics-panel input[type="number"] {{
+    background: #120c06 !important;
+    border: 2px inset #5c4a1f !important;
+    color: #ffb347 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    border-radius: 4px !important;
+    box-shadow: inset 0 0 12px rgba(255, 140, 40, 0.18) !important;
+    min-width: 4.2rem !important;
+}}
+.gradio-container .vqc-optics-panel input[type="range"] {{
+    height: 6px !important;
+    background: linear-gradient(90deg, #1a1208, #3d2e14, #1a1208) !important;
+    border: 1px solid #5c4a1f !important;
+    border-radius: 999px !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6) !important;
+}}
+.gradio-container .vqc-optics-panel input[type="range"]::-webkit-slider-thumb {{
+    -webkit-appearance: none !important;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at 32% 28%, #fff2cc 0%, #c9a227 38%, #5c4212 72%, #2a1f08 100%) !important;
+    border: 2px solid #1a1208 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.35) !important;
+    cursor: pointer !important;
+}}
+.gradio-container .vqc-optics-panel input[type="range"]::-moz-range-thumb {{
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at 32% 28%, #fff2cc 0%, #c9a227 38%, #5c4212 72%, #2a1f08 100%) !important;
+    border: 2px solid #1a1208 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55) !important;
+    cursor: pointer !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-dial-wrap {{
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid #4a3818 !important;
+    border-radius: 10px !important;
+    padding: 0.55rem 0.65rem 0.45rem !important;
+    margin: 0 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-tune-row {{
+    gap: 0.65rem !important;
+    margin-bottom: 0.55rem !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-optics-dial-row {{
+    gap: 0.65rem !important;
+    align-items: stretch !important;
+}}
+.gradio-container .vqc-optics-panel fieldset {{
+    background: rgba(0, 0, 0, 0.18) !important;
+    border: 1px solid #4a3818 !important;
+    border-radius: 10px !important;
+    padding: 0.45rem 0.55rem !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-band-switch button {{
+    border: 1px solid #6b4f1d !important;
+    background: #1a1208 !important;
+    color: #c9a227 !important;
+    border-radius: 6px !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.05em !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-band-switch button.selected,
+.gradio-container .vqc-optics-panel .vqc-band-switch button[aria-checked="true"] {{
+    background: linear-gradient(180deg, #8b6914 0%, #4a3818 100%) !important;
+    color: #fff2cc !important;
+    box-shadow: 0 0 10px rgba(255, 160, 60, 0.35) !important;
+}}
+.gradio-container .vqc-optics-presets-label {{
+    color: #c9a227 !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    margin: 0.45rem 0 0.35rem 0 !important;
+    text-align: center !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-receiver-preset {{
+    background: linear-gradient(180deg, #3d2e14 0%, #1f1608 100%) !important;
+    border: 2px solid #6b4f1d !important;
+    color: #f5e6c8 !important;
+    border-radius: 8px !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.04em !important;
+    box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.15), 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-receiver-preset:hover {{
+    background: linear-gradient(180deg, #6b4f1d 0%, #3d2e14 100%) !important;
+    color: #fff8e8 !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-slm-toggle label {{
+    color: #c9a227 !important;
+    font-size: 0.76rem !important;
+}}
 .gradio-container .markdown blockquote {{
     border-left-color: rgba(255, 180, 80, 0.5) !important;
     background: transparent !important;
@@ -887,45 +1063,77 @@ def build_app() -> gr.Blocks:
 
         with gr.Column(visible=True) as page_demo:
             gr.Markdown(SIMULATION_BANNER_MD)
-            with gr.Row():
-                payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)
-                num_orbs = gr.Slider(2, 6, value=4, step=1, label="Number of orbs")
-            with gr.Row():
-                resolution = gr.Radio(
-                    choices=["Quick", "Full"],
-                    value="Quick",
-                    label="Resolution",
-                    info="Quick = low grid (fast); Full = publication quality"
-                    + (" — Full is slower on HF" if on_hf else ""),
+            with gr.Group(elem_classes=["vqc-optics-panel"]):
+                gr.HTML(OPTICS_PANEL_FACE_HTML)
+                with gr.Row(elem_classes=["vqc-optics-tune-row"]):
+                    payload = gr.Textbox(
+                        label="Payload",
+                        value=DEFAULT_PAYLOAD,
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                    num_orbs = gr.Slider(
+                        2,
+                        6,
+                        value=4,
+                        step=1,
+                        label="Number of orbs",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                with gr.Row(elem_classes=["vqc-optics-dial-row"]):
+                    resolution = gr.Radio(
+                        choices=["Quick", "Full"],
+                        value="Quick",
+                        label="Resolution",
+                        info="Quick = low grid (fast); Full = publication quality"
+                        + (" — Full is slower on HF" if on_hf else ""),
+                        elem_classes=["vqc-optics-dial-wrap", "vqc-band-switch"],
+                    )
+                    seed = gr.Slider(
+                        0,
+                        9999,
+                        value=42,
+                        step=1,
+                        label="Random seed",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                    gamma_1 = gr.Slider(
+                        1.0,
+                        2.0,
+                        value=1.5,
+                        step=0.1,
+                        label="p-wave BMGL strength (γ₁)",
+                        info="Higher γ₁ → stronger inhibition vs. phase noise (default 1.5)",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                    noise_level = gr.Slider(
+                        0.0,
+                        1.0,
+                        value=DEFAULT_NOISE_LEVEL,
+                        step=0.05,
+                        label="Channel noise",
+                        info="0 = clean link · 0.35 = default turbulence · 1 = harsh",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                gr.HTML(
+                    '<p class="vqc-optics-presets-label">'
+                    "Example presets — one click loads settings and runs the demo"
+                    "</p>"
                 )
-                seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
-                gamma_1 = gr.Slider(
-                    1.0,
-                    2.0,
-                    value=1.5,
-                    step=0.1,
-                    label="p-wave BMGL strength (γ₁)",
-                    info="Higher γ₁ → stronger inhibition vs. phase noise (default 1.5)",
-                )
-                noise_level = gr.Slider(
-                    0.0,
-                    1.0,
-                    value=DEFAULT_NOISE_LEVEL,
-                    step=0.05,
-                    label="Channel noise",
-                    info="0 = clean link · 0.35 = default turbulence · 1 = harsh",
-                )
-            gr.Markdown("**Example presets** — one click loads settings and **runs** the demo:")
-            with gr.Row():
-                preset_buttons: dict[str, gr.Button] = {}
-                for key, preset in EXAMPLE_PRESETS.items():
-                    preset_buttons[key] = gr.Button(preset["label"], variant="secondary", size="sm")
-            with gr.Row():
+                with gr.Row():
+                    preset_buttons: dict[str, gr.Button] = {}
+                    for key, preset in EXAMPLE_PRESETS.items():
+                        preset_buttons[key] = gr.Button(
+                            preset["label"],
+                            variant="secondary",
+                            size="sm",
+                            elem_classes=["vqc-receiver-preset"],
+                        )
                 export_slm_frames = gr.Checkbox(
                     label="Include SLM-ready phase frames (PNG)",
                     value=False,
                     interactive=not on_hf,
                     info=slm_frames_info,
+                    elem_classes=["vqc-slm-toggle"],
                 )
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
             run_cache = gr.State(value=None)
