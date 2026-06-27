@@ -1,4 +1,6 @@
 -r requirements.txt
-pydantic==2.10.6
+# Local Gradio demo — use Python 3.11/3.12 (see scripts/run_gradio_local.sh).
+# Do not pin pydantic here; Gradio pulls a compatible version. HF Space uses pydantic==2.10.6 separately.
+gradio==5.27.0
 requests>=2.31.0
 huggingface_hub>=0.23.0
