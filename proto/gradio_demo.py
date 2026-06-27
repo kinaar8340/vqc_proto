@@ -74,27 +74,93 @@ SLM_PACKAGE_IDLE = (
     "- `frames/` — optional PNG sequence (enable checkbox above)"
 )
 
-# hfb.png: fixed bottom layer (full image). Page chrome transparent; fields/boxes 5%.
+_VQC_FIELD_FILL = "rgba(10, 8, 24, 0.05)"
+
+
+def _build_vqc_theme() -> gr.themes.Base:
+    """Dark transparent theme — works in light and dark OS modes (HF-safe)."""
+    return (
+        gr.themes.Base(
+            primary_hue=gr.themes.colors.orange,
+            secondary_hue=gr.themes.colors.zinc,
+            neutral_hue=gr.themes.colors.zinc,
+        )
+        .set(
+            body_background_fill="transparent",
+            body_background_fill_dark="transparent",
+            background_fill_primary="transparent",
+            background_fill_primary_dark="transparent",
+            background_fill_secondary="transparent",
+            background_fill_secondary_dark="transparent",
+            block_background_fill=_VQC_FIELD_FILL,
+            block_background_fill_dark=_VQC_FIELD_FILL,
+            panel_background_fill=_VQC_FIELD_FILL,
+            panel_background_fill_dark=_VQC_FIELD_FILL,
+            input_background_fill=_VQC_FIELD_FILL,
+            input_background_fill_dark=_VQC_FIELD_FILL,
+            body_text_color="#e8e0f8",
+            body_text_color_dark="#e8e0f8",
+            block_label_text_color="#c9b8ff",
+            block_label_text_color_dark="#c9b8ff",
+            block_title_text_color="#f0e6ff",
+            block_title_text_color_dark="#f0e6ff",
+            border_color_primary="rgba(255, 255, 255, 0.12)",
+            border_color_primary_dark="rgba(255, 255, 255, 0.12)",
+            button_primary_background_fill="#ea580c",
+            button_primary_background_fill_dark="#ea580c",
+            button_primary_text_color="#ffffff",
+            button_primary_text_color_dark="#ffffff",
+            button_secondary_background_fill="rgba(28, 22, 48, 0.92)",
+            button_secondary_background_fill_dark="rgba(28, 22, 48, 0.92)",
+            button_secondary_text_color="#e8e0f8",
+            button_secondary_text_color_dark="#e8e0f8",
+            checkbox_label_background_fill="transparent",
+            checkbox_label_background_fill_dark="transparent",
+            checkbox_label_background_fill_hover="transparent",
+            checkbox_label_background_fill_hover_dark="transparent",
+            slider_color="#ea580c",
+            slider_color_dark="#ea580c",
+        )
+    )
+
+
+# hfb.png: fixed back layer. Gradio page chrome transparent; component blocks 5%.
 HFB_CSS = f"""
-html, body, #root, footer {{
-    background: transparent !important;
+:root, :root .dark {{
+    --body-background-fill: transparent !important;
+    --background-fill-primary: transparent !important;
+    --background-fill-secondary: transparent !important;
+    --block-background-fill: {_VQC_FIELD_FILL} !important;
+    --panel-background-fill: {_VQC_FIELD_FILL} !important;
+    --input-background-fill: {_VQC_FIELD_FILL} !important;
+    --body-text-color: #e8e0f8 !important;
+    --block-label-text-color: #c9b8ff !important;
+    --block-title-text-color: #f0e6ff !important;
+    --border-color-primary: rgba(255, 255, 255, 0.12) !important;
+    color-scheme: dark;
 }}
-.gradio-container {{
-    position: relative !important;
-    background: transparent !important;
-    isolation: isolate !important;
+html, body {{
+    background-color: #0a0818 !important;
+    color: #e8e0f8 !important;
+    min-height: 100vh !important;
 }}
-.gradio-container::before {{
+body::before {{
     content: "" !important;
     position: fixed !important;
     inset: 0 !important;
-    z-index: -1 !important;
+    z-index: 0 !important;
     pointer-events: none !important;
     background-image: url('{HFB_RAW_URL}') !important;
     background-size: contain !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
     background-attachment: fixed !important;
+}}
+#root, .gradio-container, footer {{
+    position: relative !important;
+    z-index: 1 !important;
+    background: transparent !important;
+    background-color: transparent !important;
 }}
 .gradio-container .main,
 .gradio-container .wrap,
@@ -104,67 +170,55 @@ html, body, #root, footer {{
 .gradio-container .form,
 .gradio-container .column,
 .gradio-container .row,
-.gradio-container .block,
 .gradio-container .gr-group,
-.gradio-container .gr-markdown,
-.gradio-container .prose,
 .gradio-container label.wrap,
 .gradio-container .label-wrap {{
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
 }}
-.gradio-container .panel,
-.gradio-container .gr-panel,
-.gradio-container .gr-box,
-.gradio-container .input-container,
-.gradio-container input[type="text"],
-.gradio-container textarea,
-.gradio-container [data-testid="textbox"],
+.gradio-container .block {{
+    background-color: {_VQC_FIELD_FILL} !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}}
+.gradio-container .markdown,
+.gradio-container .prose,
+.gradio-container .markdown p,
+.gradio-container .markdown h1,
+.gradio-container .markdown h2,
+.gradio-container .markdown li {{
+    color: #e8e0f8 !important;
+}}
+.gradio-container .markdown a {{
+    color: #ffb366 !important;
+}}
+.gradio-container .markdown blockquote {{
+    border-left-color: rgba(255, 180, 80, 0.5) !important;
+    background: transparent !important;
+}}
 .gradio-container .accordion,
 .gradio-container details,
-.gradio-container summary,
-.gradio-container .file-preview,
-.gradio-container .gr-file,
-.gradio-container .gr-video,
-.gradio-container .gr-checkbox,
-.gradio-container .gr-radio,
-.gradio-container .gr-slider,
-.gradio-container .gr-dropdown,
-.gradio-container .vqc-figure-panel,
-.gradio-container .vqc-plot3d-panel,
-.gradio-container .vqc-animation-panel {{
-    background-color: rgba(10, 8, 24, 0.05) !important;
-    border-radius: 10px;
-}}
-.gradio-container .image-container,
-.gradio-container .gr-image {{
-    background-color: rgba(10, 8, 24, 0.05) !important;
+.gradio-container summary {{
+    background-color: {_VQC_FIELD_FILL} !important;
+    color: #e8e0f8 !important;
     border-radius: 10px;
 }}
 .gradio-container .image-container img,
 .gradio-container .gr-image img,
-.gradio-container .vqc-figure-panel img,
-.gradio-container video {{
+.gradio-container video,
+.gradio-container .plot-container {{
     background-color: transparent !important;
     opacity: 1 !important;
 }}
 .gradio-container button,
 .gradio-container .gr-button {{
-    background-color: rgba(28, 22, 48, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     opacity: 1 !important;
-}}
-.gradio-container button.primary,
-.gradio-container .primary {{
-    background-color: rgba(234, 88, 12, 0.95) !important;
-    border-color: rgba(255, 180, 80, 0.5) !important;
 }}
 .gradio-container input[type="range"] {{
     opacity: 1 !important;
-}}
-.gradio-container .gr-slider input[type="range"] {{
-    background-color: transparent !important;
 }}
 .gradio-container .vqc-full-width {{
     width: 100% !important;
@@ -321,6 +375,7 @@ def build_app() -> gr.Blocks:
     with gr.Blocks(
         title="Orbital Braille — VQC Typehead",
         analytics_enabled=False,
+        theme=_build_vqc_theme(),
         css=HFB_CSS,
         fill_width=True,
     ) as demo:
