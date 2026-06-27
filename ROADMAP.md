@@ -61,7 +61,7 @@ python profile_hotpaths.py --grid-size 80 # full-res
 | `scripts/sync_hf_space.sh` | ✅ | Copy proto → space folder |
 | `scripts/deploy_hf_space.sh` | ✅ | `HF_TOKEN` + huggingface_hub upload |
 | README live-demo badge + section | ✅ | Top of main README |
-| Space live at HF URL | ⬜ | Run deploy script (needs HF write token) |
+| Space live at HF URL | ✅ | [kinaar111/orbital-braille-vqc](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc) |
 | X thread / social update | ⬜ | After Space is live |
 
 **Deploy:**
@@ -70,7 +70,7 @@ python profile_hotpaths.py --grid-size 80 # full-res
 # 2. Sync + upload
 export HF_TOKEN=hf_...
 ./scripts/sync_hf_space.sh
-./scripts/deploy_hf_space.sh kinaar8340/orbital-braille-vqc
+./scripts/deploy_hf_space.sh kinaar111/orbital-braille-vqc
 ```
 
 **Local:**

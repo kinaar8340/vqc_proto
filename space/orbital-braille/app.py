@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import traceback
 from pathlib import Path
 
 import gradio as gr
@@ -14,6 +15,7 @@ from demo_core import plot_results, run_pipeline
 
 logger = logging.getLogger(__name__)
 DEFAULT_PAYLOAD = "I live in Oregon"
+HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
 GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
 
 
@@ -26,14 +28,19 @@ def run_demo(
     if not payload.strip():
         payload = DEFAULT_PAYLOAD
 
-    quick = resolution.strip().lower() == "quick"
-    _, encoded, noisy, decoded, metrics, _ = run_pipeline(
-        payload, int(num_orbs), quick=quick, seed=int(seed)
-    )
+    try:
+        quick = resolution.strip().lower() == "quick"
+        _, encoded, noisy, decoded, metrics, _ = run_pipeline(
+            payload, int(num_orbs), quick=quick, seed=int(seed)
+        )
 
-    out_dir = Path(tempfile.mkdtemp(prefix="vqc_gradio_"))
-    fig_path = str(plot_results(encoded, noisy, decoded, out_dir, payload))
-    return metrics, fig_path
+        out_dir = Path(tempfile.mkdtemp(prefix="vqc_gradio_"))
+        fig_path = str(plot_results(encoded, noisy, decoded, out_dir, payload))
+        return metrics, fig_path
+    except Exception as exc:
+        logger.exception("run_demo failed for payload=%r", payload)
+        err = f"Error: {exc}\n\n{traceback.format_exc()}"
+        return err, None
 
 
 def build_app() -> gr.Blocks:
@@ -42,7 +49,8 @@ def build_app() -> gr.Blocks:
             "# Orbital Braille — VQC Typehead Prototype\n"
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
             "Use **Quick** resolution for sub-second runs.\n\n"
-            f"Source: [{GITHUB_URL}]({GITHUB_URL})"
+            f"Source: [{GITHUB_URL}]({GITHUB_URL}) · "
+            f"[Live demo]({HF_SPACE_URL})"
         )
         with gr.Row():
             payload = gr.Textbox(label="Payload", value=DEFAULT_PAYLOAD)

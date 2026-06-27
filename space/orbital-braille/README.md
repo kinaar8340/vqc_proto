@@ -33,6 +33,7 @@ Browser demo of the **Orbital Braille** prototype: *N* PWM-gated point sources w
 
 ## Source & license
 
+- Live demo: [kinaar111/orbital-braille-vqc](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc)
 - GitHub: [kinaar8340/vqc_proto](https://github.com/kinaar8340/vqc_proto)
 - **CC-BY-NC-SA-4.0** + patent restrictions — non-commercial research only
 - US Provisional Patent 63/913,110

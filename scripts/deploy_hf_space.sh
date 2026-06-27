@@ -5,7 +5,7 @@
 # Usage:
 #   export HF_TOKEN=hf_...
 #   ./scripts/deploy_hf_space.sh
-#   ./scripts/deploy_hf_space.sh kinaar8340/orbital-braille-vqc
+#   ./scripts/deploy_hf_space.sh kinaar111/orbital-braille-vqc
 
 set -euo pipefail
 

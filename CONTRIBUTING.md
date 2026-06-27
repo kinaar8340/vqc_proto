@@ -59,7 +59,7 @@ black --check .
 ```bash
 ./scripts/sync_hf_space.sh
 export HF_TOKEN=hf_...   # write token from huggingface.co/settings/tokens
-./scripts/deploy_hf_space.sh kinaar8340/orbital-braille-vqc
+./scripts/deploy_hf_space.sh kinaar111/orbital-braille-vqc
 ```
 
 ## Questions
