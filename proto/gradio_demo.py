@@ -102,22 +102,28 @@ def _external_tab_html(label: str, url: str, tab_id: str) -> str:
 
 
 def _source_tab_btn_update(*, active: bool) -> gr.Update:
-    """One Gradio button per in-app tab — active = orange highlight, inactive = green."""
+    """Animations tab — orange only when that page is open; otherwise green."""
     if active:
         return gr.update(interactive=False, elem_classes=["vqc-source-tab", "active"])
-    return gr.update(interactive=True, elem_classes=["vqc-source-tab"])
+    return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
+
+
+def _home_tab_update(*, on_demo_page: bool) -> gr.Update:
+    """Home tab (Live demo / Local app): always green; clickable only from Animations page."""
+    if on_demo_page:
+        return gr.update(interactive=False, elem_classes=["vqc-source-tab"], variant="secondary")
+    return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
 
 
 def _nav_to_page(page: str) -> tuple:
     """Switch between demo and animations screens; refresh Source tab highlights."""
     on_hf = is_hf_space()
     on_demo = page == "demo"
-    home_active = on_demo
     return (
         gr.update(visible=on_demo),
         gr.update(visible=not on_demo),
-        _source_tab_btn_update(active=on_hf and home_active),
-        _source_tab_btn_update(active=not on_hf and home_active),
+        _home_tab_update(on_demo_page=on_demo) if on_hf else gr.update(),
+        _home_tab_update(on_demo_page=on_demo) if not on_hf else gr.update(),
         _source_tab_btn_update(active=not on_demo),
         page,
     )
@@ -361,6 +367,7 @@ footer {{
     border-radius: 999px !important;
     border: 1px solid rgba(30, 215, 96, 0.55) !important;
     background: rgba(30, 215, 96, 0.14) !important;
+    background-color: rgba(30, 215, 96, 0.14) !important;
     color: {_VQC_HF_RUNNING} !important;
     -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
     text-decoration: none !important;
@@ -384,15 +391,23 @@ footer {{
     -webkit-text-fill-color: #5ef59a !important;
     border-color: rgba(30, 215, 96, 0.75) !important;
     background: rgba(30, 215, 96, 0.22) !important;
+    background-color: rgba(30, 215, 96, 0.22) !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab {{
     cursor: pointer !important;
     font-family: inherit !important;
 }}
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled,
-.gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled] {{
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab[disabled],
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab:disabled:not(.active),
+.gradio-container .vqc-source-tabs-row button.vqc-source-tab.secondary:disabled {{
     opacity: 1 !important;
     cursor: default !important;
+    color: {_VQC_HF_RUNNING} !important;
+    -webkit-text-fill-color: {_VQC_HF_RUNNING} !important;
+    border-color: rgba(30, 215, 96, 0.55) !important;
+    background: rgba(30, 215, 96, 0.14) !important;
+    background-color: rgba(30, 215, 96, 0.14) !important;
 }}
 .gradio-container .vqc-source-tab.active,
 .gradio-container .vqc-source-tabs-row button.vqc-source-tab.active,
@@ -666,19 +681,26 @@ def build_app() -> gr.Blocks:
             )
             tab_demo_btn = gr.Button(
                 "Live demo",
-                elem_classes=["vqc-source-tab", "active"],
+                elem_classes=["vqc-source-tab"],
                 interactive=False,
                 visible=on_hf,
                 scale=0,
+                variant="secondary",
             )
             tab_local_btn = gr.Button(
                 "Local app",
-                elem_classes=["vqc-source-tab", "active"],
+                elem_classes=["vqc-source-tab"],
                 interactive=False,
                 visible=not on_hf,
                 scale=0,
+                variant="secondary",
             )
-            tab_anim_btn = gr.Button("Animations", elem_classes=["vqc-source-tab"], scale=0)
+            tab_anim_btn = gr.Button(
+                "Animations",
+                elem_classes=["vqc-source-tab"],
+                scale=0,
+                variant="secondary",
+            )
             gr.HTML(
                 _external_tab_html(
                     "SLM quickstart",
