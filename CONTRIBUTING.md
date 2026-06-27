@@ -6,7 +6,7 @@ Thank you for your interest in the Vortex Quaternion Conduit simulation framewor
 
 1. Read [`IP_NOTICE.md`](IP_NOTICE.md) — CC-BY-NC-SA-4.0 + patent restrictions apply.
 2. Browse [`GLOSSARY.md`](GLOSSARY.md) if terms like BMGL or Fisher-Rao are unfamiliar.
-3. Try the prototype: `cd proto && python run_demo_quick.py` (seconds) or `python run_demo.py` (full quality).
+3. Try the prototype: `cd proto && python run_demo_quick.py` (seconds) or `python run_demo.py` (full quality). Optional browser UI: `pip install -r requirements-web.txt && python gradio_demo.py`.
 
 ## Development setup
 
@@ -27,6 +27,9 @@ pytest -q
 
 # Proto-only roundtrip tests
 pytest tests/test_orbital_braille.py -v
+
+# Gradio / HF demo helpers (run sync_hf_space.sh first for HF import test)
+pytest tests/test_demo_core.py tests/test_hf_space.py -v
 ```
 
 ## Code style

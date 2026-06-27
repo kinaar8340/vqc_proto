@@ -46,23 +46,41 @@ python profile_hotpaths.py --grid-size 80 # full-res
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `proto/gradio_demo.py` | ✅ | Payload, orbs, quick/full, 6-panel output |
+| `proto/gradio_demo.py` | ✅ | Full interactive UI (see Phase 2b polish) |
 | `proto/demo_core.py` | ✅ | Shared with run_demo + HF Space |
-| `proto/requirements-web.txt` | ✅ | `pip install -r requirements-web.txt` |
+| `proto/requirements-web.txt` | ✅ | Gradio + Plotly |
+| `scripts/run_gradio_local.sh` | ✅ | Python 3.11 venv helper |
 | docker-compose `gradio` service | ✅ | Port 7860 |
 
-## Phase 2b — Hugging Face Spaces 🚧 (in progress)
+## Phase 2b — Hugging Face Spaces ✅
 
 **Goal:** Public zero-install browser demo at maximum visibility.
 
 | Task | Status | Notes |
 |------|--------|-------|
 | `space/orbital-braille/` bundle | ✅ | app.py, requirements, README frontmatter |
-| `scripts/sync_hf_space.sh` | ✅ | Copy proto → space folder |
-| `scripts/deploy_hf_space.sh` | ✅ | `HF_TOKEN` + huggingface_hub upload |
+| `scripts/sync_hf_space.sh` | ✅ | Copy proto → space; embed `docs/HF_SPACE_README.md` |
+| `scripts/deploy_hf_space.sh` | ✅ | GitHub push + HF SSH rsync |
 | README live-demo badge + section | ✅ | Top of main README |
 | Space live at HF URL | ✅ | [kinaar111/orbital-braille-vqc](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc) |
-| X thread / social update | ⬜ | After Space is live |
+| **Demo polish (9.5 target)** | ✅ | See table below |
+| X thread / social update | ⬜ | Optional outreach |
+
+### Phase 2b — interactive demo feature set ✅
+
+| Feature | Status |
+|---------|--------|
+| One-click presets (load + auto-run) | ✅ |
+| Channel noise slider (0–1) | ✅ |
+| γ₁ BMGL slider | ✅ |
+| In-app 60s guide + simulation banner | ✅ |
+| VQC claims accordion | ✅ |
+| Interactive Plotly 3D orb trajectories | ✅ |
+| Animate typehead (MP4 + GIF) | ✅ |
+| SLM package zip + bench README | ✅ |
+| HF animation frame cap + SLM PNG disabled on Space | ✅ |
+| `docs/HF_SPACE_README.md` beginner docs | ✅ |
+| `tests/test_demo_core.py` + `tests/test_hf_space.py` | ✅ |
 
 **Deploy:**
 ```bash
@@ -111,7 +129,7 @@ streamlit run analysis/dashboard.py
 | Structured `logging` config (file + level) | Medium |
 | Expand pytest to `src/` photonics LG paths | Medium |
 | SLM bench validation checklist + sample datasets | High (hardware) |
-| HF Spaces / Gradio public URL | Medium |
+| HF Spaces polish (noise slider, Plotly 3D, presets) | ✅ Done — Phase 2b |
 | GitHub repo topics (manual Settings) | Low |
 
 ---

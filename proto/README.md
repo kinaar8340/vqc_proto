@@ -74,12 +74,31 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 # Hot-path timing + cProfile (LG modes, OAM projection, ICA, encode/decode)
 .venv/bin/python profile_hotpaths.py --quick
 
-# Gradio browser demo (pip install -r requirements-web.txt first)
+# Gradio browser demo (same UI as Hugging Face Space)
+pip install -r requirements-web.txt
 .venv/bin/python gradio_demo.py
+# or from repo root: ./scripts/run_gradio_local.sh
 
 # Live public demo: https://huggingface.co/spaces/kinaar111/orbital-braille-vqc
-# Deploy: ../../scripts/deploy_hf_space.sh kinaar111/orbital-braille-vqc
+# Sync + deploy: ../../scripts/sync_hf_space.sh && ../../scripts/deploy_hf_space.sh
 ```
+
+#### Gradio / HF Space features (`gradio_demo.py` + `demo_core.py`)
+
+| Feature | Implementation |
+|---------|----------------|
+| Encode → decode pipeline | `demo_core.run_pipeline()` — shared with CLI demos |
+| **Channel noise slider** | Scales BMGL phase noise (`noise_level_to_scale()` in `altermagnetic.py`) |
+| **γ₁ slider** | Live `PWaveBMGL(gamma_1=…)` inhibition |
+| **One-click presets** | `EXAMPLE_PRESETS` — load + auto-run (patent, VQC, Hello OAM, 6-orb stress) |
+| **6-panel figure** | `plot_results()` — matplotlib PNG |
+| **Interactive 3D** | `build_orb_trajectory_3d_plotly()` — Plotly `gr.Plot`, hover PWM/time |
+| **Animate typehead** | `render_typehead_animation_bundle()` — MP4 + GIF per run |
+| **SLM zip export** | `export_slm_bundle()` — manifest, `phase_stack.npy`, `README.txt` |
+| **In-app onboarding** | Selectric typeball guide, VQC claims table, screencast accordion |
+| **HF perf caps** | Animation frame cap + SLM PNG export disabled when `SPACE_ID` is set |
+
+Beginner-facing Space docs: [`../docs/HF_SPACE_README.md`](../docs/HF_SPACE_README.md) (synced to HF README by `sync_hf_space.sh`).
 
 ---
 
@@ -117,6 +136,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `generate_slm_holograms.py` | **SLM package CLI.** Full hologram bundle for bench upload. See [`SLM_QUICKSTART.md`](SLM_QUICKSTART.md). |
 | `orbital_braille/turbulence.py` | **Free-space channel.** Kolmogorov phase screens (Fried r₀), pointing jitter — LEO/satellite link proxy on top of BMGL. |
 | `run_demo.py` | End-to-end encode → turbulence → decode + 6-panel figure. |
+| `demo_core.py` | Shared pipeline, plots, Plotly 3D, animation, SLM zip — used by Gradio + HF Space. |
+| `gradio_demo.py` | Browser UI (`gr.Plot`, presets, noise/γ₁ sliders, progress indicators). |
 | `sweep_orbs.py` | Sweep orb count 2–6; report separation and fidelity. |
 | `meta_optimize_orbital.py` | Grid search over orbs × γ₁ × r₀ against TOE invariant targets. |
 | `generate_slm_holograms.py` | Export SLM phase PNG frames for bench/SLM upload. |
@@ -188,6 +209,7 @@ A person of ordinary skill in the art can reproduce this embodiment without undu
 |-----------|---------|--------|
 | `num_orbs` | 4 | Orb sweep sweet spot |
 | `gamma_1` | 1.5 | Supplemental Disclosure No. 2 (p-wave BMGL) |
+| `noise_level` (Gradio) | 0.35 | Channel turbulence slider; 0.35 → unit phase-noise scale |
 | `wg_base` | 350 | Multi-resonator / 3-body emergence bake |
 | `kappa` | 0.85 | Observer synchronization damping |
 | `braiding_linking` | 0.084 | Strong-gauge Hopf lattice regime |

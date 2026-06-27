@@ -18,11 +18,22 @@ Ultra-high-density quantum data compression and transfer via OAM-flux qubits and
 
 **[🤗 Hugging Face Space — Orbital Braille VQC Typehead](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc)**
 
-Run the prototype in your browser: enter a payload, pick orb count (2–6), toggle quick/full mode, get metrics + the 6-panel figure. No clone required.
+Run the prototype in your browser — no clone required. The live app includes:
 
-**New to OAM or the typeball analogy?** The Space README includes a [beginner guide](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc/blob/main/README.md) with diagrams, OAM comparisons, and an animated typehead walkthrough ([`typehead_demo.gif`](typehead_demo.gif)).
+| Feature | What it does |
+|---------|----------------|
+| **One-click presets** | Patent Fig. 1, VQC prototype, Hello OAM, 6-orb stress — each loads settings and **runs** the pipeline |
+| **Channel noise slider** | Tune turbulence strength (0 = clean link, 1 = harsh) without rerolling seed |
+| **γ₁ (BMGL) slider** | Live p-wave inhibition strength vs. phase noise |
+| **6-panel figure** | Encode → turbulence → decode visualization + metrics |
+| **Interactive 3D (Plotly)** | Drag/zoom orb helices in (x, y, time); hover for PWM on/off |
+| **Animate typehead** | Per-run MP4 + GIF (phase · intensity · pulse · orb trails) |
+| **SLM package zip** | `manifest.json`, `phase_stack.npy`, bench README — optional PNG frame export locally |
+| **In-app 60s guide** | Selectric typeball analogy, pipeline steps, metrics glossary |
 
-Maintainers: deploy or refresh with `export HF_TOKEN=hf_... && ./scripts/deploy_hf_space.sh`
+**New to OAM or the typeball analogy?** The Space README includes a [beginner guide](https://huggingface.co/spaces/kinaar111/orbital-braille-vqc/blob/main/README.md) with diagrams, OAM comparisons, and an animated typehead walkthrough ([`typehead_demo.gif`](typehead_demo.gif) · [`docs/typehead_screencast.mp4`](docs/typehead_screencast.mp4)).
+
+Maintainers: `./scripts/sync_hf_space.sh` then `./scripts/deploy_hf_space.sh` (SSH git to HF, or `export HF_TOKEN=hf_...` for hub upload).
 
 ---
 
@@ -68,7 +79,7 @@ Reproduces the validated metrics below (Fisher-Rao **0.989 rad**, shard FID **0.
 
 **Next steps:** [`proto/README.md`](proto/README.md) · [`GLOSSARY.md`](GLOSSARY.md) · [`proto/SLM_QUICKSTART.md`](proto/SLM_QUICKSTART.md) · [`ROADMAP.md`](ROADMAP.md) · Jupyter [`proto/notebooks/orbital_braille_demo.ipynb`](proto/notebooks/orbital_braille_demo.ipynb)
 
-**Web demos:** `python proto/gradio_demo.py` (port 7860) · `streamlit run analysis/dashboard.py` (proto tab auto-loads latest output)
+**Web demos:** `./scripts/run_gradio_local.sh` or `python proto/gradio_demo.py` (port 7860 — same UI as HF Space) · `streamlit run analysis/dashboard.py` (proto tab auto-loads latest output)
 
 **Full VQC pipeline** (1–2 h at `L_max=199`): `python run_all.py` · smoke test: `python run_all.py --quick` (`L_max=15`)
 

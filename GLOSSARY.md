@@ -15,6 +15,7 @@ Short definitions for terms used across this repository. See [`proto/README.md`]
 | **Quaternion shard** | Unit quaternion (w, x, y, z) encoding payload bytes via hypercomplex compression (`quaternion_codec.py`). |
 | **BMGL** | Beam-Motion-Gated Learning — turbulence/error gating protocol tied to OAM rotation rates. |
 | **p-wave BMGL** | Odd-parity altermagnetic variant with SOC λ and splitting p; γ₁ controls inhibition boost (`altermagnetic.py`). |
+| **Channel noise** | Gradio demo slider (0–1) scaling phase turbulence amplitude in `propagate_with_turbulence()`; 0.35 ≈ unit scale (`noise_level_to_scale`). |
 | **Fisher-Rao distance** | Geodesic distance on the PWM duty probability simplex; measures glyph separability in the stable font. |
 | **Stable font** | Codeword table of PWM duty vectors locked to emergent constants W_g = 350/π, κ = 0.85, braiding 0.084. |
 | **W_g** | Emergent angular frequency constant 350/π used in the stable phase ladder. |
