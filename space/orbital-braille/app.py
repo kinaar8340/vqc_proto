@@ -34,17 +34,29 @@ DEMO_SCREENCAST_BASE = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/m
 DEMO_SCREENCAST_URLS = (
     f"{DEMO_SCREENCAST_BASE}/typehead_screencast_1.mp4",
     f"{DEMO_SCREENCAST_BASE}/typehead_screencast_2.mp4",
+    f"{DEMO_SCREENCAST_BASE}/typehead_screencast_3.mp4",
+    f"{DEMO_SCREENCAST_BASE}/typehead_screencast_4.mp4",
 )
 
 
-def _screencast_dual_html() -> str:
-    """Side-by-side recorded demo clips on the Animations page."""
+def _screencast_grid_html() -> str:
+    """2×2 grid of recorded demo clips on the Animations page."""
     clips = "".join(
         f'<video class="vqc-screencast-video" src="{url}" controls playsinline loop '
         f'poster="{HFB_RAW_URL}">Your browser does not support video.</video>'
         for url in DEMO_SCREENCAST_URLS
     )
     return f'<div class="vqc-screencast-wrap">{clips}</div>'
+
+
+def _screencast_links_md() -> str:
+    """Direct MP4 links for each Animations screencast panel."""
+    links = " · ".join(
+        f"[Screencast {idx}]({url})" for idx, url in enumerate(DEMO_SCREENCAST_URLS, start=1)
+    )
+    return (
+        f"{links} · same flow as **Run demo** → **Animate typehead** on the **Live Demo** tab."
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -496,22 +508,18 @@ footer {{
     line-height: 1.45 !important;
 }}
 .gradio-container .vqc-screencast-wrap {{
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    align-items: stretch !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 0.65rem !important;
     width: 100% !important;
     max-width: min(1040px, 92vw) !important;
     margin: 0.2rem auto 0.45rem !important;
 }}
 .gradio-container .vqc-screencast-video {{
-    flex: 1 1 280px !important;
+    width: 100% !important;
     min-width: 0 !important;
-    width: calc(50% - 0.35rem) !important;
     height: auto !important;
-    max-height: min(42vh, 400px) !important;
+    max-height: min(22vh, 220px) !important;
     object-fit: contain !important;
     border-radius: 8px !important;
     display: block !important;
@@ -887,12 +895,8 @@ def build_app() -> gr.Blocks:
         with gr.Column(visible=False, elem_classes=["vqc-animations-page"]) as page_animations:
             gr.Markdown("## Animations")
             gr.Markdown(ANIMATIONS_INTRO_MD)
-            gr.HTML(_screencast_dual_html())
-            gr.Markdown(
-                f"[Screencast 1]({DEMO_SCREENCAST_URLS[0]}) · "
-                f"[Screencast 2]({DEMO_SCREENCAST_URLS[1]}) · "
-                "same flow as **Run demo** → **Animate typehead** on the **Live Demo** tab."
-            )
+            gr.HTML(_screencast_grid_html())
+            gr.Markdown(_screencast_links_md())
 
         nav_outputs = [
             page_demo,

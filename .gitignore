@@ -28,6 +28,8 @@ data/
 *.mp4
 !docs/typehead_screencast_1.mp4
 !docs/typehead_screencast_2.mp4
+!docs/typehead_screencast_3.mp4
+!docs/typehead_screencast_4.mp4
 *.csv
 *.jpg
 *.jpeg
