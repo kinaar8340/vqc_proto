@@ -266,16 +266,35 @@ footer {{
     color: #e8e0f8 !important;
 }}
 .gradio-container a,
+.gradio-container a:link,
+.gradio-container a:visited,
 .gradio-container .markdown a,
+.gradio-container .markdown p a,
 .gradio-container .prose a,
-.gradio-container .markdown a:visited,
-.gradio-container .prose a:visited {{
+.gradio-container .prose p a,
+.gradio-container .vqc-header-links a {{
     color: {_VQC_ACCENT} !important;
+    -webkit-text-fill-color: {_VQC_ACCENT} !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+    font-weight: 600 !important;
 }}
 .gradio-container a:hover,
 .gradio-container .markdown a:hover,
-.gradio-container .prose a:hover {{
+.gradio-container .prose a:hover,
+.gradio-container .vqc-header-links a:hover {{
     color: #f97316 !important;
+    -webkit-text-fill-color: #f97316 !important;
+}}
+.gradio-container .vqc-header-links {{
+    color: #e8e0f8 !important;
+    font-size: 1rem;
+    margin: 0.25rem 0 0.5rem 0;
+}}
+.gradio-container .vqc-build-label {{
+    color: #a89ec8 !important;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem 0;
 }}
 .gradio-container .markdown blockquote {{
     border-left-color: rgba(255, 180, 80, 0.5) !important;
@@ -478,11 +497,19 @@ def build_app() -> gr.Blocks:
         gr.Markdown(
             "# Orbital Braille — VQC Typehead Prototype\n"
             "Multi-orb PWM-gated sources → pyramidal spectral shards on an OAM carrier. "
-            "Use **Quick** resolution for sub-second runs.\n\n"
-            f"Source: [{GITHUB_URL}]({GITHUB_URL}) · "
-            f"[Live demo]({HF_SPACE_URL}) · "
-            f"[SLM quickstart]({GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md)\n\n"
-            f"*{get_build_label()}*"
+            "Use **Quick** resolution for sub-second runs."
+        )
+        gr.HTML(
+            f'<p class="vqc-header-links">'
+            f"Source: "
+            f'<a href="{GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a>'
+            f" · "
+            f'<a href="{HF_SPACE_URL}" target="_blank" rel="noopener noreferrer">Live demo</a>'
+            f" · "
+            f'<a href="{GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md" '
+            f'target="_blank" rel="noopener noreferrer">SLM quickstart</a>'
+            f"</p>"
+            f'<p class="vqc-build-label"><em>{get_build_label()}</em></p>',
         )
         gr.Markdown(SIMULATION_BANNER_MD)
         with gr.Accordion("New here? 60-second guide (Selectric typeball → OAM)", open=False):
