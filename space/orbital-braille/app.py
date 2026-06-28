@@ -15,11 +15,15 @@ from pathlib import Path
 import gradio as gr
 
 from demo_core import (
+    BOOT_QUOTE_STRING,
     DEFAULT_NOISE_LEVEL,
     EXAMPLE_PRESETS,
+    GITHUB_URL,
+    HF_SPACE_URL,
     ONBOARDING_MD,
     PATENT_FIGURE1_PAYLOAD,
     SIMULATION_BANNER_MD,
+    TERM_KEY_ACTIONS,
     VQC_CLAIMS_MD,
     export_slm_bundle,
     get_animation_max_frames,
@@ -31,6 +35,14 @@ from demo_core import (
     plot_results,
     render_typehead_animation_bundle,
     run_pipeline,
+    terminal_claims_snapshot,
+    terminal_keypad_map,
+    terminal_metrics_baseline,
+    terminal_oam_shards,
+    terminal_pipeline_scope,
+    terminal_presets_catalog,
+    terminal_slm_export,
+    terminal_typeball_analogy,
 )
 
 DEMO_SCREENCAST_BASE = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/docs"
@@ -88,8 +100,6 @@ def _patch_gradio_client_bool_schema() -> None:
 
 _patch_gradio_client_bool_schema()
 DEFAULT_PAYLOAD = PATENT_FIGURE1_PAYLOAD
-HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
-GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
 HFB_RAW_URL = "https://raw.githubusercontent.com/kinaar8340/vqc_proto/main/hfb.png"
 
 WEBGL_3D_NOTE = (
@@ -139,12 +149,43 @@ OPTICS_LOGO_HTML = """
 </div>
 """
 
+# Client-side CSS OAM helix drift — distinct from Mystery phosphor scan (HF-safe).
+OAM_HELIX_SCANNER_HTML = f"""
+<div class="vqc-oam-helix-scan" role="img" aria-label="OAM helix orbital drift">
+  <div class="vqc-oam-rings" aria-hidden="true">
+    <div class="vqc-oam-ring vqc-oam-ring-1"></div>
+    <div class="vqc-oam-ring vqc-oam-ring-2"></div>
+    <div class="vqc-oam-ring vqc-oam-ring-3"></div>
+  </div>
+  <div class="vqc-oam-helix-beam" aria-hidden="true"></div>
+  <pre class="vqc-oam-helix-body">OAM HELIX DRIFT — ORBITAL BRAILLE
+{'─' * 72}
+ℓ multiplex   PWM typeball on LG donut carrier
+helical phase → intensity lobes → spectral shards
+payload ref.  "{PATENT_FIGURE1_PAYLOAD}"
+4 orbs · γ₁=1.5 · BMGL denoise · FastICA decode
+{'─' * 72}
+▸ virtual orbs trace helices in (x, y, time)
+▸ pyramidal FM barcodes bytes into Welch peaks
+▸ quaternion compresses payload onto carrier spin
+▸ {GITHUB_URL}
+{'─' * 72}
+press any keypad to exit</pre>
+</div>
+"""
+
 _OPTICS_TERM_BAR = "─" * 48
 _OPTICS_TERM_CHAR_DELAY_S = 0.014
 _OPTICS_TERM_NEWLINE_DELAY_S = 0.048
 _OPTICS_TERM_UPLINK_DELAY_S = 0.22
 _OPTICS_TERM_CURSOR = "▌"
 _OPTICS_TERM_RELEASE_DELAY_S = 0.25
+_BOOT_QUOTE_CHAR_DELAY_S = 0.1
+_BOOT_POST_QUOTE_DELAY_S = 3.0
+_BOOT_DOT_INTERVAL_S = 0.5
+_BOOT_DOT_COUNT = 6
+_BOOT_TERM_LINES = 14
+_BOOT_TERM_COLS = 56
 
 
 def _strip_md_plain(text: str) -> str:
@@ -163,20 +204,22 @@ TERM_KEYPAD_PROG_COLS = 12
 TERM_KEYPAD_PROG_ROWS = 2
 TERM_KEYPAD_COUNT = TERM_KEYPAD_PROG_COLS * TERM_KEYPAD_PROG_ROWS
 TERM_KEYPAD_DEFINED: dict[int, str] = {
-    1: "home",
-    2: "status",
-    3: "demo",
-    4: "build",
-    5: "help",
+    index: action for index, (action, _desc) in TERM_KEY_ACTIONS.items()
 }
 TERM_KEYPAD_HOME_KEY = "key01"
 TERM_KEYPAD_DESCRIPTIONS: dict[int, str] = {
-    1: "Return to selection menu — momentary",
-    2: "Status — pipeline & environment",
-    3: "Demo — simulation scope (encode→decode)",
-    4: "Build — last updated / commit",
-    5: "Help — keypad reference",
+    index: desc for index, (_action, desc) in TERM_KEY_ACTIONS.items()
 }
+TERM_MENU_ACTIONS: tuple[str, ...] = (
+    "home",
+    "status",
+    "typeball",
+    "pipeline",
+    "metrics",
+    "build",
+    "help",
+    "helix",
+)
 TERM_UI_MENU = "menu"
 TERM_UI_PAGE = "page"
 TERM_NAV_KEYS: tuple[str, ...] = (
@@ -208,25 +251,12 @@ TERM_KEYPAD_CONTROL_ORDER: tuple[str, ...] = (
 )
 
 
-def _optics_assigned_keypad_lines() -> str:
-    """Only keys with real functions — omit latch-only / unassigned slots."""
-    lines = []
-    for index in sorted(TERM_KEYPAD_DEFINED):
-        tag = "01 Home" if index == 1 else f"{index:02d}"
-        lines.append(f"  [{tag}]  {TERM_KEYPAD_DESCRIPTIONS[index]}")
-    for nav_key in TERM_NAV_KEYS:
-        if nav_key in TERM_NAV_DEFINED:
-            tag = "CLR" if nav_key == "clear" else nav_key.removeprefix("dpad_").upper()
-            lines.append(f"  [{tag}]  {TERM_NAV_DEFINED[nav_key]}")
-    return "\n".join(lines)
-
-
 def _optics_terminal_home() -> str:
-    return _optics_terminal_frame("PROGRAMMABLE KEYPAD", _optics_assigned_keypad_lines())
+    return _optics_terminal_frame("PROGRAMMABLE KEYPAD", terminal_keypad_map())
 
 
 def _default_term_ui_state() -> dict:
-    return {"mode": TERM_UI_MENU, "index": 0}
+    return {"mode": TERM_UI_MENU, "index": 0, "scan": False}
 
 
 def _optics_terminal_menu(menu_index: int) -> str:
@@ -240,14 +270,42 @@ def _optics_terminal_menu(menu_index: int) -> str:
     return _optics_terminal_frame("SELECTION MENU", "\n".join(lines))
 
 
+def _term_menu_label(action: str) -> str:
+    labels = {
+        "home": "Home — Keypad Map",
+        "status": "Status — Live Pipeline",
+        "typeball": "Typeball — Selectric → OAM",
+        "pipeline": "Pipeline — Encode → Decode",
+        "metrics": "Metrics — Validated Baseline",
+        "build": "Build — Deploy Stamp",
+        "help": "Help — D-pad Navigation",
+        "helix": "Helix — OAM Drift Display",
+    }
+    return labels.get(action, action)
+
+
+def _term_menu_keypad_index(action: str) -> int:
+    for index, (key, _desc) in TERM_KEY_ACTIONS.items():
+        if key == action:
+            return index
+    return 1
+
+
 def _term_menu_items() -> tuple[tuple[str, int, str, Callable[[], Iterator[str]]], ...]:
-    return (
-        ("home", 1, "Home Keypad Legend", _stream_optics_terminal_home),
-        ("status", 2, "Status Pipeline & Environment", _stream_optics_terminal_status),
-        ("demo", 3, "Demo Simulation Scope (encode-decode)", _stream_optics_terminal_demo),
-        ("build", 4, "Build Last Updated / Commit", _stream_optics_terminal_build),
-        ("help", 5, "Help Keypad Reference", _stream_optics_terminal_help),
-    )
+    items = []
+    for action in TERM_MENU_ACTIONS:
+        stream_fn = TERM_KEYPAD_STREAMERS.get(action)
+        if stream_fn is None:
+            continue
+        items.append(
+            (
+                action,
+                _term_menu_keypad_index(action),
+                _term_menu_label(action),
+                stream_fn,
+            )
+        )
+    return tuple(items)
 
 
 def _term_menu_index_for_action(action: str) -> int:
@@ -266,28 +324,55 @@ def _optics_terminal_status() -> str:
     on_hf = is_hf_space()
     env = "Hugging Face Space" if on_hf else "Local Gradio"
     slm_note = (
-        "SLM frame export disabled on HF (use local demo for PNG frames)"
+        "SLM PNG frames disabled on HF (zip core always included)"
         if on_hf
-        else "SLM frame export available locally"
+        else "SLM PNG frame export available locally"
     )
+    anim_note = "capped on HF" if on_hf else "uncapped locally"
     return _optics_terminal_frame(
         "SYSTEM STATUS",
         "\n".join(
             [
                 f"Environment : {env}",
                 f"Payload def.: {DEFAULT_PAYLOAD!r}",
-                "Resolution  : Quick (fast) · Full (publication)",
-                "Pipeline    : encode → BMGL turbulence → FastICA decode",
+                "Orbs        : 2–6 (4 validated sweet spot)",
+                "Resolution  : Quick (HF) · Full (publication)",
+                "Pipeline    : encode → BMGL × noise → FastICA decode",
                 f"SLM export  : {slm_note}",
+                f"Animation   : typehead MP4/GIF ({anim_note})",
                 "",
-                "Controls ready. Tune knobs, pick a preset, or RUN DEMO.",
+                "05 Metrics · 09 Claims · 08 Helix · Run demo below.",
             ]
         ),
     )
 
 
-def _optics_terminal_demo() -> str:
-    return _optics_terminal_frame("SIMULATION DEMO", _strip_md_plain(SIMULATION_BANNER_MD))
+def _optics_terminal_typeball() -> str:
+    return _optics_terminal_frame("TYPEBALL ANALOGY", terminal_typeball_analogy())
+
+
+def _optics_terminal_pipeline() -> str:
+    return _optics_terminal_frame("PIPELINE SCOPE", terminal_pipeline_scope())
+
+
+def _optics_terminal_metrics() -> str:
+    return _optics_terminal_frame("METRICS BASELINE", terminal_metrics_baseline())
+
+
+def _optics_terminal_claims() -> str:
+    return _optics_terminal_frame("VQC CLAIMS MAP", terminal_claims_snapshot())
+
+
+def _optics_terminal_shards() -> str:
+    return _optics_terminal_frame("OAM & SHARDS", terminal_oam_shards())
+
+
+def _optics_terminal_slm() -> str:
+    return _optics_terminal_frame("SLM EXPORT", terminal_slm_export())
+
+
+def _optics_terminal_presets() -> str:
+    return _optics_terminal_frame("PRESET CATALOG", terminal_presets_catalog())
 
 
 def _optics_terminal_build() -> str:
@@ -311,10 +396,13 @@ def _optics_terminal_help() -> str:
         "KEYPAD REFERENCE",
         "\n".join(
             [
-                "D-pad TUI — ▲▼ ◀▶ move · enter opens highlighted item",
-                "Prog keys 02–05 mirror menu items · 01 Home → menu",
+                "D-pad — ▲▼ ◀▶ move highlight · enter opens item",
+                "01 Home → selection menu (momentary)",
+                "02–08 mirror menu · 09–12 direct shortcuts",
+                "08 / menu 08 → OAM helix screensaver (any key stops)",
+                "clear → blank display",
                 "",
-                _optics_assigned_keypad_lines(),
+                "Press 01 Home for full keypad map.",
             ]
         ),
     )
@@ -351,8 +439,37 @@ def _stream_optics_terminal_status() -> Iterator[str]:
     yield from _optics_terminal_stream(_optics_terminal_status, mode="status")
 
 
-def _stream_optics_terminal_demo() -> Iterator[str]:
-    yield from _optics_terminal_stream(_optics_terminal_demo, mode="demo")
+def _stream_optics_terminal_typeball() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_typeball, mode="typeball")
+
+
+def _stream_optics_terminal_pipeline() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_pipeline, mode="pipeline")
+
+
+def _stream_optics_terminal_metrics() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_metrics, mode="metrics")
+
+
+def _stream_optics_terminal_claims() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_claims, mode="claims")
+
+
+def _stream_optics_terminal_shards() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_shards, mode="shards")
+
+
+def _stream_optics_terminal_slm() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_slm, mode="slm")
+
+
+def _stream_optics_terminal_presets() -> Iterator[str]:
+    yield from _optics_terminal_stream(_optics_terminal_presets, mode="presets")
+
+
+def _stream_helix_stub() -> Iterator[str]:
+    """Menu placeholder — helix display uses CSS toggle via key 08 / d-pad."""
+    yield ""
 
 
 def _stream_optics_terminal_build() -> Iterator[str]:
@@ -434,7 +551,18 @@ def _term_keypad_btn_updates(active: str) -> tuple:
 
 def _term_keypad_outputs(terminal_text: str, active: str, ui_state: dict | None = None) -> tuple:
     state = _default_term_ui_state() if ui_state is None else ui_state
-    return (terminal_text, *_term_keypad_btn_updates(active), active, state)
+    scanning = bool(state.get("scan"))
+    return (
+        gr.update(
+            value=terminal_text,
+            visible=not scanning,
+            elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
+        ),
+        gr.update(visible=scanning),
+        *_term_keypad_btn_updates(active),
+        active,
+        state,
+    )
 
 
 def _term_yield_stream_then_release(
@@ -473,10 +601,15 @@ def _make_term_stream_click(
     def handler(ui_state: dict) -> Iterator[tuple]:
         state = dict(ui_state) if ui_state else _default_term_ui_state()
         if menu_action is not None:
-            state = {
-                "mode": TERM_UI_PAGE,
-                "index": _term_menu_index_for_action(menu_action),
-            }
+            state.update(
+                {
+                    "mode": TERM_UI_PAGE,
+                    "index": _term_menu_index_for_action(menu_action),
+                    "scan": menu_action == "helix",
+                }
+            )
+        else:
+            state["scan"] = False
         yield from _term_stream_with_latch(stream_fn, active=active_key, ui_state=state)
 
     return handler
@@ -485,6 +618,7 @@ def _make_term_stream_click(
 def _make_term_clear_click(active_key: str):
     def handler(current: str, ui_state: dict) -> Iterator[tuple]:
         state = dict(ui_state) if ui_state else _default_term_ui_state()
+        state["scan"] = False
         yield from _term_yield_stream_then_release(
             _stream_optics_terminal_clear(current),
             active=active_key,
@@ -522,11 +656,11 @@ def _make_term_dpad_click(active_key: str):
 
         if active_key in nav_delta:
             if mode == TERM_UI_PAGE:
-                menu_state = {"mode": TERM_UI_MENU, "index": menu_index}
+                menu_state = {"mode": TERM_UI_MENU, "index": menu_index, "scan": False}
                 text = _optics_terminal_menu(menu_index)
             else:
                 new_index = _term_menu_step(menu_index, nav_delta[active_key])
-                menu_state = {"mode": TERM_UI_MENU, "index": new_index}
+                menu_state = {"mode": TERM_UI_MENU, "index": new_index, "scan": False}
                 text = _optics_terminal_menu(new_index)
             yield _term_keypad_outputs(text, active_key, menu_state)
             time.sleep(_OPTICS_TERM_RELEASE_DELAY_S)
@@ -535,15 +669,29 @@ def _make_term_dpad_click(active_key: str):
 
         if active_key == "dpad_select":
             if mode == TERM_UI_MENU:
-                _action, _keypad, _label, stream_fn = _term_menu_items()[menu_index]
-                page_state = {"mode": TERM_UI_PAGE, "index": menu_index}
+                action, _keypad, _label, stream_fn = _term_menu_items()[menu_index]
+                if action == "helix":
+                    page_state = {
+                        "mode": TERM_UI_PAGE,
+                        "index": menu_index,
+                        "scan": True,
+                    }
+                    yield _term_keypad_outputs("", "dpad_select", page_state)
+                    time.sleep(_OPTICS_TERM_RELEASE_DELAY_S)
+                    yield _term_keypad_outputs("", "", page_state)
+                    return
+                page_state = {
+                    "mode": TERM_UI_PAGE,
+                    "index": menu_index,
+                    "scan": False,
+                }
                 yield from _term_yield_stream_then_release(
                     stream_fn(),
                     active="dpad_select",
                     ui_state=page_state,
                 )
                 return
-            menu_state = {"mode": TERM_UI_MENU, "index": menu_index}
+            menu_state = {"mode": TERM_UI_MENU, "index": menu_index, "scan": False}
             text = _optics_terminal_menu(menu_index)
             yield _term_keypad_outputs(text, active_key, menu_state)
             time.sleep(_OPTICS_TERM_RELEASE_DELAY_S)
@@ -557,7 +705,27 @@ def _make_term_latch_click(active_key: str):
 
     def handler(current: str, ui_state: dict) -> tuple:
         state = dict(ui_state) if ui_state else _default_term_ui_state()
+        state["scan"] = False
         return _term_keypad_outputs(current, active_key, state)
+
+    return handler
+
+
+def _make_activate_oam_helix_scan(active_key: str, *, menu_action: str = "helix"):
+    """Toggle CSS OAM helix drift — one yield, no server animation loop."""
+
+    def handler(ui_state: dict) -> Iterator[tuple]:
+        state = dict(ui_state) if ui_state else _default_term_ui_state()
+        state.update(
+            {
+                "mode": TERM_UI_PAGE,
+                "index": _term_menu_index_for_action(menu_action),
+                "scan": True,
+            }
+        )
+        yield _term_keypad_outputs("", active_key, state)
+        time.sleep(_OPTICS_TERM_RELEASE_DELAY_S)
+        yield _term_keypad_outputs("", "", state)
 
     return handler
 
@@ -566,7 +734,7 @@ def _make_term_home_momentary():
     """Home — momentary return to the selection menu."""
 
     def handler(current_active: str, ui_state: dict) -> Iterator[tuple]:
-        menu_state = {"mode": TERM_UI_MENU, "index": 0}
+        menu_state = {"mode": TERM_UI_MENU, "index": 0, "scan": False}
         menu_text = _optics_terminal_menu(0)
         yield _term_keypad_outputs(menu_text, current_active, menu_state)
         time.sleep(_OPTICS_TERM_RELEASE_DELAY_S)
@@ -575,10 +743,34 @@ def _make_term_home_momentary():
     return handler
 
 
-def _term_boot_home() -> tuple:
-    """Initial boot — show selection menu immediately (no typewriter delay)."""
+def _boot_quote_prefix() -> str:
+    """Pad so the quote types out near the middle of the terminal panel."""
+    v_pad = max(0, (_BOOT_TERM_LINES - 1) // 2)
+    h_pad = max(0, (_BOOT_TERM_COLS - len(BOOT_QUOTE_STRING)) // 2)
+    return "\n" * v_pad + (" " * h_pad)
+
+
+def _stream_term_boot() -> Iterator[tuple]:
+    """One-shot startup: centered quote, dot countdown, then selection menu."""
     boot_state = _default_term_ui_state()
-    return _term_keypad_outputs(_optics_terminal_menu(0), "", boot_state)
+    shown = _boot_quote_prefix()
+    yield _term_keypad_outputs(shown, "", boot_state)
+
+    for ch in BOOT_QUOTE_STRING:
+        shown += ch
+        yield _term_keypad_outputs(shown + _OPTICS_TERM_CURSOR, "", boot_state)
+        time.sleep(_BOOT_QUOTE_CHAR_DELAY_S)
+
+    yield _term_keypad_outputs(shown, "", boot_state)
+    time.sleep(_BOOT_POST_QUOTE_DELAY_S)
+
+    for _ in range(_BOOT_DOT_COUNT):
+        shown += "."
+        yield _term_keypad_outputs(shown, "", boot_state)
+        time.sleep(_BOOT_DOT_INTERVAL_S)
+
+    menu_text = _optics_terminal_menu(0)
+    yield _term_keypad_outputs(menu_text, "", boot_state)
 
 
 def _register_term_keypad_streamers() -> None:
@@ -586,9 +778,16 @@ def _register_term_keypad_streamers() -> None:
         {
             "home": _stream_optics_terminal_home,
             "status": _stream_optics_terminal_status,
-            "demo": _stream_optics_terminal_demo,
+            "typeball": _stream_optics_terminal_typeball,
+            "pipeline": _stream_optics_terminal_pipeline,
+            "metrics": _stream_optics_terminal_metrics,
             "build": _stream_optics_terminal_build,
             "help": _stream_optics_terminal_help,
+            "helix": _stream_helix_stub,
+            "claims": _stream_optics_terminal_claims,
+            "shards": _stream_optics_terminal_shards,
+            "slm": _stream_optics_terminal_slm,
+            "presets": _stream_optics_terminal_presets,
         }
     )
 
@@ -1296,6 +1495,91 @@ footer {{
 }}
 .gradio-container .vqc-optics-panel .vqc-optics-terminal textarea {{
     min-height: 13.5rem !important;
+    white-space: pre !important;
+    overflow-x: hidden !important;
+}}
+.gradio-container .vqc-oam-helix-scan {{
+    position: relative !important;
+    width: 100% !important;
+    min-height: 14rem !important;
+    margin: 0.55rem 0 !important;
+    padding: 0.65rem 0.75rem !important;
+    background: rgba(10, 8, 24, 0.55) !important;
+    border: 2px inset #5c4212 !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}}
+.gradio-container .vqc-oam-rings {{
+    position: absolute !important;
+    inset: 0 !important;
+    pointer-events: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}}
+.gradio-container .vqc-oam-ring {{
+    position: absolute !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(234, 88, 12, 0.22) !important;
+    box-shadow: 0 0 12px rgba(234, 88, 12, 0.08) !important;
+}}
+.gradio-container .vqc-oam-ring-1 {{
+    width: 88% !important;
+    height: 42% !important;
+    animation: vqc-oam-spin 18s linear infinite !important;
+}}
+.gradio-container .vqc-oam-ring-2 {{
+    width: 62% !important;
+    height: 30% !important;
+    animation: vqc-oam-spin 12s linear infinite reverse !important;
+}}
+.gradio-container .vqc-oam-ring-3 {{
+    width: 38% !important;
+    height: 18% !important;
+    animation: vqc-oam-spin 8s linear infinite !important;
+}}
+.gradio-container .vqc-oam-helix-beam {{
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 22% !important;
+    pointer-events: none !important;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(234, 88, 12, 0.10) 42%,
+        rgba(255, 180, 80, 0.28) 50%,
+        rgba(234, 88, 12, 0.10) 58%,
+        transparent 100%
+    ) !important;
+    animation: vqc-oam-beam 5s ease-in-out infinite !important;
+}}
+.gradio-container .vqc-oam-helix-body {{
+    position: relative !important;
+    z-index: 1 !important;
+    margin: 0 !important;
+    color: #ffb347 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 0.78rem !important;
+    line-height: 1.45 !important;
+    text-shadow: 0 0 8px rgba(234, 88, 12, 0.35) !important;
+    white-space: pre-wrap !important;
+    animation: vqc-oam-flicker 4s ease-in-out infinite !important;
+}}
+@keyframes vqc-oam-spin {{
+    0% {{ transform: rotate(0deg) scaleX(1.15); }}
+    100% {{ transform: rotate(360deg) scaleX(1.15); }}
+}}
+@keyframes vqc-oam-beam {{
+    0%, 100% {{ top: -25%; }}
+    50% {{ top: 80%; }}
+}}
+@keyframes vqc-oam-flicker {{
+    0%, 100% {{ opacity: 1; }}
+    47% {{ opacity: 0.9; }}
+    50% {{ opacity: 0.75; }}
+    53% {{ opacity: 0.92; }}
 }}
 .gradio-container .vqc-optics-keypad {{
     background: linear-gradient(180deg, #16120c 0%, #0a0806 100%) !important;
@@ -1817,11 +2101,16 @@ def build_app() -> gr.Blocks:
                                 gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
                 optics_terminal = gr.Textbox(
                     label="Matrix status display — selection menu · d-pad nav",
-                    value=_optics_terminal_menu(0),
-                    lines=12,
-                    max_lines=16,
+                    value="",
+                    lines=14,
+                    max_lines=24,
                     interactive=False,
                     elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
+                )
+                term_oam_helix_scan = gr.HTML(
+                    OAM_HELIX_SCANNER_HTML,
+                    visible=False,
+                    elem_classes=["vqc-oam-helix-host"],
                 )
                 term_active_key = gr.State("")
                 term_ui_state = gr.State(_default_term_ui_state())
@@ -1864,10 +2153,23 @@ def build_app() -> gr.Blocks:
                             )
                 term_keypad_outputs = [
                     optics_terminal,
+                    term_oam_helix_scan,
                     *[term_all_btns[key_id] for key_id in TERM_KEYPAD_CONTROL_ORDER],
                     term_active_key,
                     term_ui_state,
                 ]
+                term_cancels: list = []
+
+                def _bind_term_event(btn: gr.Button, fn, *, inputs: list) -> None:
+                    term_cancels.append(
+                        btn.click(
+                            fn,
+                            inputs=inputs,
+                            outputs=term_keypad_outputs,
+                            cancels=term_cancels,
+                        )
+                    )
+
                 with gr.Row(elem_classes=["vqc-optics-tune-row"]):
                     payload = gr.Textbox(
                         label="Payload",
@@ -1938,42 +2240,48 @@ def build_app() -> gr.Blocks:
                     info=slm_frames_info,
                     elem_classes=["vqc-slm-toggle"],
                 )
-            term_all_btns["clear"].click(
+            helix_key = _term_key_id(8)
+            _bind_term_event(
+                term_all_btns[helix_key],
+                _make_activate_oam_helix_scan(helix_key),
+                inputs=[term_ui_state],
+            )
+            _bind_term_event(
+                term_all_btns["clear"],
                 _make_term_clear_click("clear"),
                 inputs=[optics_terminal, term_ui_state],
-                outputs=term_keypad_outputs,
             )
             for hold_key in TERM_DPAD_HOLD_KEYS:
-                term_all_btns[hold_key].click(
+                _bind_term_event(
+                    term_all_btns[hold_key],
                     _make_term_dpad_click(hold_key),
                     inputs=[optics_terminal, term_ui_state],
-                    outputs=term_keypad_outputs,
                 )
-            term_all_btns[TERM_KEYPAD_HOME_KEY].click(
+            _bind_term_event(
+                term_all_btns[TERM_KEYPAD_HOME_KEY],
                 _make_term_home_momentary(),
                 inputs=[term_active_key, term_ui_state],
-                outputs=term_keypad_outputs,
             )
             for index in range(1, TERM_KEYPAD_COUNT + 1):
                 key_id = _term_key_id(index)
-                if index == 1:
+                if index == 1 or index == 8:
                     continue
                 if index in TERM_KEYPAD_DEFINED:
                     action = TERM_KEYPAD_DEFINED[index]
-                    term_all_btns[key_id].click(
+                    _bind_term_event(
+                        term_all_btns[key_id],
                         _make_term_stream_click(
                             key_id,
                             TERM_KEYPAD_STREAMERS[action],
                             menu_action=action,
                         ),
                         inputs=[term_ui_state],
-                        outputs=term_keypad_outputs,
                     )
                 else:
-                    term_all_btns[key_id].click(
+                    _bind_term_event(
+                        term_all_btns[key_id],
                         _make_term_latch_click(key_id),
                         inputs=[optics_terminal, term_ui_state],
-                        outputs=term_keypad_outputs,
                     )
 
             run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
@@ -2101,7 +2409,7 @@ def build_app() -> gr.Blocks:
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
-        demo.load(_term_boot_home, outputs=term_keypad_outputs)
+        demo.load(_stream_term_boot, outputs=term_keypad_outputs)
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "

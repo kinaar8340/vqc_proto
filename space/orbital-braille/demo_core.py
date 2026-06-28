@@ -133,6 +133,174 @@ VQC_CLAIMS_MD = """
 Full mapping: [proto/README.md — Patent claim alignment](https://github.com/kinaar8340/vqc_proto/blob/main/proto/README.md#patent-claim-alignment)
 """
 
+BOOT_QUOTE_STRING = "SELECTRIC TYPEBALL · OAM CARRIER · VQC"
+
+GITHUB_URL = "https://github.com/kinaar8340/vqc_proto"
+HF_SPACE_URL = "https://huggingface.co/spaces/kinaar111/orbital-braille-vqc"
+
+# Validated baseline (4 orbs, Full, seed 42, noise 0.35) — README / HF card
+VALIDATED_FONT_SEPARATION_RAD = 0.989
+VALIDATED_SHARD_FIDELITY = 0.929
+
+TERM_KEY_ACTIONS: dict[int, tuple[str, str]] = {
+    1: ("home", "Return to selection menu"),
+    2: ("status", "Live pipeline & environment"),
+    3: ("typeball", "Selectric typeball → OAM analogy"),
+    4: ("pipeline", "Encode → BMGL → decode loop"),
+    5: ("metrics", "Validated metrics baseline"),
+    6: ("build", "Build stamp & deploy info"),
+    7: ("help", "D-pad / keypad navigation"),
+    8: ("helix", "OAM helix screensaver — any key exits"),
+    9: ("claims", "VQC claim ↔ demo panel map"),
+    10: ("shards", "Spectral shards & PWM glyphs"),
+    11: ("slm", "SLM bench export quickstart"),
+    12: ("presets", "Example preset catalog"),
+}
+
+
+def terminal_keypad_map() -> str:
+    lines = ["Assigned prog keys (01–12):", ""]
+    for index in sorted(TERM_KEY_ACTIONS):
+        _action, desc = TERM_KEY_ACTIONS[index]
+        tag = "01 Home" if index == 1 else f"{index:02d}"
+        lines.append(f"  [{tag}]  {desc}")
+    lines.extend(
+        [
+            "",
+            "D-pad: ▲▼◀▶ move menu · enter confirm · clear blank",
+            "Keys 13–24: reserved (latch only)",
+            "Menu items 01–08 mirror d-pad selection.",
+            "08 / menu 08 → OAM helix screensaver (any key stops).",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def terminal_typeball_analogy() -> str:
+    return "\n".join(
+        [
+            "Mechanical Selectric  →  Optical Orbital Braille:",
+            "",
+            "  typeball spin       →  N virtual orbs on orbital rings",
+            "  raised glyph        →  PWM duty vector per orb (Braille dot)",
+            "  impact timing       →  pyramidal FM pulse envelope",
+            "  ink on paper        →  OAM LG donut + spectral shard barcode",
+            "  vibrating desk      →  p-wave BMGL phase noise (γ₁ slider)",
+            "",
+            f"Patent Fig. 1 payload: {PATENT_FIGURE1_PAYLOAD!r}",
+            "Sweet spot: 4 orbs · Quick resolution on HF · Full locally.",
+            "",
+            "Run demo below → 6-panel figure + Animate typehead.",
+        ]
+    )
+
+
+def terminal_pipeline_scope() -> str:
+    return "\n".join(
+        [
+            "THIS SPACE — browser simulation (you are here):",
+            "  · quaternion + stable font encode",
+            "  · BMGL turbulence × channel noise slider",
+            "  · OAM projection + FastICA + glyph match decode",
+            "  · 6-panel figure · Plotly 3D helices · typehead MP4/GIF",
+            "  · slm_package.zip (manifest + phase_stack.npy)",
+            "",
+            "GITHUB REPO — full prototype depth:",
+            "  · proto/run_demo.py · SLM_QUICKSTART.md",
+            "  · profile_hotpaths.py · orbital_braille/ package",
+            "  · notebooks/orbital_braille_demo.ipynb",
+            "",
+            "Not live SLM hardware — zip is bench-ready after each run.",
+        ]
+    )
+
+
+def terminal_metrics_baseline() -> str:
+    return "\n".join(
+        [
+            "Validated baseline (4 orbs, Full, seed 42, noise 0.35):",
+            "",
+            f"  Fisher-Rao font sep.  {VALIDATED_FONT_SEPARATION_RAD:.3f} rad",
+            f"  Shard fidelity        {VALIDATED_SHARD_FIDELITY:.3f}",
+            "",
+            "Metrics block after Run demo reports:",
+            "  · font separation — glyph distinctness in PWM space",
+            "  · shard fidelity — encoded vs recovered subcarriers",
+            "  · glyph fidelity — decoded Braille index confidence",
+            "  · quaternion — compressed payload orientation",
+            "",
+            "Tune channel noise (0–1) and γ₁ (1.0–2.0) live.",
+            "6-orb stress preset — harsher turbulence scout.",
+        ]
+    )
+
+
+def terminal_claims_snapshot() -> str:
+    lines = [
+        "VQC claim element  →  demo panel / output:",
+        "",
+        "  Pyramidal FM       →  bottom-left pulse trace",
+        "  Spectral shards    →  bottom-middle Welch PSD",
+        "  Quaternion encode  →  metrics block quaternion",
+        "  OAM multiplex      →  bottom-right orb layout (ℓ charges)",
+        "  Helical shielding  →  top-left clean encoded phase",
+        "  p-wave BMGL (γ₁)   →  top-middle noisy phase vs slider",
+        "  16-qubit QEC proxy →  shard fidelity after BMGL denoise",
+        "  SLM virtual typehead → slm_package.zip accordion",
+        "",
+        f'Patent Fig. 1: "{PATENT_FIGURE1_PAYLOAD}" · expand Claims tab for table.',
+    ]
+    return "\n".join(lines)
+
+
+def terminal_oam_shards() -> str:
+    return "\n".join(
+        [
+            "OAM carrier + spectral shard barcode:",
+            "",
+            "  LG donut beam carries helical phase (topological ℓ per orb)",
+            "  PWM gates each orb ON/OFF → duty picks glyph from stable font",
+            "  Pyramidal FM triangular chirp → discrete Welch PSD peaks",
+            "  Peaks = subcarrier shards — frequency barcode for payload bytes",
+            "  Quaternion rotates compressed byte stream on the carrier",
+            "",
+            "Bottom-middle panel: shard peaks before/after turbulence.",
+            "Compare γ₁ and channel noise — watch shard fidelity in metrics.",
+        ]
+    )
+
+
+def terminal_slm_export() -> str:
+    return "\n".join(
+        [
+            "SLM bench package (after Run demo):",
+            "",
+            "  manifest.json      orb geometry, PWM duties, quaternion, timing",
+            "  phase_stack.npy    [frames, H, W] phase sequence",
+            "  preview_montage.png visual sanity check",
+            "  LUT_calibration.txt gray→phase mapping notes",
+            "  README.txt         Holoeye / Meadowlark / Thorlabs quick-start",
+            "  frames/            optional PNG sequence (local demo only)",
+            "",
+            f"Quickstart: {GITHUB_URL}/blob/main/proto/SLM_QUICKSTART.md",
+            "HF: PNG frame export disabled for speed — core zip always included.",
+        ]
+    )
+
+
+def terminal_presets_catalog() -> str:
+    lines = ["Example presets (one click loads + runs):", ""]
+    for key, preset in EXAMPLE_PRESETS.items():
+        noise = preset.get("noise_level", DEFAULT_NOISE_LEVEL)
+        lines.append(f"  {preset['label']}")
+        lines.append(f"    payload={preset['payload']!r}  orbs={preset['orbs']}  "
+                     f"γ₁={preset['gamma_1']}  noise={noise}")
+        if preset.get("blurb"):
+            lines.append(f"    {preset['blurb']}")
+        lines.append("")
+    lines.append(f"Default payload: {PATENT_FIGURE1_PAYLOAD!r}")
+    return "\n".join(lines).rstrip()
+
 
 def is_hf_space() -> bool:
     """True when running inside a Hugging Face Space container."""
