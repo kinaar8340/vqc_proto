@@ -137,6 +137,33 @@ Concept: IBM Selectric typeball meets optical Braille — orbital phases + dutie
 
 **Technical documentation & module reference:** [`proto/README.md`](proto/README.md) — typeball mapping, encoding pipeline, patent claim table, future work.
 
+### Blind Manifold Recovery
+
+When no clean pilot field is available, the decoder can recover the payload quaternion **reference-free** (Level 2): rank glyph templates by intensity correlation, synthesize orb backgrounds, search the LG₁ carrier weight `w`, subtract orb leakage, and fit `q ∈ S³` against the documented forward model.
+
+| Path | Typical S³ error @ noise 0.35 | Reference required |
+|------|------------------------------|--------------------|
+| Differential (default demo / HF Space) | ≈ **0.002** | Yes — encoded field + quaternion |
+| Blind manifold (Level 2) | ≈ **0.115** | No — glyph-ranked orb template |
+
+At higher turbulence (noise ≈ 0.5–0.7), shallow carrier basins can stall SLSQP early. **Adaptive auto-retry** (default) re-runs with forced top-5 carrier refinement when `nfev < 300` and residual loss stays elevated — metrics report `Carrier search retried: Yes/No`.
+
+```bash
+cd proto
+.venv/bin/python -c "
+from demo_core import run_pipeline
+_, _, _, _, metrics, _ = run_pipeline(
+    'I live in Oregon', 4, seed=42, noise_level=0.35, blind_quaternion=True,
+)
+print(metrics)
+"
+
+# 32-case stress matrix + cliff before/after comparison
+.venv/bin/python stress_test_blind_manifold.py --compare-auto-retry
+```
+
+Full coupling reference, cliff analysis, and API: [`docs/quaternion_oam_coupling.md`](docs/quaternion_oam_coupling.md) · implementation in `proto/orbital_braille/quaternion_oam.py`.
+
 ### Quick start (4-orb prototype)
 
 ```bash

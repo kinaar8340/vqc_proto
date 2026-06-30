@@ -8,8 +8,15 @@ import numpy as np
 from scipy.signal import chirp, welch
 
 from .altermagnetic import PWaveBMGL, apply_turbulence, noise_level_to_scale
+from .encode_redundancy import (
+    QEC_REPS,
+    effective_num_times,
+    repeat_triplets_1d,
+    repeat_triplets_along_time,
+)
 from .lg_modes import lg_mode
 from .quaternion_codec import Quaternion, encode_shard, rodrigues_rotation
+from .quaternion_oam import IMPRINT_SCALE, PHI_SCALE, encode_imprint_field
 from .stable_fonts import EmergentConstants, build_stable_font, glyph_for_byte
 
 
@@ -40,6 +47,85 @@ class TypeheadConfig:
     chirp_rate: float = 0.5
     bmgl: PWaveBMGL = field(default_factory=PWaveBMGL)
     constants: EmergentConstants = field(default_factory=EmergentConstants)
+    qec_reps: int = QEC_REPS
+    qec_transmit_redundancy: bool = True
+
+
+def build_orbs_from_duties(
+    glyph_duties: np.ndarray,
+    num_orbs: int,
+    constants: EmergentConstants | None = None,
+) -> list[OrbConfig]:
+    """Reconstruct orb configs from recovered PWM duties (decode-side)."""
+    constants = constants or EmergentConstants()
+    phases = constants.stable_phase_ladder(num_orbs)
+    duties = np.asarray(glyph_duties, dtype=float).ravel()
+    orbs: list[OrbConfig] = []
+    for k in range(num_orbs):
+        duty = float(duties[k]) if k < duties.size else 0.5
+        orbs.append(
+            OrbConfig(
+                radius=0.4 + 0.15 * k,
+                omega=1.0 + 0.3 * k,
+                ell=k if k % 2 == 0 else -(k // 2 + 1),
+                amplitude=0.8 + 0.1 * k,
+                phase0=phases[k],
+                pwm_duty=duty,
+            )
+        )
+    return orbs
+
+
+def synthesize_orb_field(
+    orbs: list[OrbConfig],
+    x_grid: np.ndarray,
+    y_grid: np.ndarray,
+    t_val: float,
+    t_max: float,
+    *,
+    w0: float = 1.0,
+) -> np.ndarray:
+    """Sum PWM-gated point sources at time ``t_val`` (matches encode geometry)."""
+    field = np.zeros_like(x_grid, dtype=complex)
+    sigma = w0 * 0.35
+    for orb in orbs:
+        theta = orb.phase0 + orb.omega * t_val
+        x0 = orb.radius * np.cos(theta)
+        y0 = orb.radius * np.sin(theta)
+        pwm_on = (np.sin(2 * np.pi * orb.omega * t_val / t_max) + 1) / 2 < orb.pwm_duty
+        gate = 1.0 if pwm_on else 0.15
+        phase = orb.omega * t_val + orb.phase0
+        amp = orb.amplitude * gate * np.exp(1j * phase)
+        gauss = np.exp(-((x_grid - x0) ** 2 + (y_grid - y0) ** 2) / (2 * sigma**2))
+        helical = np.exp(1j * orb.ell * np.arctan2(y_grid - y0, x_grid - x0))
+        field += amp * gauss * helical
+    return field
+
+
+def synthesize_per_orb_intensity_maps(
+    orbs: list[OrbConfig],
+    x_grid: np.ndarray,
+    y_grid: np.ndarray,
+    t_val: float,
+    t_max: float,
+    *,
+    w0: float = 1.0,
+) -> np.ndarray:
+    """Per-orb |field|² maps at ``t_val``, shape ``(n_orbs, ny, nx)``."""
+    maps = np.zeros((len(orbs), *x_grid.shape), dtype=np.float64)
+    sigma = w0 * 0.35
+    for i, orb in enumerate(orbs):
+        theta = orb.phase0 + orb.omega * t_val
+        x0 = orb.radius * np.cos(theta)
+        y0 = orb.radius * np.sin(theta)
+        pwm_on = (np.sin(2 * np.pi * orb.omega * t_val / t_max) + 1) / 2 < orb.pwm_duty
+        gate = 1.0 if pwm_on else 0.15
+        phase = orb.omega * t_val + orb.phase0
+        amp = orb.amplitude * gate * np.exp(1j * phase)
+        gauss = np.exp(-((x_grid - x0) ** 2 + (y_grid - y0) ** 2) / (2 * sigma**2))
+        helical = np.exp(1j * orb.ell * np.arctan2(y_grid - y0, x_grid - x0))
+        maps[i] = np.abs(amp * gauss * helical) ** 2
+    return maps
 
 
 @dataclass
@@ -58,6 +144,7 @@ class EncodeResult:
     rho: np.ndarray
     phi: np.ndarray
     payload: bytes
+    qec_reps: int = QEC_REPS
 
 
 class OrbitalTypehead:
@@ -89,21 +176,9 @@ class OrbitalTypehead:
 
     def _build_orbs(self, glyph_duties: np.ndarray) -> list[OrbConfig]:
         """Map glyph PWM duties to orbiting sources with distinct ell charges."""
-        cfg = self.config
-        phases = cfg.constants.stable_phase_ladder(cfg.num_orbs)
-        orbs = []
-        for k in range(cfg.num_orbs):
-            orbs.append(
-                OrbConfig(
-                    radius=0.4 + 0.15 * k,
-                    omega=1.0 + 0.3 * k,
-                    ell=k if k % 2 == 0 else -(k // 2 + 1),
-                    amplitude=0.8 + 0.1 * k,
-                    phase0=phases[k],
-                    pwm_duty=float(glyph_duties[k]),
-                )
-            )
-        return orbs
+        return build_orbs_from_duties(
+            glyph_duties, self.config.num_orbs, self.config.constants
+        )
 
     def _orb_position(self, orb: OrbConfig, t: float) -> tuple[float, float]:
         theta = orb.phase0 + orb.omega * t
@@ -152,38 +227,62 @@ class OrbitalTypehead:
         orbs = self._build_orbs(glyph)
 
         cfg = self.config
-        t = np.linspace(0, cfg.pulse_duration_ns * 1e-9, cfg.num_times)
+        reps = cfg.qec_reps if cfg.qec_transmit_redundancy else 1
+        n_times = effective_num_times(cfg.num_times, reps) if reps > 1 else cfg.num_times
+        t = np.linspace(0, cfg.pulse_duration_ns * 1e-9, n_times)
         pulse = self.pyramidal_pulse(t)
 
-        field_time = np.zeros((cfg.num_times, cfg.grid_size, cfg.grid_size), dtype=complex)
+        field_time = np.zeros((n_times, cfg.grid_size, cfg.grid_size), dtype=complex)
         intensity_time = np.zeros_like(field_time, dtype=float)
 
-        for ti, ti_val in enumerate(t):
-            field = np.zeros((cfg.grid_size, cfg.grid_size), dtype=complex)
-            mod = 1.0 + 0.15 * pulse[ti] / (np.max(np.abs(pulse)) + 1e-12)
+        if cfg.qec_transmit_redundancy and reps > 1:
+            n_logical = n_times // reps
+            t_logical = t[np.arange(n_logical) * reps + reps // 2]
+            pulse_logical = self.pyramidal_pulse(t_logical)
+            for li, ti_val in enumerate(t_logical):
+                field = np.zeros((cfg.grid_size, cfg.grid_size), dtype=complex)
+                mod = 1.0 + 0.15 * pulse_logical[li] / (np.max(np.abs(pulse_logical)) + 1e-12)
+                for orb in orbs:
+                    x0, y0 = self._orb_position(orb, ti_val)
+                    amp = self._orb_amplitude(orb, ti_val, t[-1])
+                    field += self._point_source_field(x0, y0, amp * mod, orb.ell)
+                field += encode_imprint_field(q, self.rho, self.phi, w0=cfg.w0)
+                lg_carrier = lg_mode(1, self.rho, self.phi, w0=cfg.w0)
+                axis = rodrigues_rotation(
+                    np.array([1.0, 0.0, 0.0]),
+                    np.array([0.0, 0.0, 1.0]),
+                    q.w * np.pi / 2,
+                )
+                quat_phase = np.exp(1j * axis[0] * PHI_SCALE)
+                field *= lg_carrier * quat_phase
+                sl = slice(li * reps, (li + 1) * reps)
+                field_time[sl] = field
+                intensity_time[sl] = np.abs(field) ** 2
+            pulse = repeat_triplets_1d(pulse, reps=reps)
+        else:
+            for ti, ti_val in enumerate(t):
+                field = np.zeros((cfg.grid_size, cfg.grid_size), dtype=complex)
+                mod = 1.0 + 0.15 * pulse[ti] / (np.max(np.abs(pulse)) + 1e-12)
+                for orb in orbs:
+                    x0, y0 = self._orb_position(orb, ti_val)
+                    amp = self._orb_amplitude(orb, ti_val, t[-1])
+                    field += self._point_source_field(x0, y0, amp * mod, orb.ell)
+                field += encode_imprint_field(q, self.rho, self.phi, w0=cfg.w0)
+                lg_carrier = lg_mode(1, self.rho, self.phi, w0=cfg.w0)
+                axis = rodrigues_rotation(
+                    np.array([1.0, 0.0, 0.0]),
+                    np.array([0.0, 0.0, 1.0]),
+                    q.w * np.pi / 2,
+                )
+                quat_phase = np.exp(1j * axis[0] * PHI_SCALE)
+                field *= lg_carrier * quat_phase
+                field_time[ti] = field
+                intensity_time[ti] = np.abs(field) ** 2
 
-            for orb in orbs:
-                x0, y0 = self._orb_position(orb, ti_val)
-                amp = self._orb_amplitude(orb, ti_val, t[-1])
-                field += self._point_source_field(x0, y0, amp * mod, orb.ell)
-
-            lg_carrier = lg_mode(1, self.rho, self.phi, w0=cfg.w0)
-            axis = rodrigues_rotation(
-                np.array([1.0, 0.0, 0.0]),
-                np.array([0.0, 0.0, 1.0]),
-                q.w * np.pi / 2,
-            )
-            quat_phase = np.exp(1j * axis[0] * 0.3)
-            field *= lg_carrier * quat_phase
-
-            field_time[ti] = field
-            intensity_time[ti] = np.abs(field) ** 2
-
-        mid = cfg.num_times // 2
-        nperseg = min(32, cfg.num_times // 2)
+        nperseg = min(32, max(n_times // 2, 2))
         freqs, psd = welch(
             pulse,
-            fs=1.0 / (t[1] - t[0]),
+            fs=1.0 / (t[1] - t[0]) if n_times > 1 else 1.0,
             nperseg=nperseg,
         )
 
@@ -200,6 +299,7 @@ class OrbitalTypehead:
             rho=self.rho,
             phi=self.phi,
             payload=bytes(payload),
+            qec_reps=reps if cfg.qec_transmit_redundancy else 1,
         )
 
     def propagate_with_turbulence(

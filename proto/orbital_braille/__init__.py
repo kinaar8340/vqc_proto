@@ -1,6 +1,23 @@
 """Orbital Braille — multi-orb typehead prototype for VQC shard encoding."""
 
-from .typehead import OrbitalTypehead, TypeheadConfig
+from .orb_interference import (
+    effective_oam_modes,
+    mean_pairwise_intensity_correlation,
+    measure_orb_interference,
+)
+from .glyph_cache import (
+    GlyphTemplateBank,
+    clear_glyph_template_cache,
+    get_glyph_template_bank,
+    rank_glyphs_by_orb_intensity,
+)
+from .typehead import (
+    OrbitalTypehead,
+    TypeheadConfig,
+    build_orbs_from_duties,
+    synthesize_orb_field,
+    synthesize_per_orb_intensity_maps,
+)
 from .decoder import decode_field, DecodeResult
 from .lg_modes import lg_mode, lg_mode_full, project_oam_spectrum
 from .altermagnetic import NOISE_LEVEL_REFERENCE, PWaveBMGL, apply_turbulence, noise_level_to_scale
@@ -20,10 +37,59 @@ from .slm_typehead import (
     phase_to_levels,
 )
 from .turbulence import apply_free_space_channel, kolmogorov_phase_screen
+from .encode_redundancy import (
+    QEC_REPS,
+    effective_num_times,
+    repeat_triplets_1d,
+    repeat_triplets_along_time,
+    triplet_codeword_check,
+)
+from .quaternion_oam import (
+    IMPRINT_SCALE,
+    OAM_QUAT_ELLS,
+    PHI_SCALE,
+    dewarp_oam_weights,
+    encode_imprint_field,
+    oam_weights_to_quaternion,
+    project_quaternion_oam,
+    quaternion_recovery_error,
+    ManifoldRecoveryResult,
+    forward_quaternion_field,
+    mode_weights_from_bmgl,
+    predict_oam_weights_from_quaternion,
+    recover_quaternion_from_field_manifold,
+    recover_quaternion_manifold,
+    recover_quaternion_with_reference,
+    recover_w_from_phase,
+    triplet_centre_field,
+    triplet_median_oam_weights,
+    orb_oam_background_weights,
+    residual_oam_weights_after_orb,
+    search_carrier_w_for_orb_residual,
+)
+from .qec_stub import (
+    BitFlipRepetitionCode,
+    QECStats,
+    bitflip_repetition_qec,
+    format_threshold_table,
+    measure_qec_threshold,
+    physical_error_rate,
+    simulate_code_memory,
+)
 
 __all__ = [
     "OrbitalTypehead",
     "TypeheadConfig",
+    "effective_oam_modes",
+    "mean_pairwise_intensity_correlation",
+    "measure_orb_interference",
+    "GlyphTemplateBank",
+    "clear_glyph_template_cache",
+    "get_glyph_template_bank",
+    "rank_glyphs_by_orb_intensity",
+    "build_orbs_from_duties",
+    "synthesize_orb_field",
+    "synthesize_per_orb_intensity_maps",
     "decode_field",
     "DecodeResult",
     "lg_mode",
@@ -53,4 +119,37 @@ __all__ = [
     "phase_to_levels",
     "apply_free_space_channel",
     "kolmogorov_phase_screen",
+    "QEC_REPS",
+    "effective_num_times",
+    "repeat_triplets_1d",
+    "repeat_triplets_along_time",
+    "triplet_codeword_check",
+    "IMPRINT_SCALE",
+    "OAM_QUAT_ELLS",
+    "PHI_SCALE",
+    "dewarp_oam_weights",
+    "encode_imprint_field",
+    "oam_weights_to_quaternion",
+    "project_quaternion_oam",
+    "quaternion_recovery_error",
+    "ManifoldRecoveryResult",
+    "forward_quaternion_field",
+    "mode_weights_from_bmgl",
+    "predict_oam_weights_from_quaternion",
+    "recover_quaternion_from_field_manifold",
+    "recover_quaternion_manifold",
+    "recover_quaternion_with_reference",
+    "recover_w_from_phase",
+    "triplet_centre_field",
+    "triplet_median_oam_weights",
+    "orb_oam_background_weights",
+    "residual_oam_weights_after_orb",
+    "search_carrier_w_for_orb_residual",
+    "BitFlipRepetitionCode",
+    "QECStats",
+    "bitflip_repetition_qec",
+    "format_threshold_table",
+    "measure_qec_threshold",
+    "physical_error_rate",
+    "simulate_code_memory",
 ]

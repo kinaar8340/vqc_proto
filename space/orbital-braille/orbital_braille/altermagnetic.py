@@ -63,7 +63,7 @@ def apply_turbulence(
 
 
 def repetition_qec(data: np.ndarray, reps: int = 16, error_rate: float = 0.015, rng=None) -> np.ndarray:
-    """Majority-vote repetition code proxy (16-qubit QEC)."""
+    """Legacy stochastic denoise proxy — prefer ``qec_stub.bitflip_repetition_qec``."""
     rng = rng or np.random.default_rng()
     errors = rng.binomial(reps, error_rate, data.shape)
     correction = rng.normal(0, error_rate / reps, data.shape) * (errors % 2)

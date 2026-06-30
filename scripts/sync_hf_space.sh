@@ -20,6 +20,7 @@ EOF
 
 cp -r "$SRC/orbital_braille" "$DST/"
 cp "$SRC/demo_core.py" "$DST/"
+cp "$SRC/stov_analyzer.py" "$DST/"
 cp "$SRC/build_info.py" "$DST/"
 cp "$SRC/gradio_demo.py" "$DST/app.py"
 # HF Spaces requirements — do NOT pin gradio here; HF installs gradio[oauth] from

@@ -14,6 +14,8 @@ from pathlib import Path
 
 import gradio as gr
 
+from stov_analyzer import STOV_PRESETS, load_stov_preset, run_stov_analysis
+
 from demo_core import (
     BOOT_QUOTE_STRING,
     DEFAULT_NOISE_LEVEL,
@@ -829,18 +831,34 @@ def _close_links_panels() -> tuple:
     )
 
 
+def _nav_tab_btn_update(*, active: bool) -> gr.Update:
+    """Source navigation tab — orange when active, green link otherwise."""
+    if active:
+        return gr.update(interactive=False, elem_classes=["vqc-source-tab", "active"], variant="secondary")
+    return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
+
+
 def _nav_to_page(page: str) -> tuple:
-    """Switch between demo and animations screens; refresh Source tab highlights."""
+    """Switch demo / animations / STOV screens; refresh Source tab highlights."""
     on_demo = page == "demo"
+    on_anim = page == "animations"
+    on_stov = page == "stov"
     closed = _close_links_panels()
+    tab = _nav_tab_btn_update
     return (
         gr.update(visible=on_demo),
-        gr.update(visible=not on_demo),
-        _home_tab_update(on_demo_page=on_demo),
-        _source_tab_btn_update(active=not on_demo),
+        gr.update(visible=on_anim),
+        gr.update(visible=on_stov),
+        tab(active=on_demo),
+        tab(active=on_anim),
+        tab(active=on_stov),
         *closed,
-        _home_tab_update(on_demo_page=on_demo),
-        _source_tab_btn_update(active=not on_demo),
+        tab(active=on_demo),
+        tab(active=on_anim),
+        tab(active=on_stov),
+        tab(active=on_demo),
+        tab(active=on_anim),
+        tab(active=on_stov),
         page,
     )
 
@@ -1281,6 +1299,42 @@ footer {{
 .gradio-container .vqc-animations-page .html-container {{
     width: 100% !important;
     max-width: 100% !important;
+}}
+.gradio-container .vqc-stov-page .markdown h2 {{
+    font-size: 1.35rem !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
+}}
+.gradio-container .vqc-stov-page .markdown p {{
+    font-size: 0.92rem !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
+    line-height: 1.45 !important;
+}}
+.gradio-container .vqc-stov-page,
+.gradio-container .vqc-stov-page > .block,
+.gradio-container .vqc-stov-page .html-container {{
+    width: 100% !important;
+    max-width: 100% !important;
+}}
+.gradio-container .vqc-stov-sidebar {{
+    background: linear-gradient(180deg, #1e1a2e 0%, #12101f 100%) !important;
+    border: 2px solid #4a4068 !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 0.75rem !important;
+}}
+.gradio-container .vqc-stov-sidebar .label-wrap span {{
+    color: #d8d0f0 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.04em !important;
+}}
+.gradio-container .vqc-stov-meters .block {{
+    border: 1px solid #3d3558 !important;
+    border-radius: 8px !important;
+    background: rgba(18, 14, 32, 0.65) !important;
+}}
+.gradio-container .vqc-stov-page .plot-container {{
+    border: 2px solid #5a4a20 !important;
+    border-radius: 10px !important;
+    background: rgba(8, 6, 18, 0.5) !important;
 }}
 .gradio-container .vqc-screencast-wrap {{
     display: grid !important;
@@ -2080,7 +2134,12 @@ def build_app() -> gr.Blocks:
                                     variant="secondary",
                                 )
                             with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
-                                gr.HTML('<span class="vqc-nav-cell-empty" aria-hidden="true">&nbsp;</span>')
+                                tab_stov_btn = gr.Button(
+                                    "STOV Analyzer",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
                         with gr.Row(elem_classes=["vqc-nav-spreadsheet-row"]):
                             gr.HTML('<span class="vqc-source-label vqc-nav-row-label">Links:</span>')
                             with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
@@ -2379,18 +2438,138 @@ def build_app() -> gr.Blocks:
                     scale=0,
                     variant="secondary",
                 )
+                anim_tab_stov_btn = gr.Button(
+                    "STOV Analyzer",
+                    elem_classes=["vqc-source-tab"],
+                    scale=0,
+                    variant="secondary",
+                )
             gr.Markdown("## Animations")
             gr.Markdown(ANIMATIONS_INTRO_MD)
             gr.HTML(_screencast_grid_html())
             gr.Markdown(_screencast_links_md())
+
+        with gr.Column(visible=False, elem_classes=["vqc-stov-page"]) as page_stov_analyzer:
+            with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-animations-nav-row"]):
+                gr.HTML('<span class="vqc-source-label">Source:</span>')
+                stov_tab_demo_btn = gr.Button(
+                    "Live Demo",
+                    elem_classes=["vqc-source-tab"],
+                    scale=0,
+                    variant="secondary",
+                )
+                stov_tab_anim_btn = gr.Button(
+                    "Animations",
+                    elem_classes=["vqc-source-tab"],
+                    scale=0,
+                    variant="secondary",
+                )
+                stov_tab_stov_btn = gr.Button(
+                    "STOV Analyzer",
+                    elem_classes=["vqc-source-tab", "active"],
+                    interactive=False,
+                    scale=0,
+                    variant="secondary",
+                )
+            gr.Markdown("## STOV Analyzer — Spatiotemporal OAM Spectrum")
+            gr.Markdown(
+                "Analyze spatiotemporal optical vortex (STOV) mode weights vs. topological order "
+                "*m* in the space-time plane. Ties into the VQC OAM / spectral-shard work — "
+                "vibrant field spectrogram plus DSP-style spectrum bars and vector proxies (Lx / Ly / Lz)."
+            )
+            stov_preset_key = gr.State("vqc_carrier")
+            with gr.Row():
+                with gr.Column(scale=1, elem_classes=["vqc-stov-sidebar"]):
+                    gr.Markdown("### Controls")
+                    stov_m_min = gr.Slider(-12, 0, value=-8, step=1, label="Min order m")
+                    stov_m_max = gr.Slider(0, 12, value=8, step=1, label="Max order m")
+                    stov_noise = gr.Slider(0.0, 0.5, value=0.1, step=0.01, label="Noise level")
+                    stov_n_modes = gr.Slider(3, 25, value=9, step=1, label="Active modes")
+                    stov_seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
+                    with gr.Accordion("Presets", open=True):
+                        stov_preset_buttons: dict[str, gr.Button] = {}
+                        for key, preset in STOV_PRESETS.items():
+                            stov_preset_buttons[key] = gr.Button(
+                                preset["label"],
+                                variant="secondary",
+                                size="sm",
+                            )
+                    stov_analyze_btn = gr.Button(
+                        "Analyze / Generate Spectrum",
+                        variant="primary",
+                        elem_classes=["vqc-full-width"],
+                    )
+                    stov_metrics_out = gr.Textbox(
+                        label="Analysis metrics",
+                        lines=7,
+                        interactive=False,
+                    )
+                with gr.Column(scale=3):
+                    gr.Markdown("### Colorful space-time spectrogram")
+                    stov_colorful_plot = gr.Plot(label="STOV field (RGB channels)")
+                    gr.Markdown("### Spatiotemporal OAM spectrum")
+                    stov_spectrum_plot = gr.Plot(label="Power vs m")
+                    with gr.Accordion("Vector components (Lx / Ly / Lz)", open=False):
+                        stov_vector_plot = gr.Plot(label="Three-component spectra")
+            with gr.Row(elem_classes=["vqc-stov-meters"]):
+                stov_purity = gr.Number(label="Mode purity", value=0.0, precision=4)
+                stov_dominant_m = gr.Number(label="Dominant m", value=0, precision=0)
+                stov_fidelity = gr.Number(label="Vector fidelity", value=0.0, precision=4)
+
+            stov_outputs = [
+                stov_colorful_plot,
+                stov_spectrum_plot,
+                stov_vector_plot,
+                stov_metrics_out,
+                stov_purity,
+                stov_dominant_m,
+                stov_fidelity,
+            ]
+            stov_inputs = [stov_m_min, stov_m_max, stov_noise, stov_n_modes, stov_seed]
+
+            def _run_stov_with_preset(
+                m_min: float,
+                m_max: float,
+                noise: float,
+                n_modes: float,
+                seed: float,
+                preset_key: str,
+            ):
+                return run_stov_analysis(
+                    m_min,
+                    m_max,
+                    noise,
+                    n_modes,
+                    seed,
+                    preset_key=preset_key,
+                )
+
+            stov_analyze_btn.click(
+                lambda m_min, m_max, noise, n_modes, seed, pk: run_stov_analysis(
+                    m_min, m_max, noise, n_modes, seed, preset_key=pk
+                ),
+                inputs=[*stov_inputs, stov_preset_key],
+                outputs=stov_outputs,
+            )
+            for key, btn in stov_preset_buttons.items():
+                btn.click(
+                    lambda k=key: (*load_stov_preset(k), k),
+                    outputs=[stov_m_min, stov_m_max, stov_noise, stov_n_modes, stov_seed, stov_preset_key],
+                ).then(
+                    _run_stov_with_preset,
+                    inputs=[*stov_inputs, stov_preset_key],
+                    outputs=stov_outputs,
+                )
 
         newhere_outputs = [panel_newhere, tab_newhere_btn, newhere_open, panel_claims, tab_claims_btn, claims_open]
         claims_outputs = [panel_claims, tab_claims_btn, claims_open, panel_newhere, tab_newhere_btn, newhere_open]
         nav_outputs = [
             page_demo,
             page_animations,
+            page_stov_analyzer,
             tab_demo_btn,
             tab_anim_btn,
+            tab_stov_btn,
             panel_newhere,
             tab_newhere_btn,
             newhere_open,
@@ -2399,12 +2578,21 @@ def build_app() -> gr.Blocks:
             claims_open,
             anim_tab_demo_btn,
             anim_tab_anim_btn,
+            anim_tab_stov_btn,
+            stov_tab_demo_btn,
+            stov_tab_anim_btn,
+            stov_tab_stov_btn,
             current_page,
         ]
         tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
         tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+        tab_stov_btn.click(lambda: _nav_to_page("stov"), outputs=nav_outputs)
         anim_tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
         anim_tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+        anim_tab_stov_btn.click(lambda: _nav_to_page("stov"), outputs=nav_outputs)
+        stov_tab_demo_btn.click(lambda: _nav_to_page("demo"), outputs=nav_outputs)
+        stov_tab_anim_btn.click(lambda: _nav_to_page("animations"), outputs=nav_outputs)
+        stov_tab_stov_btn.click(lambda: _nav_to_page("stov"), outputs=nav_outputs)
         tab_newhere_btn.click(_toggle_newhere, inputs=[newhere_open], outputs=newhere_outputs)
         tab_claims_btn.click(_toggle_claims, inputs=[claims_open], outputs=claims_outputs)
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])

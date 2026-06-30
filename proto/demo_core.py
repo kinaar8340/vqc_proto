@@ -24,6 +24,7 @@ from orbital_braille import (
     build_stable_font,
     font_separation,
     noise_level_to_scale,
+    quaternion_recovery_error,
 )
 from orbital_braille.slm_typehead import SLM_PRESETS, SLMConfig, export_hologram_package
 
@@ -936,6 +937,32 @@ def _encode_frames_mp4(frames: list, out_path: Path, *, fps: float = 9.0) -> Pat
     return out_path
 
 
+def _manifold_metric_lines(decoded) -> list[str]:
+    """Format Level-2 manifold recovery diagnostics when present."""
+    mr = decoded.manifold_recovery
+    if mr is None:
+        return ["Quaternion recovery: Level-1 differential (pilot reference)"]
+    lines = [
+        "Quaternion recovery: Level-2 manifold (reference-free)",
+        f"  Manifold loss: {mr.loss:.6e}",
+        f"  Converged: {mr.converged}  fallback: {mr.used_fallback}",
+        f"  Orb background subtracted: {mr.orb_subtracted}",
+    ]
+    if mr.carrier_w is not None:
+        lines.append(f"  Carrier w (searched): {mr.carrier_w:.4f}")
+    if mr.optimizer_nfev_total is not None:
+        lines.append(
+            f"  Optimizer nfev: {mr.optimizer_nfev_total} "
+            f"(win {mr.optimizer_nfev}, nit {mr.optimizer_nit}, "
+            f"grid {mr.carrier_grid_evals})"
+        )
+    if mr.carrier_search_retried:
+        lines.append("  Carrier search retried: Yes (adaptive deep basin search)")
+    else:
+        lines.append("  Carrier search retried: No")
+    return lines
+
+
 def run_pipeline(
     payload: str,
     num_orbs: int,
@@ -944,6 +971,15 @@ def run_pipeline(
     seed: int = 42,
     gamma_1: float = 1.5,
     noise_level: float = DEFAULT_NOISE_LEVEL,
+    blind_quaternion: bool = False,
+    glyph_rank_k: int = 24,
+    glyph_refine_k: int = 12,
+    carrier_grid_steps: int = 15,
+    carrier_refine_top_k: int = 5,
+    slsqp_maxiter: int = 120,
+    pin_carrier_w: float | None = None,
+    force_carrier_top_k: int | None = None,
+    auto_retry_early_exit: bool = True,
 ) -> tuple[TypeheadConfig, object, np.ndarray, object, str, float]:
     """Encode → turbulence → decode. Returns cfg, encoded, noisy, decoded, metrics, font_sep."""
     cfg = build_config(num_orbs, quick=quick, gamma_1=gamma_1)
@@ -952,36 +988,67 @@ def run_pipeline(
 
     encoded = typehead.encode(payload)
     noisy = typehead.propagate_with_turbulence(encoded, noise_level=noise_level)
-    decoded = decode_field(
-        noisy,
-        reference_intensity=encoded.intensity_time,
-        font=typehead.font,
-        orbs_ells=[o.ell for o in encoded.orbs],
-        bmgl=cfg.bmgl,
-        rho=encoded.rho,
-        phi=encoded.phi,
-        pulse_ref=encoded.pulse,
-        t=encoded.t,
-    )
+    nscale = noise_level_to_scale(noise_level)
+    decode_kwargs: dict = {
+        "reference_intensity": encoded.intensity_time,
+        "font": typehead.font,
+        "orbs_ells": [o.ell for o in encoded.orbs],
+        "bmgl": cfg.bmgl,
+        "rho": encoded.rho,
+        "phi": encoded.phi,
+        "pulse_ref": encoded.pulse,
+        "t": encoded.t,
+        "noise_scale": nscale,
+        "constants": cfg.constants,
+        "glyph_rank_k": glyph_rank_k,
+        "glyph_refine_k": glyph_refine_k,
+        "carrier_grid_steps": carrier_grid_steps,
+        "carrier_refine_top_k": carrier_refine_top_k,
+        "slsqp_maxiter": slsqp_maxiter,
+        "pin_carrier_w": pin_carrier_w,
+        "force_carrier_top_k": force_carrier_top_k,
+        "auto_retry_early_exit": auto_retry_early_exit,
+    }
+    if not blind_quaternion:
+        decode_kwargs["reference_field"] = encoded.field_time
+        decode_kwargs["reference_quaternion"] = encoded.quaternion
+    decoded = decode_field(noisy, **decode_kwargs)
+    quat_err = quaternion_recovery_error(encoded.quaternion, decoded.quaternion)
 
     bmgl = cfg.bmgl
     mode = "QUICK" if quick else "FULL"
-    metrics = "\n".join(
-        [
-            f"Mode: {mode} (grid={cfg.grid_size}, times={cfg.num_times})",
-            f"Payload: {payload!r}",
-            f"Orbs: {num_orbs}",
-            f"p-wave BMGL γ₁ = {bmgl.gamma_1:.2f}  inhibition boost = {bmgl.inhibition_boost:.4f}",
-            f"Channel noise: {noise_level:.2f}  (phase scale {noise_level_to_scale(noise_level):.2f})",
-            f"Font separation: {font_sep:.4f} rad",
-            f"Shard fidelity: {decoded.shard_fidelity:.4f}",
-            f"Glyph: index={decoded.glyph_index}  fidelity={decoded.glyph_fidelity:.4f}",
-            f"Quaternion: w={encoded.quaternion.w:.3f} "
-            f"x={encoded.quaternion.x:.3f} y={encoded.quaternion.y:.3f} "
-            f"z={encoded.quaternion.z:.3f}",
-            f"Dominant ℓ: {decoded.recovered_ells}",
-        ]
-    )
+    metric_lines = [
+        f"Mode: {mode} (grid={cfg.grid_size}, times={cfg.num_times})",
+        f"Payload: {payload!r}",
+        f"Orbs: {num_orbs}",
+        f"p-wave BMGL γ₁ = {bmgl.gamma_1:.2f}  inhibition boost = {bmgl.inhibition_boost:.4f}",
+        f"Channel noise: {noise_level:.2f}  (phase scale {nscale:.2f})",
+        f"Font separation: {font_sep:.4f} rad",
+        f"Shard fidelity: {decoded.shard_fidelity:.4f}",
+        f"Glyph: index={decoded.glyph_index}  fidelity={decoded.glyph_fidelity:.4f}",
+        f"Quaternion (encoded): w={encoded.quaternion.w:.3f} "
+        f"x={encoded.quaternion.x:.3f} y={encoded.quaternion.y:.3f} "
+        f"z={encoded.quaternion.z:.3f}",
+        f"Quaternion (recovered): w={decoded.quaternion.w:.3f} "
+        f"x={decoded.quaternion.x:.3f} y={decoded.quaternion.y:.3f} "
+        f"z={decoded.quaternion.z:.3f}",
+        f"Quaternion S³ error: {quat_err:.4f}",
+        f"Dominant ℓ: {decoded.recovered_ells}",
+        *_manifold_metric_lines(decoded),
+    ]
+    if decoded.qec_stats is not None:
+        qs = decoded.qec_stats
+        metric_lines.extend(
+            [
+                f"QEC: {qs.code_name}  (transmit triplets ×{getattr(encoded, 'qec_reps', 3)})",
+                f"  p_physical (BMGL-mapped): {qs.p_physical_effective:.5f}",
+                f"  physical error rate: {qs.physical_error_rate:.5f}",
+                f"  logical error (pre-decode): {qs.logical_error_rate_pre:.5f}",
+                f"  logical error (post-decode): {qs.logical_error_rate:.5f}",
+                f"  syndromes detected: {qs.syndromes_detected}/{qs.n_groups}",
+            ]
+        )
+    metrics = "\n".join(metric_lines)
     return cfg, encoded, noisy, decoded, metrics, font_sep
 
 

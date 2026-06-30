@@ -22,7 +22,9 @@ from orbital_braille import (  # noqa: E402
     decode_shard,
     encode_shard,
     font_separation,
+    noise_level_to_scale,
 )
+from orbital_braille.encode_redundancy import effective_num_times, triplet_codeword_check  # noqa: E402
 from orbital_braille.quaternion_codec import Quaternion  # noqa: E402
 from orbital_braille.stable_fonts import fisher_rao_distance, glyph_for_byte  # noqa: E402
 
@@ -89,6 +91,8 @@ def test_encode_decode_field_roundtrip(quick_config: TypeheadConfig):
         phi=encoded.phi,
         pulse_ref=encoded.pulse,
         t=encoded.t,
+        reference_field=encoded.field_time,
+        reference_quaternion=encoded.quaternion,
     )
     assert decoded.shard_fidelity > 0.5
     assert decoded.glyph_fidelity > 0.0
@@ -98,10 +102,58 @@ def test_encode_decode_field_roundtrip(quick_config: TypeheadConfig):
 def test_encode_produces_expected_tensor_shapes(quick_config: TypeheadConfig):
     typehead = OrbitalTypehead(quick_config, seed=7)
     encoded = typehead.encode("hi")
+    n_t = effective_num_times(quick_config.num_times, quick_config.qec_reps)
     assert encoded.field_time.shape == (
-        quick_config.num_times,
+        n_t,
         quick_config.grid_size,
         quick_config.grid_size,
     )
     assert encoded.spectral_shards.size > 0
     assert len(encoded.orbs) == quick_config.num_orbs
+
+
+def test_transmit_triplet_codewords(quick_config: TypeheadConfig):
+    typehead = OrbitalTypehead(quick_config, seed=3)
+    encoded = typehead.encode("QEC")
+    assert encoded.qec_reps == 3
+    assert triplet_codeword_check(encoded.intensity_time)
+
+
+def test_qec_logical_error_improves_with_transmit_redundancy(quick_config: TypeheadConfig):
+    typehead = OrbitalTypehead(quick_config, seed=42)
+    payload = "I live in Oregon"
+    encoded = typehead.encode(payload)
+    noisy = typehead.propagate_with_turbulence(encoded, noise_level=0.35)
+    decoded = decode_field(
+        noisy,
+        reference_intensity=encoded.intensity_time,
+        font=typehead.font,
+        orbs_ells=[o.ell for o in encoded.orbs],
+        bmgl=quick_config.bmgl,
+        rho=encoded.rho,
+        phi=encoded.phi,
+        noise_scale=1.0,
+    )
+    assert decoded.qec_stats is not None
+    qs = decoded.qec_stats
+    assert qs.logical_error_rate <= qs.logical_error_rate_pre + 1e-12
+    assert qs.logical_error_rate < 0.05
+
+    # Harsher turbulence: protected triplets still beat raw physical flip rate.
+    encoded_harsh = typehead.encode(payload)
+    noisy_harsh = typehead.propagate_with_turbulence(encoded_harsh, noise_level=1.0)
+    decoded_harsh = decode_field(
+        noisy_harsh,
+        reference_intensity=encoded_harsh.intensity_time,
+        font=typehead.font,
+        orbs_ells=[o.ell for o in encoded_harsh.orbs],
+        bmgl=quick_config.bmgl,
+        rho=encoded_harsh.rho,
+        phi=encoded_harsh.phi,
+        noise_scale=noise_level_to_scale(1.0),
+    )
+    qsh = decoded_harsh.qec_stats
+    assert qsh is not None
+    assert qsh.logical_error_rate <= qsh.logical_error_rate_pre + 1e-12
+    if qsh.physical_error_rate > 0.001:
+        assert qsh.logical_error_rate < qsh.physical_error_rate
