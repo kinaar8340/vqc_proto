@@ -2658,7 +2658,7 @@ def build_app() -> gr.Blocks:
             def _bootstrap_stov_tab():
                 return run_stov_analysis(-8, 8, 0.1, 9, 42, preset_key="vqc_carrier")
 
-            page_stov_analyzer.load(_bootstrap_stov_tab, outputs=stov_outputs)
+            stov_bootstrap_fn = _bootstrap_stov_tab
 
         newhere_outputs = [panel_newhere, tab_newhere_btn, newhere_open, panel_claims, tab_claims_btn, claims_open]
         claims_outputs = [panel_claims, tab_claims_btn, claims_open, panel_newhere, tab_newhere_btn, newhere_open]
@@ -2697,6 +2697,7 @@ def build_app() -> gr.Blocks:
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
         demo.load(_stream_term_boot, outputs=term_keypad_outputs)
+        demo.load(stov_bootstrap_fn, outputs=stov_outputs)
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "
