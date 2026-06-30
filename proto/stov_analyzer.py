@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 
 STOV_BG = "#1a1a2e"
 STOV_AX = "#0f0f23"
@@ -54,6 +58,83 @@ class STOVAnalysisResult:
     crest_factor: float
     fidelity: float
     metrics_text: str
+
+
+@dataclass
+class STOVSession:
+    """Cached analysis for reconstruct, animation, and cross-tab bridge."""
+
+    m_values: np.ndarray
+    powers: np.ndarray
+    coeffs: np.ndarray
+    weights: np.ndarray
+    x: np.ndarray
+    t: np.ndarray
+    field: np.ndarray
+    result: STOVAnalysisResult
+    noise_level: float
+    seed: int
+    preset_key: str | None = None
+
+    def to_cache(self) -> dict[str, Any]:
+        return {
+            "m_values": self.m_values.tolist(),
+            "powers": self.powers.tolist(),
+            "coeffs_real": np.real(self.coeffs).tolist(),
+            "coeffs_imag": np.imag(self.coeffs).tolist(),
+            "weights": self.weights.tolist(),
+            "x": self.x.tolist(),
+            "t": self.t.tolist(),
+            "field_real": np.real(self.field).tolist(),
+            "field_imag": np.imag(self.field).tolist(),
+            "noise_level": self.noise_level,
+            "seed": self.seed,
+            "preset_key": self.preset_key,
+            "result": {
+                "dominant_m": self.result.dominant_m,
+                "purity": self.result.purity,
+                "crest_factor": self.result.crest_factor,
+                "fidelity": self.result.fidelity,
+                "metrics_text": self.result.metrics_text,
+                "powers_x": self.result.powers_x.tolist(),
+                "powers_y": self.result.powers_y.tolist(),
+                "powers_z": self.result.powers_z.tolist(),
+            },
+        }
+
+    @classmethod
+    def from_cache(cls, data: dict[str, Any] | None) -> STOVSession | None:
+        if not data:
+            return None
+        m_values = np.asarray(data["m_values"], dtype=int)
+        result_blob = data["result"]
+        result = STOVAnalysisResult(
+            m_values=m_values,
+            powers=np.asarray(data["powers"], dtype=float),
+            powers_x=np.asarray(result_blob["powers_x"], dtype=float),
+            powers_y=np.asarray(result_blob["powers_y"], dtype=float),
+            powers_z=np.asarray(result_blob["powers_z"], dtype=float),
+            dominant_m=int(result_blob["dominant_m"]),
+            purity=float(result_blob["purity"]),
+            crest_factor=float(result_blob["crest_factor"]),
+            fidelity=float(result_blob["fidelity"]),
+            metrics_text=str(result_blob["metrics_text"]),
+        )
+        coeffs = np.asarray(data["coeffs_real"]) + 1j * np.asarray(data["coeffs_imag"])
+        field = np.asarray(data["field_real"]) + 1j * np.asarray(data["field_imag"])
+        return cls(
+            m_values=m_values,
+            powers=np.asarray(data["powers"], dtype=float),
+            coeffs=coeffs,
+            weights=np.asarray(data["weights"], dtype=float),
+            x=np.asarray(data["x"], dtype=float),
+            t=np.asarray(data["t"], dtype=float),
+            field=field,
+            result=result,
+            noise_level=float(data["noise_level"]),
+            seed=int(data["seed"]),
+            preset_key=data.get("preset_key"),
+        )
 
 
 def load_stov_preset(preset_key: str) -> tuple[int, int, float, int, int]:
@@ -120,9 +201,9 @@ def generate_stov_superposition(
     if weights is None:
         weights = _build_weights(m_values, n_modes=n_modes, seed=seed, peak_m=peak_m)
 
-    x = np.linspace(-5.0, 5.0, n_points)
-    t = np.linspace(-5.0, 5.0, n_points)
-    x_grid, t_grid = np.meshgrid(x, t)
+    x_1d = np.linspace(-5.0, 5.0, n_points)
+    t_1d = np.linspace(-5.0, 5.0, n_points)
+    x_grid, t_grid = np.meshgrid(x_1d, t_1d)
 
     field = np.zeros_like(x_grid, dtype=complex)
     for m, weight in zip(m_values, weights):
@@ -136,6 +217,25 @@ def generate_stov_superposition(
     return x_grid, t_grid, field, m_values, weights
 
 
+def project_stov_coefficients(
+    field: np.ndarray,
+    m_values: np.ndarray,
+    x: np.ndarray,
+    t: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Orthonormal STOV basis projection — complex coefficients and normalized powers."""
+    coeffs = np.empty(len(m_values), dtype=np.complex128)
+    for idx, m in enumerate(m_values):
+        basis = _stov_basis(int(m), x, t)
+        denom = np.sum(np.abs(basis) ** 2) + 1e-12
+        coeffs[idx] = np.sum(field * np.conj(basis)) / denom
+    powers = np.abs(coeffs) ** 2
+    total = float(powers.sum())
+    if total > 0:
+        powers = powers / total
+    return coeffs, powers
+
+
 def project_stov_spectrum(
     field: np.ndarray,
     m_values: np.ndarray,
@@ -143,16 +243,34 @@ def project_stov_spectrum(
     t: np.ndarray,
 ) -> np.ndarray:
     """Project the field onto STOV basis modes; return normalized powers."""
-    powers = np.empty(len(m_values), dtype=float)
-    for idx, m in enumerate(m_values):
-        basis = _stov_basis(int(m), x, t)
-        denom = np.sum(np.abs(basis) ** 2) + 1e-12
-        coeff = np.sum(field * np.conj(basis)) / denom
-        powers[idx] = float(np.abs(coeff) ** 2)
-    total = powers.sum()
-    if total > 0:
-        powers /= total
+    _, powers = project_stov_coefficients(field, m_values, x, t)
     return powers
+
+
+def reconstruct_stov_field(
+    coeffs: np.ndarray,
+    m_values: np.ndarray,
+    x: np.ndarray,
+    t: np.ndarray,
+) -> np.ndarray:
+    """Synthesize a clean STOV field from projected mode coefficients."""
+    field = np.zeros_like(x, dtype=np.complex128)
+    for coeff, m in zip(coeffs, m_values):
+        field += coeff * _stov_basis(int(m), x, t)
+    return field
+
+
+def estimate_local_topological_charge(phase: np.ndarray, x: np.ndarray, t: np.ndarray) -> np.ndarray:
+    """
+    Local m estimate from phase gradient in the (x, t) plane.
+
+    For φ ≈ m·arctan2(t, x), use m ≈ (x·∂φ/∂t − t·∂φ/∂x) with phase unwrapping guard.
+    """
+    dphi_dt = np.gradient(phase, axis=0)
+    dphi_dx = np.gradient(phase, axis=1)
+    denom = x**2 + t**2 + 1e-3
+    m_local = (x * dphi_dt - t * dphi_dx) / denom
+    return np.clip(np.round(m_local), -12, 12)
 
 
 def decompose_vector_spectra(
@@ -203,9 +321,11 @@ def plot_colorful_stov_spectrogram(
     blue = np.clip(norm * (0.55 + 0.45 * np.sin(phase * 2.0)), 0, 1)
     rgb = np.stack([red, green, blue], axis=-1)
 
+    x_1d = x[0, :]
+    t_1d = t[:, 0]
     ax.imshow(
         rgb,
-        extent=[float(x.min()), float(x.max()), float(t.min()), float(t.max())],
+        extent=[float(x_1d.min()), float(x_1d.max()), float(t_1d.min()), float(t_1d.max())],
         aspect="auto",
         origin="lower",
         interpolation="bilinear",
@@ -216,6 +336,50 @@ def plot_colorful_stov_spectrogram(
     ax.grid(True, color=STOV_GRID, alpha=0.28, linestyle="--", linewidth=0.6)
     _style_axes(ax)
     fig.tight_layout()
+    return fig
+
+
+def plot_stov_spectrogram_plotly(
+    x: np.ndarray,
+    t: np.ndarray,
+    field: np.ndarray,
+) -> go.Figure:
+    """Interactive space-time spectrogram with intensity, phase, and local m on hover."""
+    intensity = np.abs(field)
+    phase = np.angle(field)
+    m_local = estimate_local_topological_charge(phase, x, t)
+    x_1d = x[0, :]
+    t_1d = t[:, 0]
+
+    hover = np.empty(intensity.shape, dtype=object)
+    for i in range(intensity.shape[0]):
+        for j in range(intensity.shape[1]):
+            hover[i, j] = (
+                f"|E|={intensity[i, j]:.4f}<br>"
+                f"phase={phase[i, j]:.3f} rad<br>"
+                f"m_local={int(m_local[i, j])}"
+            )
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=intensity,
+            x=x_1d,
+            y=t_1d,
+            colorscale="Viridis",
+            colorbar=dict(title="|E|", tickfont=dict(color="#d8d0f0")),
+            hovertext=hover,
+            hoverinfo="text+x+y",
+        )
+    )
+    fig.update_layout(
+        title=dict(text="STOV space-time field (hover: |E|, phase, local m)", font=dict(color="#e8e0f8")),
+        paper_bgcolor=STOV_BG,
+        plot_bgcolor=STOV_AX,
+        font=dict(color="#d8d0f0"),
+        xaxis=dict(title="Space (x)", gridcolor=STOV_GRID),
+        yaxis=dict(title="Time (t)", gridcolor=STOV_GRID),
+        margin=dict(l=48, r=24, t=48, b=40),
+    )
     return fig
 
 
@@ -260,6 +424,39 @@ def plot_vector_spectra(
     return fig
 
 
+def format_meter_gauges_html(
+    *,
+    purity: float,
+    dominant_m: float,
+    fidelity: float,
+    crest_factor: float,
+) -> str:
+    """Visual bar meters for analyzer readouts."""
+
+    def bar(label: str, value: float, *, max_val: float = 1.0, color: str) -> str:
+        pct = float(np.clip(100.0 * value / max_val, 0.0, 100.0))
+        return (
+            f'<div class="vqc-stov-gauge">'
+            f'<div class="vqc-stov-gauge-label"><span>{label}</span><span>{value:.3f}</span></div>'
+            f'<div class="vqc-stov-gauge-track"><div class="vqc-stov-gauge-fill" '
+            f'style="width:{pct:.1f}%;background:{color};"></div></div></div>'
+        )
+
+    crest_norm = float(np.clip(crest_factor / 10.0, 0.0, 1.0))
+    return (
+        '<div class="vqc-stov-gauges">'
+        + bar("Mode purity", purity, color="#ffb347")
+        + bar("Vector fidelity", fidelity, color="#6ecf9c")
+        + bar("Crest factor", crest_norm, color="#7eb8ff")
+        + (
+            f'<div class="vqc-stov-gauge vqc-stov-gauge-dominant">'
+            f'<div class="vqc-stov-gauge-label"><span>Dominant m</span>'
+            f'<span class="vqc-stov-m-value">{int(dominant_m):+d}</span></div></div>'
+        )
+        + "</div>"
+    )
+
+
 def analyze_stov_field(
     field: np.ndarray,
     m_values: np.ndarray,
@@ -268,9 +465,9 @@ def analyze_stov_field(
     *,
     noise_level: float,
     target_weights: np.ndarray | None = None,
-) -> STOVAnalysisResult:
-    """Compute STOV metrics and component spectra from a simulated field."""
-    powers = project_stov_spectrum(field, m_values, x, t)
+) -> tuple[STOVAnalysisResult, np.ndarray]:
+    """Compute STOV metrics, component spectra, and projection coefficients."""
+    coeffs, powers = project_stov_coefficients(field, m_values, x, t)
     powers_x, powers_y, powers_z = decompose_vector_spectra(field, m_values, x, t)
     dominant_idx = int(np.argmax(powers))
     dominant_m = int(m_values[dominant_idx])
@@ -298,7 +495,7 @@ def analyze_stov_field(
             f"Top-3 share: {np.sum(np.sort(powers)[-3:]):.4f}",
         ]
     )
-    return STOVAnalysisResult(
+    result = STOVAnalysisResult(
         m_values=m_values,
         powers=powers,
         powers_x=powers_x,
@@ -310,6 +507,61 @@ def analyze_stov_field(
         fidelity=fidelity,
         metrics_text=metrics,
     )
+    return result, coeffs
+
+
+def build_stov_session(
+    m_min: float,
+    m_max: float,
+    noise_level: float,
+    n_modes: float,
+    seed: float,
+    *,
+    preset_key: str | None = None,
+) -> STOVSession:
+    """Generate field, decompose, and cache a full STOV session."""
+    m_lo, m_hi = int(m_min), int(m_max)
+    if m_lo > m_hi:
+        m_lo, m_hi = m_hi, m_lo
+    m_range = (m_lo, m_hi)
+    peak_m = STOV_PRESETS[preset_key].get("peak_m") if preset_key in STOV_PRESETS else None
+
+    m_values = np.arange(m_range[0], m_range[1] + 1)
+    target_weights = _build_weights(
+        m_values,
+        n_modes=int(n_modes),
+        seed=int(seed),
+        peak_m=peak_m,
+    )
+    x, t, field, m_values, weights = generate_stov_superposition(
+        m_range,
+        weights=target_weights,
+        noise_level=float(noise_level),
+        n_modes=int(n_modes),
+        seed=int(seed),
+        peak_m=peak_m,
+    )
+    result, coeffs = analyze_stov_field(
+        field,
+        m_values,
+        x,
+        t,
+        noise_level=float(noise_level),
+        target_weights=target_weights,
+    )
+    return STOVSession(
+        m_values=m_values,
+        powers=result.powers,
+        coeffs=coeffs,
+        weights=weights,
+        x=x,
+        t=t,
+        field=field,
+        result=result,
+        noise_level=float(noise_level),
+        seed=int(seed),
+        preset_key=preset_key,
+    )
 
 
 def run_stov_analysis(
@@ -320,48 +572,199 @@ def run_stov_analysis(
     seed: float,
     *,
     preset_key: str | None = None,
-) -> tuple[plt.Figure, plt.Figure, plt.Figure, str, float, float, float]:
-    """Gradio handler: generate STOV field, decompose, and render analyzer plots."""
-    m_lo, m_hi = int(m_min), int(m_max)
-    if m_lo > m_hi:
-        m_lo, m_hi = m_hi, m_lo
-    m_range = (m_lo, m_hi)
-    peak_m = None
-    if preset_key and preset_key in STOV_PRESETS:
-        peak_m = STOV_PRESETS[preset_key].get("peak_m")
-
-    m_values = np.arange(m_range[0], m_range[1] + 1)
-    target_weights = _build_weights(
-        m_values,
-        n_modes=int(n_modes),
-        seed=int(seed),
-        peak_m=peak_m,
+) -> tuple:
+    """Gradio handler: plots, metrics, gauges, and session cache."""
+    session = build_stov_session(
+        m_min, m_max, noise_level, n_modes, seed, preset_key=preset_key
     )
-    x, t, field, m_values, _ = generate_stov_superposition(
-        m_range,
-        weights=target_weights,
-        noise_level=float(noise_level),
-        n_modes=int(n_modes),
-        seed=int(seed),
-        peak_m=peak_m,
+    fig_plotly = plot_stov_spectrogram_plotly(session.x, session.t, session.field)
+    fig_color = plot_colorful_stov_spectrogram(session.x, session.t, session.field)
+    fig_spec = plot_stov_spectrum_bars(session.m_values, session.result.powers)
+    fig_vec = plot_vector_spectra(
+        session.m_values,
+        session.result.powers_x,
+        session.result.powers_y,
+        session.result.powers_z,
     )
-    result = analyze_stov_field(
-        field,
-        m_values,
-        x,
-        t,
-        noise_level=float(noise_level),
-        target_weights=target_weights,
+    gauges = format_meter_gauges_html(
+        purity=session.result.purity,
+        dominant_m=float(session.result.dominant_m),
+        fidelity=session.result.fidelity,
+        crest_factor=session.result.crest_factor,
     )
-    fig_color = plot_colorful_stov_spectrogram(x, t, field)
-    fig_spec = plot_stov_spectrum_bars(m_values, result.powers)
-    fig_vec = plot_vector_spectra(m_values, result.powers_x, result.powers_y, result.powers_z)
     return (
+        fig_plotly,
         fig_color,
         fig_spec,
         fig_vec,
-        result.metrics_text,
-        result.purity,
-        float(result.dominant_m),
-        result.fidelity,
+        session.result.metrics_text,
+        gauges,
+        session.result.purity,
+        float(session.result.dominant_m),
+        session.result.fidelity,
+        session.result.crest_factor,
+        session.to_cache(),
     )
+
+
+def _field_coherence(a: np.ndarray, b: np.ndarray) -> float:
+    av = a.ravel()
+    bv = b.ravel()
+    denom = float(np.linalg.norm(av) * np.linalg.norm(bv))
+    if denom < 1e-12:
+        return 0.0
+    return float(np.abs(np.vdot(av, bv)) / denom)
+
+
+def run_stov_reconstruct_decode(cache: dict[str, Any] | None) -> str:
+    """Reconstruct clean field from spectrum and run lightweight Orbital Braille pipeline."""
+    session = STOVSession.from_cache(cache)
+    if session is None:
+        return "Run **Analyze** first to populate the STOV session cache."
+
+    recon = reconstruct_stov_field(session.coeffs, session.m_values, session.x, session.t)
+    recon_coh = _field_coherence(recon, session.field)
+
+    bridge = stov_bridge_to_demo_params(session)
+    try:
+        from demo_core import run_pipeline
+
+        _, _, _, decoded, metrics, font_sep = run_pipeline(
+            bridge["payload"],
+            bridge["num_orbs"],
+            quick=True,
+            seed=bridge["seed"],
+            gamma_1=bridge["gamma_1"],
+            noise_level=bridge["noise_level"],
+        )
+        pipeline_block = (
+            f"\n\n--- Orbital Braille pipeline (STOV-mapped settings) ---\n"
+            f"Payload: {bridge['payload']!r}\n"
+            f"Orbs: {bridge['num_orbs']}  γ₁: {bridge['gamma_1']:.2f}  "
+            f"noise: {bridge['noise_level']:.2f}\n"
+            f"Shard fidelity: {decoded.shard_fidelity:.4f}  "
+            f"Glyph fidelity: {decoded.glyph_fidelity:.4f}  "
+            f"field coherence: {getattr(decoded, 'glyph_field_coherence', 0):.4f}\n"
+            f"Font separation: {font_sep:.4f} rad"
+        )
+    except Exception as exc:
+        pipeline_block = f"\n\nPipeline preview failed: {exc}"
+
+    return (
+        f"STOV spectrum → field reconstruction\n"
+        f"  Reconstruction coherence vs. noisy field: {recon_coh:.4f}\n"
+        f"  Dominant m: {session.result.dominant_m:+d}  "
+        f"purity: {session.result.purity:.4f}  "
+        f"crest: {session.result.crest_factor:.3f}\n"
+        f"  Mapped orbs={bridge['num_orbs']}, γ₁={bridge['gamma_1']:.2f}, "
+        f"noise={bridge['noise_level']:.2f}"
+        f"{pipeline_block}"
+    )
+
+
+def stov_bridge_to_demo_params(session: STOVSession) -> dict[str, Any]:
+    """Map STOV session to Live Demo slider values."""
+    m = abs(int(session.result.dominant_m))
+    num_orbs = int(np.clip(4 + m // 2, 4, 8))
+    noise_level = float(np.clip(session.noise_level * 2.0, 0.05, 0.85))
+    gamma_1 = float(np.clip(1.4 + 0.08 * m + 0.15 * session.result.purity, 1.0, 2.0))
+    payload = f"STOV m={session.result.dominant_m:+d} purity={session.result.purity:.2f}"
+    return {
+        "payload": payload,
+        "num_orbs": num_orbs,
+        "noise_level": noise_level,
+        "gamma_1": gamma_1,
+        "seed": session.seed,
+    }
+
+
+def bridge_stov_to_demo(cache: dict[str, Any] | None) -> tuple[str, float, float, float, str]:
+    """Return demo payload/orbs/noise/gamma plus status message."""
+    session = STOVSession.from_cache(cache)
+    if session is None:
+        return (
+            "STOV m=0",
+            4.0,
+            0.35,
+            1.5,
+            "⚠ Run **Analyze** first, then send settings to Live Demo.",
+        )
+    params = stov_bridge_to_demo_params(session)
+    msg = (
+        f"✓ Copied STOV settings → Live Demo: orbs={params['num_orbs']}, "
+        f"γ₁={params['gamma_1']:.2f}, noise={params['noise_level']:.2f}. "
+        f"Switch to **Live Demo** and click **Run demo**."
+    )
+    return (
+        params["payload"],
+        float(params["num_orbs"]),
+        float(params["noise_level"]),
+        float(params["gamma_1"]),
+        msg,
+    )
+
+
+def _stov_frame_pil(x: np.ndarray, t: np.ndarray, field: np.ndarray, row_idx: int):
+    from PIL import Image, ImageDraw
+
+    intensity = np.abs(field)
+    phase = np.angle(field)
+    peak = np.percentile(intensity, 99) + 1e-9
+    norm = intensity / peak
+    red = np.clip(norm * (0.55 + 0.45 * np.sin(phase)), 0, 1)
+    green = np.clip(norm * (0.55 + 0.45 * np.cos(phase * 1.5)), 0, 1)
+    blue = np.clip(norm * (0.55 + 0.45 * np.sin(phase * 2.0)), 0, 1)
+    rgb = (np.stack([red, green, blue], axis=-1) * 255).astype(np.uint8)
+
+    window = min(64, field.shape[0])
+    row = int(np.clip(row_idx, 0, field.shape[0] - 1))
+    r0 = int(np.clip(row - window // 2, 0, max(0, field.shape[0] - window)))
+    crop = rgb[r0 : r0 + window, :, :]
+    img = Image.fromarray(crop)
+    draw = ImageDraw.Draw(img)
+    cursor = row - r0
+    if 0 <= cursor < window:
+        draw.line([(0, cursor), (crop.shape[1] - 1, cursor)], fill=(255, 220, 80), width=2)
+    return img.resize((640, 240), Image.Resampling.BILINEAR)
+
+
+def render_stov_animation_bundle(
+    cache: dict[str, Any] | None,
+    *,
+    n_frames: int = 48,
+) -> tuple[str | None, str | None, str]:
+    """Export STOV space-time scroll animation as GIF + optional MP4."""
+    session = STOVSession.from_cache(cache)
+    if session is None:
+        return None, None, "Run **Analyze** first before exporting animation."
+
+    indices = np.linspace(0, session.field.shape[0] - 1, n_frames, dtype=int)
+    frames = [_stov_frame_pil(session.x, session.t, session.field, int(i)) for i in indices]
+
+    out_dir = Path(tempfile.mkdtemp(prefix="vqc_stov_anim_"))
+    gif_path = out_dir / "stov_field.gif"
+    frames[0].save(
+        gif_path,
+        save_all=True,
+        append_images=frames[1:],
+        duration=90,
+        loop=0,
+        optimize=False,
+        disposal=2,
+    )
+
+    mp4_path: str | None = None
+    try:
+        from demo_core import _encode_frames_mp4
+
+        encoded = _encode_frames_mp4(frames, out_dir / "stov_field.mp4", fps=11.0)
+        if encoded is not None:
+            mp4_path = str(encoded)
+    except Exception:
+        mp4_path = None
+
+    note = (
+        f"Exported {n_frames} frames scrolling through the space-time plane "
+        f"(dominant m={session.result.dominant_m:+d})."
+    )
+    return str(gif_path), mp4_path, note

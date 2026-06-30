@@ -7,10 +7,14 @@ from .orb_interference import (
 )
 from .glyph_cache import (
     GlyphTemplateBank,
+    adaptive_glyph_rank_k,
     clear_glyph_template_cache,
     get_glyph_template_bank,
+    glyph_field_coherence,
+    rank_glyphs_by_orb_field,
     rank_glyphs_by_orb_intensity,
 )
+from .glyph_demix import recover_pwm_duties
 from .typehead import (
     OrbitalTypehead,
     TypeheadConfig,
@@ -87,6 +91,10 @@ __all__ = [
     "clear_glyph_template_cache",
     "get_glyph_template_bank",
     "rank_glyphs_by_orb_intensity",
+    "rank_glyphs_by_orb_field",
+    "glyph_field_coherence",
+    "adaptive_glyph_rank_k",
+    "recover_pwm_duties",
     "build_orbs_from_duties",
     "synthesize_orb_field",
     "synthesize_per_orb_intensity_maps",

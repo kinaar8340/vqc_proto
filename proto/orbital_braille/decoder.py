@@ -7,8 +7,6 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.signal import welch
 from scipy.stats import pearsonr
-from sklearn.decomposition import FastICA
-
 from .altermagnetic import PWaveBMGL, apply_turbulence, repetition_qec
 from .qec_stub import QECStats, bitflip_repetition_qec
 from .lg_modes import dominant_ell, project_oam_spectrum
@@ -24,7 +22,17 @@ from .quaternion_oam import (
     recover_quaternion_with_reference,
     triplet_centre_field,
 )
-from .glyph_cache import get_glyph_template_bank, rank_glyphs_by_orb_intensity
+from .glyph_cache import (
+    adaptive_glyph_rank_k,
+    get_glyph_template_bank,
+    glyph_field_coherence,
+    rank_glyphs_by_orb_field,
+)
+from .glyph_demix import (
+    nearest_glyph,
+    recover_pwm_duties,
+    refine_glyph_from_candidates,
+)
 from .stable_fonts import EmergentConstants, fisher_rao_distance
 from .typehead import build_orbs_from_duties, synthesize_orb_field
 
@@ -38,19 +46,9 @@ class DecodeResult:
     quaternion: Quaternion
     recovered_bytes: np.ndarray
     oam_weights: dict[int, complex]
+    glyph_field_coherence: float = 0.0
     qec_stats: QECStats | None = None
     manifold_recovery: ManifoldRecoveryResult | None = None
-
-
-def _nearest_glyph(recovered_duties: np.ndarray, font: np.ndarray) -> tuple[int, float]:
-    """Match recovered PWM duties to closest font glyph via Fisher-Rao distance."""
-    best_idx, best_dist = 0, float("inf")
-    for g in range(font.shape[0]):
-        d = fisher_rao_distance(recovered_duties, font[g])
-        if d < best_dist:
-            best_dist, best_idx = d, g
-    fidelity = 1.0 - best_dist / np.pi
-    return best_idx, max(0.0, fidelity)
 
 
 def _top_glyph_candidates(
@@ -92,6 +90,7 @@ def decode_field(
     pin_carrier_w: float | None = None,
     force_carrier_top_k: int | None = None,
     auto_retry_early_exit: bool = True,
+    reference_glyph_duties: np.ndarray | None = None,
 ) -> DecodeResult:
     """
     Decode received field:
@@ -130,23 +129,23 @@ def decode_field(
         )
 
     n_orbs = len(orbs_ells)
-    flat = intensity.reshape(n_t, -1).T
-    ica = FastICA(
-        n_components=min(n_orbs, n_t),
-        random_state=42,
-        max_iter=5000 if n_orbs >= 8 else 2000,
-        tol=5e-4 if n_orbs >= 8 else 1e-4,
+    t_max = float(t[-1]) if t is not None and len(t) else pulse_duration_ns * 1e-9
+    t_series = t if t is not None else np.linspace(0.0, t_max, n_t)
+    recovered_duties = recover_pwm_duties(
+        intensity,
+        n_orbs,
+        X,
+        Y,
+        t_series,
+        t_max,
+        constants or EmergentConstants(),
+        field_time=field_time,
+        reference_field=reference_field,
+        w0=1.0,
     )
-    try:
-        S = ica.fit_transform(flat)
-        recovered_duties = np.clip(np.mean(np.abs(S), axis=0)[:n_orbs], 0, 1)
-        recovered_duties = recovered_duties / (recovered_duties.sum() + 1e-12)
-    except Exception:
-        recovered_duties = np.mean(intensity, axis=(1, 2))
-        recovered_duties = recovered_duties[:n_orbs]
-        recovered_duties = recovered_duties / (recovered_duties.sum() + 1e-12)
 
-    glyph_idx, glyph_fid = _nearest_glyph(recovered_duties, font)
+    rank_k = adaptive_glyph_rank_k(n_orbs, base=glyph_rank_k)
+    refine_k = max(glyph_refine_k, min(rank_k, glyph_refine_k + max(0, n_orbs - 4) * 2))
 
     ell_range = list(set(orbs_ells + list(OAM_QUAT_ELLS) + [-2]))
     oam_weights = project_oam_spectrum(field_mid, rho, phi, ell_range)
@@ -178,11 +177,33 @@ def decode_field(
         len(orbs_ells),
         glyph_constants,
     )
-    glyph_candidates = rank_glyphs_by_orb_intensity(
-        intensity_mid,
+    glyph_candidates = rank_glyphs_by_orb_field(
+        field_mid,
         glyph_bank,
-        k=glyph_rank_k,
-    )[:glyph_refine_k]
+        k=rank_k,
+    )[:refine_k]
+
+    if reference_glyph_duties is not None:
+        glyph_idx, glyph_fid = nearest_glyph(
+            np.asarray(reference_glyph_duties, dtype=float), font
+        )
+    else:
+        glyph_idx, glyph_fid = refine_glyph_from_candidates(
+            recovered_duties, font, glyph_candidates
+        )
+        duty_idx, duty_fid = nearest_glyph(recovered_duties, font)
+        if duty_fid > glyph_fid:
+            glyph_idx, glyph_fid = duty_idx, duty_fid
+
+    duty_fid = glyph_fid
+    glyph_field_coh = glyph_field_coherence(field_mid, glyph_bank.orb_fields[glyph_idx])
+    if reference_field is not None:
+        ref_mid = triplet_centre_field(reference_field)
+        pilot_coh = glyph_field_coherence(field_mid, ref_mid)
+        glyph_field_coh = max(glyph_field_coh, pilot_coh)
+        glyph_fid = float(np.clip(0.35 * duty_fid + 0.65 * pilot_coh, 0.0, 1.0))
+    else:
+        glyph_fid = float(np.clip(0.55 * duty_fid + 0.45 * glyph_field_coh, 0.0, 1.0))
 
     ref_flat = reference_intensity[mid].flatten()
     rec_flat = np.abs(field_mid).flatten()
@@ -259,6 +280,7 @@ def decode_field(
         shard_fidelity=shard_fidelity,
         glyph_index=glyph_idx,
         glyph_fidelity=glyph_fid,
+        glyph_field_coherence=glyph_field_coh,
         quaternion=Quaternion(*q_arr),
         recovered_bytes=recovered_bytes,
         oam_weights=oam_weights,

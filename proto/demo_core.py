@@ -1012,6 +1012,7 @@ def run_pipeline(
     if not blind_quaternion:
         decode_kwargs["reference_field"] = encoded.field_time
         decode_kwargs["reference_quaternion"] = encoded.quaternion
+        decode_kwargs["reference_glyph_duties"] = encoded.glyph_duties
     decoded = decode_field(noisy, **decode_kwargs)
     quat_err = quaternion_recovery_error(encoded.quaternion, decoded.quaternion)
 
@@ -1025,7 +1026,8 @@ def run_pipeline(
         f"Channel noise: {noise_level:.2f}  (phase scale {nscale:.2f})",
         f"Font separation: {font_sep:.4f} rad",
         f"Shard fidelity: {decoded.shard_fidelity:.4f}",
-        f"Glyph: index={decoded.glyph_index}  fidelity={decoded.glyph_fidelity:.4f}",
+        f"Glyph: index={decoded.glyph_index}  fidelity={decoded.glyph_fidelity:.4f}  "
+        f"field coherence={decoded.glyph_field_coherence:.4f}",
         f"Quaternion (encoded): w={encoded.quaternion.w:.3f} "
         f"x={encoded.quaternion.x:.3f} y={encoded.quaternion.y:.3f} "
         f"z={encoded.quaternion.z:.3f}",

@@ -14,7 +14,14 @@ from pathlib import Path
 
 import gradio as gr
 
-from stov_analyzer import STOV_PRESETS, load_stov_preset, run_stov_analysis
+from stov_analyzer import (
+    STOV_PRESETS,
+    bridge_stov_to_demo,
+    load_stov_preset,
+    render_stov_animation_bundle,
+    run_stov_analysis,
+    run_stov_reconstruct_decode,
+)
 
 from demo_core import (
     BOOT_QUOTE_STRING,
@@ -1336,6 +1343,39 @@ footer {{
     border-radius: 10px !important;
     background: rgba(8, 6, 18, 0.5) !important;
 }}
+.gradio-container .vqc-stov-gauges {{
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    width: 100%;
+}}
+.gradio-container .vqc-stov-gauge-label {{
+    display: flex;
+    justify-content: space-between;
+    color: #d8d0f0;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+}}
+.gradio-container .vqc-stov-gauge-track {{
+    height: 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}}
+.gradio-container .vqc-stov-gauge-fill {{
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.25s ease;
+}}
+.gradio-container .vqc-stov-m-value {{
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffb347;
+}}
+.gradio-container .vqc-stov-actions-row button {{
+    margin-bottom: 0.35rem;
+}}
 .gradio-container .vqc-screencast-wrap {{
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2478,6 +2518,7 @@ def build_app() -> gr.Blocks:
                 "vibrant field spectrogram plus DSP-style spectrum bars and vector proxies (Lx / Ly / Lz)."
             )
             stov_preset_key = gr.State("vqc_carrier")
+            stov_cache = gr.State(value=None)
             with gr.Row():
                 with gr.Column(scale=1, elem_classes=["vqc-stov-sidebar"]):
                     gr.Markdown("### Controls")
@@ -2499,31 +2540,68 @@ def build_app() -> gr.Blocks:
                         variant="primary",
                         elem_classes=["vqc-full-width"],
                     )
+                    with gr.Column(elem_classes=["vqc-stov-actions-row"]):
+                        stov_reconstruct_btn = gr.Button(
+                            "Reconstruct / Decode from Spectrum",
+                            variant="secondary",
+                            elem_classes=["vqc-full-width"],
+                        )
+                        stov_send_demo_btn = gr.Button(
+                            "Send weights → Orbital Braille encoder",
+                            variant="secondary",
+                            elem_classes=["vqc-full-width"],
+                        )
+                        stov_export_anim_btn = gr.Button(
+                            "Export STOV animation (GIF / MP4)",
+                            variant="secondary",
+                            elem_classes=["vqc-full-width"],
+                        )
+                    stov_gauges_html = gr.HTML("")
                     stov_metrics_out = gr.Textbox(
                         label="Analysis metrics",
                         lines=7,
                         interactive=False,
                     )
+                    stov_bridge_status = gr.Markdown(
+                        "*Send weights copies γ₁, noise, orbs, and payload to **Live Demo**.*"
+                    )
+                    stov_decode_out = gr.Markdown("")
                 with gr.Column(scale=3):
-                    gr.Markdown("### Colorful space-time spectrogram")
-                    stov_colorful_plot = gr.Plot(label="STOV field (RGB channels)")
+                    gr.Markdown("### Interactive space-time spectrogram (Plotly)")
+                    stov_plotly_plot = gr.Plot(label="STOV field — hover for |E|, phase, local m")
+                    with gr.Accordion("Static RGB spectrogram", open=False):
+                        stov_colorful_plot = gr.Plot(label="STOV field (RGB channels)")
                     gr.Markdown("### Spatiotemporal OAM spectrum")
                     stov_spectrum_plot = gr.Plot(label="Power vs m")
                     with gr.Accordion("Vector components (Lx / Ly / Lz)", open=False):
                         stov_vector_plot = gr.Plot(label="Three-component spectra")
-            with gr.Row(elem_classes=["vqc-stov-meters"]):
+                    with gr.Accordion("STOV space-time animation", open=False):
+                        stov_animation_info = gr.Markdown(
+                            "*Export scrolls through the time axis of the current field.*"
+                        )
+                        stov_animation_video = gr.Video(label="STOV animation (MP4)")
+                        stov_animation_gif = gr.Image(
+                            label="STOV animation (GIF)",
+                            type="filepath",
+                        )
+            with gr.Row(elem_classes=["vqc-stov-meters"], visible=False):
                 stov_purity = gr.Number(label="Mode purity", value=0.0, precision=4)
                 stov_dominant_m = gr.Number(label="Dominant m", value=0, precision=0)
                 stov_fidelity = gr.Number(label="Vector fidelity", value=0.0, precision=4)
+                stov_crest = gr.Number(label="Crest factor", value=0.0, precision=3)
 
             stov_outputs = [
+                stov_plotly_plot,
                 stov_colorful_plot,
                 stov_spectrum_plot,
                 stov_vector_plot,
                 stov_metrics_out,
+                stov_gauges_html,
                 stov_purity,
                 stov_dominant_m,
                 stov_fidelity,
+                stov_crest,
+                stov_cache,
             ]
             stov_inputs = [stov_m_min, stov_m_max, stov_noise, stov_n_modes, stov_seed]
 
@@ -2560,6 +2638,22 @@ def build_app() -> gr.Blocks:
                     inputs=[*stov_inputs, stov_preset_key],
                     outputs=stov_outputs,
                 )
+
+            stov_reconstruct_btn.click(
+                run_stov_reconstruct_decode,
+                inputs=[stov_cache],
+                outputs=[stov_decode_out],
+            )
+            stov_send_demo_btn.click(
+                bridge_stov_to_demo,
+                inputs=[stov_cache],
+                outputs=[payload, num_orbs, noise_level, gamma_1, stov_bridge_status],
+            )
+            stov_export_anim_btn.click(
+                render_stov_animation_bundle,
+                inputs=[stov_cache],
+                outputs=[stov_animation_gif, stov_animation_video, stov_animation_info],
+            )
 
         newhere_outputs = [panel_newhere, tab_newhere_btn, newhere_open, panel_claims, tab_claims_btn, claims_open]
         claims_outputs = [panel_claims, tab_claims_btn, claims_open, panel_newhere, tab_newhere_btn, newhere_open]
