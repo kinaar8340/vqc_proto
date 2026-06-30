@@ -2655,6 +2655,11 @@ def build_app() -> gr.Blocks:
                 outputs=[stov_animation_gif, stov_animation_video, stov_animation_info],
             )
 
+            def _bootstrap_stov_tab():
+                return run_stov_analysis(-8, 8, 0.1, 9, 42, preset_key="vqc_carrier")
+
+            page_stov_analyzer.load(_bootstrap_stov_tab, outputs=stov_outputs)
+
         newhere_outputs = [panel_newhere, tab_newhere_btn, newhere_open, panel_claims, tab_claims_btn, claims_open]
         claims_outputs = [panel_claims, tab_claims_btn, claims_open, panel_newhere, tab_newhere_btn, newhere_open]
         nav_outputs = [

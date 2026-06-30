@@ -339,36 +339,49 @@ def plot_colorful_stov_spectrogram(
     return fig
 
 
+def _downsample_stov_grid(
+    x: np.ndarray,
+    t: np.ndarray,
+    field: np.ndarray,
+    *,
+    max_size: int = 128,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Downsample space-time grids for lightweight Plotly payloads."""
+    n_rows, n_cols = field.shape
+    if n_rows <= max_size and n_cols <= max_size:
+        return x, t, field
+    row_step = max(1, n_rows // max_size)
+    col_step = max(1, n_cols // max_size)
+    return x[::row_step, ::col_step], t[::row_step, ::col_step], field[::row_step, ::col_step]
+
+
 def plot_stov_spectrogram_plotly(
     x: np.ndarray,
     t: np.ndarray,
     field: np.ndarray,
-) -> go.Figure:
+    *,
+    max_size: int = 128,
+) -> dict[str, Any]:
     """Interactive space-time spectrogram with intensity, phase, and local m on hover."""
-    intensity = np.abs(field)
-    phase = np.angle(field)
-    m_local = estimate_local_topological_charge(phase, x, t)
-    x_1d = x[0, :]
-    t_1d = t[:, 0]
-
-    hover = np.empty(intensity.shape, dtype=object)
-    for i in range(intensity.shape[0]):
-        for j in range(intensity.shape[1]):
-            hover[i, j] = (
-                f"|E|={intensity[i, j]:.4f}<br>"
-                f"phase={phase[i, j]:.3f} rad<br>"
-                f"m_local={int(m_local[i, j])}"
-            )
+    x_ds, t_ds, field_ds = _downsample_stov_grid(x, t, field, max_size=max_size)
+    intensity = np.abs(field_ds)
+    phase = np.angle(field_ds)
+    m_local = estimate_local_topological_charge(phase, x_ds, t_ds)
+    x_1d = x_ds[0, :].tolist()
+    t_1d = t_ds[:, 0].tolist()
 
     fig = go.Figure(
         data=go.Heatmap(
-            z=intensity,
+            z=intensity.tolist(),
             x=x_1d,
             y=t_1d,
             colorscale="Viridis",
             colorbar=dict(title="|E|", tickfont=dict(color="#d8d0f0")),
-            hovertext=hover,
-            hoverinfo="text+x+y",
+            customdata=np.stack([phase, m_local], axis=-1).tolist(),
+            hovertemplate=(
+                "x=%{x:.2f}<br>t=%{y:.2f}<br>|E|=%{z:.4f}<br>"
+                "phase=%{customdata[0]:.3f} rad<br>m_local=%{customdata[1]:.0f}<extra></extra>"
+            ),
         )
     )
     fig.update_layout(
@@ -380,7 +393,7 @@ def plot_stov_spectrogram_plotly(
         yaxis=dict(title="Time (t)", gridcolor=STOV_GRID),
         margin=dict(l=48, r=24, t=48, b=40),
     )
-    return fig
+    return fig.to_plotly_json()
 
 
 def plot_stov_spectrum_bars(
@@ -704,9 +717,8 @@ def bridge_stov_to_demo(cache: dict[str, Any] | None) -> tuple[str, float, float
     )
 
 
-def _stov_frame_pil(x: np.ndarray, t: np.ndarray, field: np.ndarray, row_idx: int):
-    from PIL import Image, ImageDraw
-
+def _stov_rgb_array(field: np.ndarray) -> np.ndarray:
+    """RGB space-time view matching the static matplotlib spectrogram."""
     intensity = np.abs(field)
     phase = np.angle(field)
     peak = np.percentile(intensity, 99) + 1e-9
@@ -714,8 +726,13 @@ def _stov_frame_pil(x: np.ndarray, t: np.ndarray, field: np.ndarray, row_idx: in
     red = np.clip(norm * (0.55 + 0.45 * np.sin(phase)), 0, 1)
     green = np.clip(norm * (0.55 + 0.45 * np.cos(phase * 1.5)), 0, 1)
     blue = np.clip(norm * (0.55 + 0.45 * np.sin(phase * 2.0)), 0, 1)
-    rgb = (np.stack([red, green, blue], axis=-1) * 255).astype(np.uint8)
+    return (np.stack([red, green, blue], axis=-1) * 255).astype(np.uint8)
 
+
+def _stov_frame_pil(x: np.ndarray, t: np.ndarray, field: np.ndarray, row_idx: int):
+    from PIL import Image, ImageDraw
+
+    rgb = _stov_rgb_array(field)
     window = min(64, field.shape[0])
     row = int(np.clip(row_idx, 0, field.shape[0] - 1))
     r0 = int(np.clip(row - window // 2, 0, max(0, field.shape[0] - window)))
@@ -728,43 +745,63 @@ def _stov_frame_pil(x: np.ndarray, t: np.ndarray, field: np.ndarray, row_idx: in
     return img.resize((640, 240), Image.Resampling.BILINEAR)
 
 
+def _stov_full_frame_pil(field: np.ndarray, row_idx: int):
+    """Full-field RGB frame with a time-axis cursor (for GIF/MP4 export)."""
+    from PIL import Image, ImageDraw
+
+    rgb = _stov_rgb_array(field)
+    img = Image.fromarray(rgb)
+    draw = ImageDraw.Draw(img)
+    row = int(np.clip(row_idx, 0, field.shape[0] - 1))
+    draw.line([(0, row), (rgb.shape[1] - 1, row)], fill=(255, 220, 80), width=2)
+    return img.resize((640, 360), Image.Resampling.BILINEAR)
+
+
 def render_stov_animation_bundle(
     cache: dict[str, Any] | None,
     *,
     n_frames: int = 48,
+    fps: float = 11.0,
 ) -> tuple[str | None, str | None, str]:
     """Export STOV space-time scroll animation as GIF + optional MP4."""
     session = STOVSession.from_cache(cache)
     if session is None:
-        return None, None, "Run **Analyze** first before exporting animation."
+        return None, None, "⚠ Run **Analyze** first before exporting animation."
 
+    n_frames = int(np.clip(n_frames, 8, 60))
     indices = np.linspace(0, session.field.shape[0] - 1, n_frames, dtype=int)
-    frames = [_stov_frame_pil(session.x, session.t, session.field, int(i)) for i in indices]
+    frames = [_stov_full_frame_pil(session.field, int(i)) for i in indices]
+    if not frames:
+        return None, None, "⚠ No frames generated — re-run **Analyze** and try again."
 
     out_dir = Path(tempfile.mkdtemp(prefix="vqc_stov_anim_"))
     gif_path = out_dir / "stov_field.gif"
+    frame_ms = max(40, int(1000.0 / fps))
     frames[0].save(
         gif_path,
         save_all=True,
         append_images=frames[1:],
-        duration=90,
+        duration=frame_ms,
         loop=0,
         optimize=False,
         disposal=2,
     )
 
     mp4_path: str | None = None
+    mp4_note = ""
     try:
         from demo_core import _encode_frames_mp4
 
-        encoded = _encode_frames_mp4(frames, out_dir / "stov_field.mp4", fps=11.0)
+        encoded = _encode_frames_mp4(frames, out_dir / "stov_field.mp4", fps=fps)
         if encoded is not None:
             mp4_path = str(encoded)
-    except Exception:
-        mp4_path = None
+        else:
+            mp4_note = " MP4 skipped (ffmpeg not available on this host)."
+    except Exception as exc:
+        mp4_note = f" MP4 export failed: {exc}"
 
     note = (
-        f"Exported {n_frames} frames scrolling through the space-time plane "
-        f"(dominant m={session.result.dominant_m:+d})."
+        f"✓ Exported {n_frames} full-field RGB frames "
+        f"(dominant m={session.result.dominant_m:+d}, {fps:.0f} fps).{mp4_note}"
     )
     return str(gif_path), mp4_path, note
