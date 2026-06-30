@@ -361,7 +361,7 @@ def plot_stov_spectrogram_plotly(
     field: np.ndarray,
     *,
     max_size: int = 128,
-) -> dict[str, Any]:
+) -> go.Figure:
     """Interactive space-time spectrogram with intensity, phase, and local m on hover."""
     x_ds, t_ds, field_ds = _downsample_stov_grid(x, t, field, max_size=max_size)
     intensity = np.abs(field_ds)
@@ -393,7 +393,7 @@ def plot_stov_spectrogram_plotly(
         yaxis=dict(title="Time (t)", gridcolor=STOV_GRID),
         margin=dict(l=48, r=24, t=48, b=40),
     )
-    return fig.to_plotly_json()
+    return fig
 
 
 def plot_stov_spectrum_bars(
