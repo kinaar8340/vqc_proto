@@ -392,6 +392,9 @@ def plot_stov_spectrogram_plotly(
         xaxis=dict(title="Space (x)", gridcolor=STOV_GRID),
         yaxis=dict(title="Time (t)", gridcolor=STOV_GRID),
         margin=dict(l=48, r=24, t=48, b=40),
+        height=400,
+        autosize=False,
+        uirevision="stov-spectrogram",
     )
     return fig
 

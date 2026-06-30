@@ -1343,6 +1343,37 @@ footer {{
     border-radius: 10px !important;
     background: rgba(8, 6, 18, 0.5) !important;
 }}
+.gradio-container .vqc-stov-plotly-panel {{
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+    align-self: flex-start !important;
+}}
+.gradio-container .vqc-stov-plotly-panel .plot-container,
+.gradio-container .vqc-stov-plotly-panel .js-plotly-plot,
+.gradio-container .vqc-stov-plotly-panel .plotly-graph-div {{
+    width: 100% !important;
+    min-height: 400px !important;
+    max-height: 400px !important;
+    height: 400px !important;
+    overflow: hidden !important;
+}}
+.gradio-container .vqc-stov-animation-panel video,
+.gradio-container .vqc-stov-animation-panel .image-container,
+.gradio-container .vqc-stov-animation-panel img {{
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 280px !important;
+    height: auto !important;
+    aspect-ratio: 16 / 9 !important;
+    object-fit: contain !important;
+    display: block !important;
+}}
+.gradio-container .vqc-stov-animation-panel .image-container {{
+    min-height: 200px !important;
+    max-height: 280px !important;
+    overflow: hidden !important;
+}}
 .gradio-container .vqc-stov-gauges {{
     display: flex;
     flex-direction: column;
@@ -2568,22 +2599,29 @@ def build_app() -> gr.Blocks:
                     stov_decode_out = gr.Markdown("")
                 with gr.Column(scale=3):
                     gr.Markdown("### Interactive space-time spectrogram (Plotly)")
-                    stov_plotly_plot = gr.Plot(label="STOV field — hover for |E|, phase, local m")
+                    stov_plotly_plot = gr.Plot(
+                        label="STOV field — hover for |E|, phase, local m",
+                        elem_classes=["vqc-stov-plotly-panel"],
+                    )
                     with gr.Accordion("Static RGB spectrogram", open=False):
                         stov_colorful_plot = gr.Plot(label="STOV field (RGB channels)")
                     gr.Markdown("### Spatiotemporal OAM spectrum")
                     stov_spectrum_plot = gr.Plot(label="Power vs m")
                     with gr.Accordion("Vector components (Lx / Ly / Lz)", open=False):
                         stov_vector_plot = gr.Plot(label="Three-component spectra")
-                    with gr.Accordion("STOV space-time animation", open=False):
-                        stov_animation_info = gr.Markdown(
-                            "*Export scrolls through the time axis of the current field.*"
-                        )
-                        stov_animation_video = gr.Video(label="STOV animation (MP4)")
-                        stov_animation_gif = gr.Image(
-                            label="STOV animation (GIF)",
-                            type="filepath",
-                        )
+                    with gr.Accordion("STOV space-time animation", open=False) as stov_animation_accordion:
+                        with gr.Column(elem_classes=["vqc-stov-animation-panel"]):
+                            stov_animation_info = gr.Markdown(
+                                "*Export scrolls through the time axis of the current field.*"
+                            )
+                            stov_animation_video = gr.Video(
+                                label="STOV animation (MP4)",
+                                autoplay=False,
+                            )
+                            stov_animation_gif = gr.Image(
+                                label="STOV animation (GIF)",
+                                type="filepath",
+                            )
             with gr.Row(elem_classes=["vqc-stov-meters"], visible=False):
                 stov_purity = gr.Number(label="Mode purity", value=0.0, precision=4)
                 stov_dominant_m = gr.Number(label="Dominant m", value=0, precision=0)
@@ -2649,10 +2687,24 @@ def build_app() -> gr.Blocks:
                 inputs=[stov_cache],
                 outputs=[payload, num_orbs, noise_level, gamma_1, stov_bridge_status],
             )
+            def _export_stov_animation(cache):
+                gif_path, mp4_path, note = render_stov_animation_bundle(cache)
+                return (
+                    gif_path,
+                    mp4_path,
+                    note,
+                    gr.update(open=True),
+                )
+
             stov_export_anim_btn.click(
-                render_stov_animation_bundle,
+                _export_stov_animation,
                 inputs=[stov_cache],
-                outputs=[stov_animation_gif, stov_animation_video, stov_animation_info],
+                outputs=[
+                    stov_animation_gif,
+                    stov_animation_video,
+                    stov_animation_info,
+                    stov_animation_accordion,
+                ],
             )
 
             def _bootstrap_stov_tab():
