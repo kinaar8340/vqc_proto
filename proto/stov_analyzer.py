@@ -417,15 +417,36 @@ def plot_stov_spectrum_bars(
     powers: np.ndarray,
     *,
     title: str = "Spatiotemporal OAM Spectrum",
+    figsize: tuple[float, float] = (10, 4.5),
 ) -> plt.Figure:
     """DSP-style bar spectrum (power vs topological order m)."""
-    fig, ax = plt.subplots(figsize=(10, 4.5), facecolor=STOV_BG)
+    fig, ax = plt.subplots(figsize=figsize, facecolor=STOV_BG)
     colors = plt.cm.plasma(np.linspace(0.2, 0.9, len(m_values)))
     ax.bar(m_values, powers, color=colors, edgecolor="white", linewidth=0.5, width=0.82)
     ax.set_xlabel("Spatiotemporal order m")
     ax.set_ylabel("Relative power / weight")
     ax.set_title(title, fontsize=13)
     ax.grid(True, axis="y", alpha=0.3, color="white")
+    _style_axes(ax)
+    fig.tight_layout()
+    return fig
+
+
+def plot_vector_spectrum_single(
+    m_values: np.ndarray,
+    powers: np.ndarray,
+    *,
+    color: str,
+    label: str,
+    figsize: tuple[float, float] = (4.2, 3.0),
+) -> plt.Figure:
+    """Single-component STOV spectrum bar chart (Lx, Ly, or Lz)."""
+    fig, ax = plt.subplots(figsize=figsize, facecolor=STOV_BG)
+    ax.bar(m_values, powers, color=color, edgecolor="white", linewidth=0.4, width=0.82)
+    ax.set_title(label, fontsize=10)
+    ax.set_xlabel("Spatiotemporal order m", fontsize=8)
+    ax.set_ylabel("Relative power", fontsize=8)
+    ax.grid(True, axis="y", alpha=0.25, color="white")
     _style_axes(ax)
     fig.tight_layout()
     return fig
@@ -608,12 +629,28 @@ def run_stov_analysis(
     )
     fig_plotly = plot_stov_spectrogram_plotly(session.x, session.t, session.field)
     fig_color = plot_colorful_stov_spectrogram(session.x, session.t, session.field)
-    fig_spec = plot_stov_spectrum_bars(session.m_values, session.result.powers)
-    fig_vec = plot_vector_spectra(
+    fig_spec = plot_stov_spectrum_bars(
+        session.m_values,
+        session.result.powers,
+        figsize=(5.8, 3.6),
+    )
+    fig_lx = plot_vector_spectrum_single(
         session.m_values,
         session.result.powers_x,
+        color="#ff5555",
+        label="Lx (x-comp)",
+    )
+    fig_ly = plot_vector_spectrum_single(
+        session.m_values,
         session.result.powers_y,
+        color="#55dd55",
+        label="Ly (y-comp)",
+    )
+    fig_lz = plot_vector_spectrum_single(
+        session.m_values,
         session.result.powers_z,
+        color="#5599ff",
+        label="Lz (z-comp)",
     )
     gauges = format_meter_gauges_html(
         purity=session.result.purity,
@@ -625,7 +662,9 @@ def run_stov_analysis(
         fig_plotly,
         fig_color,
         fig_spec,
-        fig_vec,
+        fig_lx,
+        fig_ly,
+        fig_lz,
         session.result.metrics_text,
         gauges,
         session.result.purity,

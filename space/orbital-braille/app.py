@@ -158,6 +158,14 @@ OPTICS_LOGO_HTML = """
 </div>
 """
 
+STOV_OPTICS_LOGO_HTML = """
+<div class="vqc-optics-logo" role="img" aria-label="STOV Analyzer Control Panel">
+  <span class="vqc-optics-brand">ORBITAL BRAILLE</span>
+  <span class="vqc-optics-panel-title">STOV Control Panel</span>
+  <span class="vqc-optics-subtitle">TUNE · ANALYZE · RECONSTRUCT · TRANSMIT</span>
+</div>
+"""
+
 # Client-side CSS OAM helix drift — distinct from Mystery phosphor scan (HF-safe).
 OAM_HELIX_SCANNER_HTML = f"""
 <div class="vqc-oam-helix-scan" role="img" aria-label="OAM helix orbital drift">
@@ -1343,16 +1351,32 @@ footer {{
     width: 100% !important;
     max-width: 100% !important;
 }}
-.gradio-container .vqc-stov-sidebar {{
-    background: linear-gradient(180deg, #1e1a2e 0%, #12101f 100%) !important;
-    border: 2px solid #4a4068 !important;
-    border-radius: 10px !important;
-    padding: 0.65rem 0.75rem !important;
+.gradio-container .vqc-stov-optics-panel {{
+    margin: 0 !important;
+    width: 100% !important;
 }}
-.gradio-container .vqc-stov-sidebar .label-wrap span {{
-    color: #d8d0f0 !important;
-    font-size: 0.82rem !important;
-    letter-spacing: 0.04em !important;
+.gradio-container .vqc-stov-optics-panel .vqc-stov-readout-row {{
+    gap: 0.65rem !important;
+    align-items: stretch !important;
+    margin-top: 0.45rem !important;
+}}
+.gradio-container .vqc-stov-optics-panel .vqc-stov-readout-row > .column {{
+    min-width: 0 !important;
+}}
+.gradio-container .vqc-stov-optics-panel .vqc-action-btn-row button.vqc-receiver-preset {{
+    width: 100% !important;
+    min-height: 4.6rem !important;
+}}
+.gradio-container .vqc-stov-optics-panel .vqc-stov-readout-side .markdown p {{
+    margin: 0.15rem 0 !important;
+}}
+.gradio-container .vqc-stov-optics-panel .markdown p {{
+    color: #c9a227 !important;
+    font-size: 0.78rem !important;
+    line-height: 1.45 !important;
+}}
+.gradio-container .vqc-stov-optics-panel .vqc-stov-decode-out p {{
+    color: #e8d4a8 !important;
 }}
 .gradio-container .vqc-stov-meters .block {{
     border: 1px solid #3d3558 !important;
@@ -1364,74 +1388,106 @@ footer {{
     border-radius: 10px !important;
     background: rgba(8, 6, 18, 0.5) !important;
 }}
+.gradio-container .vqc-stov-viz-grid {{
+    width: 100% !important;
+    gap: 0.55rem !important;
+    margin-top: 0.45rem !important;
+}}
+.gradio-container .vqc-stov-viz-row-2x1,
+.gradio-container .vqc-stov-viz-row-3x2 {{
+    gap: 0.65rem !important;
+    width: 100% !important;
+    align-items: stretch !important;
+}}
+.gradio-container .vqc-stov-viz-row-2x1 {{
+    margin-bottom: 0.35rem !important;
+}}
+.gradio-container .vqc-stov-viz-row-2x1 > .column,
+.gradio-container .vqc-stov-viz-row-3x2 > .column {{
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+}}
+.gradio-container .vqc-stov-viz-cell {{
+    border: 2px solid #5a4a20 !important;
+    border-radius: 10px !important;
+    padding: 0.35rem 0.45rem 0.5rem !important;
+    background: rgba(8, 6, 18, 0.55) !important;
+}}
+.gradio-container .vqc-stov-viz-cell .markdown p {{
+    text-align: center !important;
+    margin: 0 0 0.3rem 0 !important;
+    font-size: 0.82rem !important;
+    color: #e8d4a8 !important;
+}}
+.gradio-container .vqc-stov-viz-caption {{
+    margin: 0.15rem 0 0.45rem 0 !important;
+}}
+.gradio-container .vqc-stov-viz-caption p {{
+    text-align: center !important;
+    font-size: 0.78rem !important;
+    color: #c9a227 !important;
+    margin: 0 !important;
+}}
 .gradio-container .vqc-stov-plotly-panel {{
     width: 100% !important;
     max-width: 100% !important;
     flex: 0 0 auto !important;
     align-self: flex-start !important;
 }}
-.gradio-container .vqc-stov-plotly-panel .plot-container,
-.gradio-container .vqc-stov-plotly-panel .js-plotly-plot,
-.gradio-container .vqc-stov-plotly-panel .plotly-graph-div {{
+.gradio-container .vqc-stov-viz-row-2x1 .vqc-stov-plotly-panel .plot-container,
+.gradio-container .vqc-stov-viz-row-2x1 .vqc-stov-plotly-panel .js-plotly-plot,
+.gradio-container .vqc-stov-viz-row-2x1 .vqc-stov-plotly-panel .plotly-graph-div {{
     width: 100% !important;
-    min-height: 400px !important;
-    max-height: 400px !important;
-    height: 400px !important;
+    min-height: 300px !important;
+    max-height: 300px !important;
+    height: 300px !important;
     overflow: hidden !important;
 }}
-.gradio-container .vqc-stov-animation-panel video,
-.gradio-container .vqc-stov-animation-panel .image-container,
-.gradio-container .vqc-stov-animation-panel img {{
+.gradio-container .vqc-stov-viz-spectrum-panel .plot-container {{
+    min-height: 260px !important;
+    max-height: 300px !important;
+}}
+.gradio-container .vqc-stov-viz-vector-spectrum .plot-container {{
+    min-height: 190px !important;
+    max-height: 220px !important;
+}}
+.gradio-container .vqc-stov-viz-column video,
+.gradio-container .vqc-stov-viz-column .image-container,
+.gradio-container .vqc-stov-viz-column img {{
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 280px !important;
+    max-height: 240px !important;
+    min-height: 160px !important;
     height: auto !important;
-    aspect-ratio: 16 / 9 !important;
-    object-fit: contain !important;
-    display: block !important;
-}}
-.gradio-container .vqc-stov-animation-panel .image-container {{
-    min-height: 200px !important;
-    max-height: 280px !important;
-    overflow: hidden !important;
-}}
-.gradio-container .vqc-stov-perspective-gallery {{
-    width: 100% !important;
-    gap: 0.65rem !important;
-}}
-.gradio-container .vqc-stov-perspective-gallery > .column {{
-    min-width: 0 !important;
-    flex: 1 1 0 !important;
-}}
-.gradio-container .vqc-stov-perspective-gallery video {{
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 260px !important;
-    min-height: 180px !important;
+    aspect-ratio: 1 / 1 !important;
     object-fit: contain !important;
     display: block !important;
     background: rgba(8, 6, 18, 0.55) !important;
     border-radius: 8px !important;
 }}
-.gradio-container .vqc-stov-perspective-gallery .markdown p {{
+.gradio-container .vqc-stov-viz-column .markdown p {{
     text-align: center !important;
-    margin: 0 0 0.35rem 0 !important;
+    margin: 0 0 0.3rem 0 !important;
     font-size: 0.82rem !important;
+    font-weight: 600 !important;
 }}
-.gradio-container .vqc-stov-perspective-lx > .block {{
+.gradio-container .vqc-stov-viz-column.vqc-stov-perspective-lx {{
     border: 2px solid rgba(255, 85, 85, 0.55) !important;
     border-radius: 10px !important;
     padding: 0.35rem !important;
+    background: rgba(8, 6, 18, 0.45) !important;
 }}
-.gradio-container .vqc-stov-perspective-ly > .block {{
+.gradio-container .vqc-stov-viz-column.vqc-stov-perspective-ly {{
     border: 2px solid rgba(85, 221, 85, 0.55) !important;
     border-radius: 10px !important;
     padding: 0.35rem !important;
+    background: rgba(8, 6, 18, 0.45) !important;
 }}
-.gradio-container .vqc-stov-perspective-lz > .block {{
+.gradio-container .vqc-stov-viz-column.vqc-stov-perspective-lz {{
     border: 2px solid rgba(85, 153, 255, 0.55) !important;
     border-radius: 10px !important;
     padding: 0.35rem !important;
+    background: rgba(8, 6, 18, 0.45) !important;
 }}
 .gradio-container .vqc-stov-perspective-lx .markdown p {{ color: #ff8888 !important; }}
 .gradio-container .vqc-stov-perspective-ly .markdown p {{ color: #88ee99 !important; }}
@@ -1445,10 +1501,13 @@ footer {{
 .gradio-container .vqc-stov-gauge-label {{
     display: flex;
     justify-content: space-between;
-    color: #d8d0f0;
+    color: #e8d4a8;
     font-size: 0.78rem;
     letter-spacing: 0.04em;
     margin-bottom: 0.2rem;
+}}
+.gradio-container .vqc-stov-optics-panel .vqc-stov-gauges {{
+    margin: 0.35rem 0 0.5rem 0 !important;
 }}
 .gradio-container .vqc-stov-gauge-track {{
     height: 10px;
@@ -1466,9 +1525,7 @@ footer {{
     font-weight: 700;
     color: #ffb347;
 }}
-.gradio-container .vqc-stov-actions-row button {{
-    margin-bottom: 0.35rem;
-}}
+
 .gradio-container .vqc-screencast-wrap {{
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2683,131 +2740,226 @@ def build_app() -> gr.Blocks:
             gr.Markdown(_screencast_links_md())
 
         with gr.Column(visible=False, elem_classes=["vqc-stov-page"]) as page_stov_analyzer:
-            with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-animations-nav-row"]):
-                gr.HTML('<span class="vqc-source-label">Source:</span>')
-                stov_tab_demo_btn = gr.Button(
-                    "Live Demo",
-                    elem_classes=["vqc-source-tab"],
-                    scale=0,
-                    variant="secondary",
-                )
-                stov_tab_stov_btn = gr.Button(
-                    "STOV Analyzer",
-                    elem_classes=["vqc-source-tab", "active"],
-                    interactive=False,
-                    scale=0,
-                    variant="secondary",
-                )
-                stov_tab_anim_btn = gr.Button(
-                    "Animations",
-                    elem_classes=["vqc-source-tab"],
-                    scale=0,
-                    variant="secondary",
-                )
-            gr.Markdown("## STOV Analyzer — Spatiotemporal OAM Spectrum")
-            gr.Markdown(
-                "Analyze spatiotemporal optical vortex (STOV) mode weights vs. topological order "
-                "*m* in the space-time plane. Ties into the VQC OAM / spectral-shard work — "
-                "vibrant field spectrogram plus DSP-style spectrum bars and vector proxies (Lx / Ly / Lz)."
-            )
             stov_preset_key = gr.State("vqc_carrier")
             stov_cache = gr.State(value=None)
-            with gr.Row():
-                with gr.Column(scale=1, elem_classes=["vqc-stov-sidebar"]):
-                    gr.Markdown("### Controls")
-                    stov_m_min = gr.Slider(-12, 0, value=-8, step=1, label="Min order m")
-                    stov_m_max = gr.Slider(0, 12, value=8, step=1, label="Max order m")
-                    stov_noise = gr.Slider(0.0, 0.5, value=0.1, step=0.01, label="Noise level")
-                    stov_n_modes = gr.Slider(3, 25, value=9, step=1, label="Active modes")
-                    stov_seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
-                    with gr.Accordion("Presets", open=True):
-                        stov_preset_buttons: dict[str, gr.Button] = {}
-                        for key, preset in STOV_PRESETS.items():
-                            stov_preset_buttons[key] = gr.Button(
-                                preset["label"],
-                                variant="secondary",
-                                size="sm",
-                            )
-                    stov_analyze_btn = gr.Button(
-                        "Analyze / Generate Spectrum",
-                        variant="primary",
-                        elem_classes=["vqc-full-width"],
+            with gr.Group(elem_classes=["vqc-optics-panel", "vqc-stov-optics-panel"]):
+                with gr.Row(elem_classes=["vqc-optics-panel-header"]):
+                    gr.HTML(STOV_OPTICS_LOGO_HTML)
+                    with gr.Column(elem_classes=["vqc-optics-panel-nav"], scale=1):
+                        with gr.Row(elem_classes=["vqc-nav-spreadsheet-row"]):
+                            gr.HTML('<span class="vqc-source-label vqc-nav-row-label">Source:</span>')
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                stov_tab_demo_btn = gr.Button(
+                                    "Live Demo",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                stov_tab_stov_btn = gr.Button(
+                                    "STOV Analyzer",
+                                    elem_classes=["vqc-source-tab", "active"],
+                                    interactive=False,
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                stov_tab_anim_btn = gr.Button(
+                                    "Animations",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                with gr.Row(elem_classes=["vqc-optics-tune-row"]):
+                    stov_m_min = gr.Slider(
+                        -12,
+                        0,
+                        value=-8,
+                        step=1,
+                        label="Min order m",
+                        elem_classes=["vqc-optics-dial-wrap"],
                     )
-                    with gr.Column(elem_classes=["vqc-stov-actions-row"]):
+                    stov_m_max = gr.Slider(
+                        0,
+                        12,
+                        value=8,
+                        step=1,
+                        label="Max order m",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                with gr.Row(elem_classes=["vqc-optics-dial-row"]):
+                    stov_noise = gr.Slider(
+                        0.0,
+                        0.5,
+                        value=0.1,
+                        step=0.01,
+                        label="Noise level",
+                        info="0 = clean field · 0.1 = default · 0.5 = harsh",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                    stov_n_modes = gr.Slider(
+                        3,
+                        25,
+                        value=9,
+                        step=1,
+                        label="Active modes",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                    stov_seed = gr.Slider(
+                        0,
+                        9999,
+                        value=42,
+                        step=1,
+                        label="Random seed",
+                        elem_classes=["vqc-optics-dial-wrap"],
+                    )
+                gr.HTML(
+                    '<p class="vqc-optics-presets-label">'
+                    "Example presets — one click loads settings and runs analysis"
+                    "</p>"
+                )
+                with gr.Row():
+                    stov_preset_buttons: dict[str, gr.Button] = {}
+                    for key, preset in STOV_PRESETS.items():
+                        stov_preset_buttons[key] = gr.Button(
+                            preset["label"],
+                            variant="secondary",
+                            size="sm",
+                            elem_classes=["vqc-receiver-preset"],
+                        )
+                gr.HTML(
+                    '<div class="vqc-optics-action-spacer" aria-hidden="true"></div>',
+                    elem_classes=["vqc-optics-action-spacer"],
+                )
+                stov_analyze_latched = gr.State(value=False)
+                stov_preset_latched_key = gr.State(value=None)
+                with gr.Row(equal_height=True, elem_classes=["vqc-action-btn-row"]):
+                    with gr.Column(scale=1):
+                        stov_analyze_btn = gr.Button(
+                            "Analyze / Generate Spectrum",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-tall"],
+                        )
+                    with gr.Column(scale=1):
                         stov_reconstruct_btn = gr.Button(
-                            "Reconstruct / Decode from Spectrum",
+                            "Reconstruct / Decode",
                             variant="secondary",
-                            elem_classes=["vqc-full-width"],
+                            size="sm",
+                            elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-tall"],
                         )
+                    with gr.Column(scale=1):
                         stov_send_demo_btn = gr.Button(
-                            "Send weights → Orbital Braille encoder",
+                            "Send weights → Live Demo",
                             variant="secondary",
-                            elem_classes=["vqc-full-width"],
+                            size="sm",
+                            elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-tall"],
                         )
+                    with gr.Column(scale=1):
                         stov_export_anim_btn = gr.Button(
-                            "Refresh STOV animation gallery",
+                            "Refresh animation gallery",
                             variant="secondary",
-                            elem_classes=["vqc-full-width"],
+                            size="sm",
+                            elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-tall"],
                         )
-                    stov_gauges_html = gr.HTML("")
-                    stov_metrics_out = gr.Textbox(
-                        label="Analysis metrics",
-                        lines=7,
-                        interactive=False,
-                    )
-                    stov_bridge_status = gr.Markdown(
-                        "*Send weights copies γ₁, noise, orbs, and payload to **Live Demo**.*"
-                    )
-                    stov_decode_out = gr.Markdown("")
-                with gr.Column(scale=3):
-                    gr.Markdown("### Interactive space-time spectrogram (Plotly)")
-                    stov_plotly_plot = gr.Plot(
-                        label="STOV field — hover for |E|, phase, local m",
-                        elem_classes=["vqc-stov-plotly-panel"],
-                    )
-                    with gr.Accordion("Static RGB spectrogram", open=False):
-                        stov_colorful_plot = gr.Plot(label="STOV field (RGB channels)")
-                    gr.Markdown("### Spatiotemporal OAM spectrum")
-                    stov_spectrum_plot = gr.Plot(label="Power vs m")
-                    with gr.Accordion("Vector components (Lx / Ly / Lz)", open=False):
-                        stov_vector_plot = gr.Plot(label="Three-component spectra")
-                    with gr.Accordion(
-                        "STOV Animations (Three Perspectives)",
-                        open=True,
-                    ) as stov_animation_accordion:
-                        with gr.Column(elem_classes=["vqc-stov-animation-panel"]):
-                            stov_animation_info = gr.Markdown(
-                                "*Vector-synced gallery: each view tints to its **Lx / Ly / Lz** "
-                                "spectrum accent with a slow phase-rotation overlay.*"
-                            )
-                            with gr.Row(
-                                equal_height=True,
-                                elem_classes=["vqc-stov-perspective-gallery"],
-                            ):
-                                with gr.Column(elem_classes=["vqc-stov-perspective-lx"]):
-                                    gr.Markdown("**1. Lx · Axial Pinwheel**")
-                                    stov_axial_video = gr.Video(
-                                        label="Lx Axial Pinwheel",
-                                        show_label=False,
-                                        autoplay=True,
-                                        loop=True,
-                                    )
-                                with gr.Column(elem_classes=["vqc-stov-perspective-ly"]):
-                                    gr.Markdown("**2. Ly · Space-Time Scanner**")
-                                    stov_spacetime_video = gr.Video(
-                                        label="Ly Space-Time Scanner",
-                                        show_label=False,
-                                        autoplay=True,
-                                        loop=True,
-                                    )
-                                with gr.Column(elem_classes=["vqc-stov-perspective-lz"]):
-                                    gr.Markdown("**3. Lz · Oblique Tilt**")
-                                    stov_oblique_video = gr.Video(
-                                        label="Lz Oblique Tilt",
-                                        show_label=False,
-                                        autoplay=True,
-                                        loop=True,
-                                    )
+                with gr.Row(elem_classes=["vqc-stov-readout-row"]):
+                    with gr.Column(scale=1, min_width=160):
+                        stov_gauges_html = gr.HTML("")
+                    with gr.Column(scale=2, min_width=240):
+                        stov_metrics_out = gr.Textbox(
+                            label="Analysis metrics",
+                            lines=6,
+                            interactive=False,
+                            elem_classes=["vqc-optics-terminal-wrap", "vqc-optics-terminal"],
+                        )
+                    with gr.Column(scale=1, min_width=180, elem_classes=["vqc-stov-readout-side"]):
+                        stov_bridge_status = gr.Markdown(
+                            "*Send weights copies γ₁, noise, orbs, and payload to **Live Demo**.*"
+                        )
+                        stov_decode_out = gr.Markdown(
+                            "",
+                            elem_classes=["vqc-stov-decode-out"],
+                        )
+            with gr.Column(elem_classes=["vqc-stov-viz-grid"]):
+                with gr.Row(equal_height=True, elem_classes=["vqc-stov-viz-row-2x1"]):
+                    with gr.Column(scale=1, elem_classes=["vqc-stov-viz-cell"]):
+                        gr.Markdown("**Space-time field (Plotly)**")
+                        stov_plotly_plot = gr.Plot(
+                            label="STOV field — hover for |E|, phase, local m",
+                            show_label=False,
+                            elem_classes=["vqc-stov-plotly-panel"],
+                        )
+                    with gr.Column(scale=1, elem_classes=["vqc-stov-viz-cell"]):
+                        gr.Markdown("**Spatiotemporal OAM spectrum**")
+                        stov_spectrum_plot = gr.Plot(
+                            label="Power vs m",
+                            show_label=False,
+                            elem_classes=["vqc-stov-viz-spectrum-panel"],
+                        )
+                stov_colorful_plot = gr.Plot(
+                    label="STOV field (RGB channels)",
+                    visible=False,
+                )
+                stov_animation_info = gr.Markdown(
+                    "*Vector-synced 3×2 gallery — each column pairs an **Lx / Ly / Lz** "
+                    "spectrum with its three-point perspective animation.*",
+                    elem_classes=["vqc-stov-viz-caption"],
+                )
+                with gr.Row(equal_height=True, elem_classes=["vqc-stov-viz-row-3x2"]):
+                    with gr.Column(
+                        elem_classes=[
+                            "vqc-stov-viz-column",
+                            "vqc-stov-perspective-lx",
+                        ],
+                    ):
+                        gr.Markdown("**Lx · Axial Pinwheel**")
+                        stov_lx_spectrum_plot = gr.Plot(
+                            label="Lx spectrum",
+                            show_label=False,
+                            elem_classes=["vqc-stov-viz-vector-spectrum"],
+                        )
+                        stov_axial_video = gr.Video(
+                            label="Lx Axial Pinwheel",
+                            show_label=False,
+                            autoplay=True,
+                            loop=True,
+                        )
+                    with gr.Column(
+                        elem_classes=[
+                            "vqc-stov-viz-column",
+                            "vqc-stov-perspective-ly",
+                        ],
+                    ):
+                        gr.Markdown("**Ly · Space-Time Scanner**")
+                        stov_ly_spectrum_plot = gr.Plot(
+                            label="Ly spectrum",
+                            show_label=False,
+                            elem_classes=["vqc-stov-viz-vector-spectrum"],
+                        )
+                        stov_spacetime_video = gr.Video(
+                            label="Ly Space-Time Scanner",
+                            show_label=False,
+                            autoplay=True,
+                            loop=True,
+                        )
+                    with gr.Column(
+                        elem_classes=[
+                            "vqc-stov-viz-column",
+                            "vqc-stov-perspective-lz",
+                        ],
+                    ):
+                        gr.Markdown("**Lz · Oblique Tilt**")
+                        stov_lz_spectrum_plot = gr.Plot(
+                            label="Lz spectrum",
+                            show_label=False,
+                            elem_classes=["vqc-stov-viz-vector-spectrum"],
+                        )
+                        stov_oblique_video = gr.Video(
+                            label="Lz Oblique Tilt",
+                            show_label=False,
+                            autoplay=True,
+                            loop=True,
+                        )
             with gr.Row(elem_classes=["vqc-stov-meters"], visible=False):
                 stov_purity = gr.Number(label="Mode purity", value=0.0, precision=4)
                 stov_dominant_m = gr.Number(label="Dominant m", value=0, precision=0)
@@ -2818,7 +2970,9 @@ def build_app() -> gr.Blocks:
                 stov_plotly_plot,
                 stov_colorful_plot,
                 stov_spectrum_plot,
-                stov_vector_plot,
+                stov_lx_spectrum_plot,
+                stov_ly_spectrum_plot,
+                stov_lz_spectrum_plot,
                 stov_metrics_out,
                 stov_gauges_html,
                 stov_purity,
@@ -2851,7 +3005,6 @@ def build_app() -> gr.Blocks:
                 stov_spacetime_video,
                 stov_oblique_video,
                 stov_animation_info,
-                stov_animation_accordion,
             ]
 
             def _export_stov_animation(cache):
@@ -2863,10 +3016,61 @@ def build_app() -> gr.Blocks:
                     spacetime_path,
                     oblique_path,
                     note,
-                    gr.update(open=True),
                 )
 
+            stov_preset_btn_list = list(stov_preset_buttons.values())
+            stov_preset_btn_keys = list(stov_preset_buttons.keys())
+
+            def _stov_all_presets_idle():
+                return tuple(_action_btn_idle() for _ in stov_preset_btn_list)
+
+            def _stov_latch_analyze_on():
+                return (
+                    True,
+                    None,
+                    *_stov_all_presets_idle(),
+                    _action_btn_latched(),
+                )
+
+            def _stov_latch_analyze_off():
+                return (
+                    False,
+                    None,
+                    *_stov_all_presets_idle(),
+                    _action_btn_idle(),
+                )
+
+            def _stov_latch_preset_on(active_key: str):
+                updates = [
+                    _action_btn_latched() if k == active_key else _action_btn_idle()
+                    for k in stov_preset_btn_keys
+                ]
+                return (
+                    False,
+                    active_key,
+                    *updates,
+                    _action_btn_idle(),
+                )
+
+            def _stov_latch_preset_off():
+                return (
+                    False,
+                    None,
+                    *_stov_all_presets_idle(),
+                    _action_btn_idle(),
+                )
+
+            stov_latch_outputs = [
+                stov_analyze_latched,
+                stov_preset_latched_key,
+                *stov_preset_btn_list,
+                stov_analyze_btn,
+            ]
+
             stov_analyze_btn.click(
+                _stov_latch_analyze_on,
+                outputs=stov_latch_outputs,
+            ).then(
                 lambda m_min, m_max, noise, n_modes, seed, pk: run_stov_analysis(
                     m_min, m_max, noise, n_modes, seed, preset_key=pk
                 ),
@@ -2876,11 +3080,17 @@ def build_app() -> gr.Blocks:
                 _export_stov_animation,
                 inputs=[stov_cache],
                 outputs=stov_animation_outputs,
+            ).then(
+                _stov_latch_analyze_off,
+                outputs=stov_latch_outputs,
             )
             for key, btn in stov_preset_buttons.items():
                 btn.click(
                     lambda k=key: (*load_stov_preset(k), k),
                     outputs=[stov_m_min, stov_m_max, stov_noise, stov_n_modes, stov_seed, stov_preset_key],
+                ).then(
+                    lambda k=key: _stov_latch_preset_on(k),
+                    outputs=stov_latch_outputs,
                 ).then(
                     _run_stov_with_preset,
                     inputs=[*stov_inputs, stov_preset_key],
@@ -2889,6 +3099,9 @@ def build_app() -> gr.Blocks:
                     _export_stov_animation,
                     inputs=[stov_cache],
                     outputs=stov_animation_outputs,
+                ).then(
+                    _stov_latch_preset_off,
+                    outputs=stov_latch_outputs,
                 )
 
             stov_reconstruct_btn.click(
