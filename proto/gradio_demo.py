@@ -534,8 +534,8 @@ def _term_key_is_defined_prog(key: str) -> bool:
 
 
 def _term_key_btn_classes(key: str, active: str) -> list[str]:
-    """Black/white idle caps; matrix-green latch on active keys (never home)."""
-    classes = ["vqc-optics-key"]
+    """Preset-style keys; matrix-green latched outline while active (never home)."""
+    classes = ["vqc-optics-key", "vqc-receiver-preset"]
     if key in TERM_NAV_KEYS:
         classes.append("vqc-optics-dpad-key")
     if key == TERM_KEYPAD_HOME_KEY:
@@ -547,7 +547,7 @@ def _term_key_btn_classes(key: str, active: str) -> list[str]:
     if _term_key_is_defined_prog(key):
         classes.append("vqc-optics-key-defined")
     if key == active and key != TERM_KEYPAD_HOME_KEY:
-        classes.append("active")
+        classes.append("vqc-action-btn-latched")
     return classes
 
 
@@ -1769,12 +1769,14 @@ footer {{
     53% {{ opacity: 0.92; }}
 }}
 .gradio-container .vqc-optics-keypad {{
-    background: linear-gradient(180deg, #16120c 0%, #0a0806 100%) !important;
-    border: 2px inset #3d3020 !important;
+    background: linear-gradient(180deg, #1e1a12 0%, #12100a 100%) !important;
+    border: 2px solid #6b4f1d !important;
     border-radius: 10px !important;
     padding: 0.42rem 0.38rem 0.48rem !important;
     margin: 0 0 0.65rem 0 !important;
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.55) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 220, 150, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.35) !important;
 }}
 .gradio-container .vqc-optics-keypad > .block,
 .gradio-container .vqc-optics-keypad .block {{
@@ -1784,107 +1786,55 @@ footer {{
     padding: 0 !important;
     margin: 0 !important;
 }}
-.gradio-container .vqc-optics-dpad-group {{
-    margin: 0 0 0.28rem 0 !important;
-    padding: 0 0 0.12rem 0 !important;
-}}
 .gradio-container .vqc-optics-panel .vqc-optics-dpad-row,
 .gradio-container .vqc-optics-panel .vqc-optics-prog-row {{
-    gap: 0.2rem !important;
-    margin: 0 0 0.2rem 0 !important;
+    gap: 0.28rem !important;
+    margin: 0 0 0.28rem 0 !important;
     justify-content: stretch !important;
     width: 100% !important;
 }}
-.gradio-container .vqc-optics-keypad button.vqc-optics-key,
-.gradio-container .vqc-optics-keypad button.vqc-optics-key span {{
-    font-family: "Courier New", Courier, monospace !important;
-    font-size: 1.44rem !important;
-    font-weight: 700 !important;
-    line-height: 1.1 !important;
-}}
-.gradio-container .vqc-optics-keypad button.vqc-optics-key {{
+.gradio-container .vqc-optics-keypad button.vqc-optics-key.vqc-receiver-preset {{
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
     min-height: 3rem !important;
     height: 3rem !important;
     max-height: 3rem !important;
-    aspect-ratio: auto !important;
-    background: #000000 !important;
-    border: none !important;
-    border-radius: 8px !important;
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-    letter-spacing: 0.03em !important;
-    padding: 0.28rem 0.1rem !important;
-    box-shadow: none !important;
+    width: 100% !important;
+    padding: 0.22rem 0.08rem !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1.15 !important;
+}}
+.gradio-container .vqc-optics-keypad button.vqc-optics-key.vqc-receiver-preset span {{
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0.04em !important;
 }}
 .gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad,
 .gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad span {{
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
-    font-size: 1.44rem !important;
+    font-size: 1.05rem !important;
     font-weight: 700 !important;
     line-height: 1 !important;
-}}
-.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad:active,
-.gradio-container .vqc-optics-panel .vqc-optics-dpad-row button.vqc-optics-key-dpad:active span {{
-    background: {_VQC_MATRIX_GREEN} !important;
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
 }}
 .gradio-container .vqc-optics-panel button.vqc-optics-key-clear {{
     text-transform: lowercase !important;
     letter-spacing: 0.06em !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home,
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
-    background: {_VQC_HOME_KEY_BG} !important;
-    box-shadow: none !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home,
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover,
 .gradio-container .vqc-optics-panel button.vqc-optics-key-home span {{
-    color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
-    font-size: 1.44rem !important;
-    font-weight: 700 !important;
-    text-shadow: 0 0 6px rgba(51, 255, 102, 0.35) !important;
+    font-size: 0.68rem !important;
+    letter-spacing: 0.03em !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-home:hover {{
-    background: #141414 !important;
+.gradio-container .vqc-optics-keypad button.vqc-optics-key.vqc-receiver-preset.vqc-action-btn-latched,
+.gradio-container .vqc-optics-keypad button.vqc-optics-key.vqc-receiver-preset.vqc-action-btn-latched:hover {{
+    color: #e8ffe8 !important;
+    -webkit-text-fill-color: #e8ffe8 !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active),
-.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active) span {{
-    color: {_VQC_MATRIX_GREEN} !important;
-    -webkit-text-fill-color: {_VQC_MATRIX_GREEN} !important;
-    text-shadow: 0 0 6px rgba(51, 255, 102, 0.35) !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover,
-.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover span {{
-    color: #7dff9a !important;
-    -webkit-text-fill-color: #7dff9a !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key:not(.active):not(.vqc-optics-key-home):not(.vqc-optics-key-defined):hover {{
-    background: #141414 !important;
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key-defined:not(.active):hover {{
-    background: #141414 !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key.active,
-.gradio-container .vqc-optics-panel button.vqc-optics-key.active:hover {{
-    background: {_VQC_MATRIX_GREEN} !important;
-    box-shadow: 0 0 12px rgba(51, 255, 102, 0.45) !important;
-}}
-.gradio-container .vqc-optics-panel button.vqc-optics-key.active,
-.gradio-container .vqc-optics-panel button.vqc-optics-key.active:hover,
-.gradio-container .vqc-optics-panel button.vqc-optics-key.active span {{
-    color: #000000 !important;
-    -webkit-text-fill-color: #000000 !important;
-    text-shadow: none !important;
-    -webkit-text-stroke: none !important;
+.gradio-container .vqc-optics-keypad button.vqc-optics-key.vqc-receiver-preset.vqc-action-btn-latched span {{
+    color: #e8ffe8 !important;
+    -webkit-text-fill-color: #e8ffe8 !important;
 }}
 .gradio-container .vqc-optics-panel .label-wrap span,
 .gradio-container .vqc-optics-panel label span {{
