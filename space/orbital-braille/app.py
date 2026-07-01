@@ -1397,6 +1397,24 @@ footer {{
     margin: 0 0 0.35rem 0 !important;
     font-size: 0.82rem !important;
 }}
+.gradio-container .vqc-stov-perspective-lx > .block {{
+    border: 2px solid rgba(255, 85, 85, 0.55) !important;
+    border-radius: 10px !important;
+    padding: 0.35rem !important;
+}}
+.gradio-container .vqc-stov-perspective-ly > .block {{
+    border: 2px solid rgba(85, 221, 85, 0.55) !important;
+    border-radius: 10px !important;
+    padding: 0.35rem !important;
+}}
+.gradio-container .vqc-stov-perspective-lz > .block {{
+    border: 2px solid rgba(85, 153, 255, 0.55) !important;
+    border-radius: 10px !important;
+    padding: 0.35rem !important;
+}}
+.gradio-container .vqc-stov-perspective-lx .markdown p {{ color: #ff8888 !important; }}
+.gradio-container .vqc-stov-perspective-ly .markdown p {{ color: #88ee99 !important; }}
+.gradio-container .vqc-stov-perspective-lz .markdown p {{ color: #88bbff !important; }}
 .gradio-container .vqc-stov-gauges {{
     display: flex;
     flex-direction: column;
@@ -2638,33 +2656,33 @@ def build_app() -> gr.Blocks:
                     ) as stov_animation_accordion:
                         with gr.Column(elem_classes=["vqc-stov-animation-panel"]):
                             stov_animation_info = gr.Markdown(
-                                "*Three views of the same generated STOV field — "
-                                "axial pinwheel, space-time scanner, and oblique tilt.*"
+                                "*Vector-synced gallery: each view tints to its **Lx / Ly / Lz** "
+                                "spectrum accent with a slow phase-rotation overlay.*"
                             )
                             with gr.Row(
                                 equal_height=True,
                                 elem_classes=["vqc-stov-perspective-gallery"],
                             ):
-                                with gr.Column():
-                                    gr.Markdown("**1. Axial Pinwheel** (default)")
+                                with gr.Column(elem_classes=["vqc-stov-perspective-lx"]):
+                                    gr.Markdown("**1. Lx · Axial Pinwheel**")
                                     stov_axial_video = gr.Video(
-                                        label="Axial Pinwheel View",
+                                        label="Lx Axial Pinwheel",
                                         show_label=False,
                                         autoplay=True,
                                         loop=True,
                                     )
-                                with gr.Column():
-                                    gr.Markdown("**2. Space-Time Scanner**")
+                                with gr.Column(elem_classes=["vqc-stov-perspective-ly"]):
+                                    gr.Markdown("**2. Ly · Space-Time Scanner**")
                                     stov_spacetime_video = gr.Video(
-                                        label="Space-Time Evolution",
+                                        label="Ly Space-Time Scanner",
                                         show_label=False,
                                         autoplay=True,
                                         loop=True,
                                     )
-                                with gr.Column():
-                                    gr.Markdown("**3. Oblique Tilted View**")
+                                with gr.Column(elem_classes=["vqc-stov-perspective-lz"]):
+                                    gr.Markdown("**3. Lz · Oblique Tilt**")
                                     stov_oblique_video = gr.Video(
-                                        label="Oblique Perspective",
+                                        label="Lz Oblique Tilt",
                                         show_label=False,
                                         autoplay=True,
                                         loop=True,

@@ -21,6 +21,13 @@ STOV_ANIM_PINWHEEL = "Axial Pinwheel (Default)"
 STOV_ANIM_SPACETIME = "Space-Time Evolution"
 STOV_ANIM_STYLES = (STOV_ANIM_PINWHEEL, STOV_ANIM_SPACETIME)
 
+# Lx / Ly / Lz vector proxies — synced with plot_vector_spectra bar colors.
+STOV_VECTOR_AXES: tuple[tuple[str, str, tuple[int, int, int]], ...] = (
+    ("x", "Lx", (255, 85, 85)),
+    ("y", "Ly", (85, 221, 85)),
+    ("z", "Lz", (85, 153, 255)),
+)
+
 STOV_PRESETS: dict[str, dict] = {
     "vqc_carrier": {
         "label": "VQC LG₁ carrier",
@@ -741,6 +748,76 @@ def _stov_rgb_from_norm_phase(norm: np.ndarray, phase: np.ndarray) -> np.ndarray
     return (np.stack([red, green, blue], axis=-1) * 255).astype(np.uint8)
 
 
+def _stov_component_norm_phase(
+    field: np.ndarray,
+    axis: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Normalized component amplitude and phase (matches decompose_vector_spectra)."""
+    intensity = np.abs(field)
+    phase = np.angle(field)
+    if axis == "x":
+        comp = np.abs(intensity * np.cos(phase))
+    elif axis == "y":
+        comp = np.abs(intensity * np.sin(phase))
+    else:
+        comp = np.abs(intensity * (0.5 + 0.5 * np.sin(2.0 * phase)))
+    peak = np.percentile(comp, 99) + 1e-9
+    return comp, comp / peak, phase
+
+
+def _vector_spectrum_shares(result: STOVAnalysisResult) -> dict[str, float]:
+    """Dominant-mode peak share per Lx / Ly / Lz spectrum (drives accent sync)."""
+    peaks = {
+        "x": float(np.max(result.powers_x)),
+        "y": float(np.max(result.powers_y)),
+        "z": float(np.max(result.powers_z)),
+    }
+    total = sum(peaks.values()) or 1.0
+    return {k: v / total for k, v in peaks.items()}
+
+
+def _stov_rgb_from_component(
+    norm: np.ndarray,
+    phase: np.ndarray,
+    accent: tuple[int, int, int],
+    spectrum_share: float,
+    *,
+    delta_phase: float = 0.0,
+    accent_strength: float = 0.58,
+) -> np.ndarray:
+    """Tint the base RGB toward an Lx/Ly/Lz accent using spectrum weight."""
+    base = _stov_rgb_from_norm_phase(norm, phase + delta_phase).astype(np.float32)
+    accent_arr = np.array(accent, dtype=np.float32)
+    weight = float(np.clip(accent_strength * spectrum_share * 1.35, 0.22, 0.82))
+    glow = norm[..., None] * accent_arr
+    tinted = base * (1.0 - weight) + glow * weight
+    return np.clip(tinted, 0, 255).astype(np.uint8)
+
+
+def _draw_phase_rotation_overlay(
+    draw,
+    width: int,
+    height: int,
+    frame_idx: int,
+    n_frames: int,
+    accent: tuple[int, int, int],
+) -> None:
+    """Slow phase-rotation guide overlay (vector-topological coherence cue)."""
+    cx, cy = width // 2, height // 2
+    radius = max(18, min(width, height) // 6)
+    angle = 2.0 * np.pi * frame_idx / max(n_frames, 1)
+    x_tip = cx + int(radius * np.cos(angle))
+    y_tip = cy + int(radius * np.sin(angle))
+    ring = (max(0, cx - radius), max(0, cy - radius), cx + radius, cy + radius)
+    draw.ellipse(ring, outline=accent, width=1)
+    draw.line([(cx, cy), (x_tip, y_tip)], fill=accent, width=2)
+    draw.ellipse(
+        [(x_tip - 3, y_tip - 3), (x_tip + 3, y_tip + 3)],
+        fill=accent,
+        outline=accent,
+    )
+
+
 def _stov_rgb_array(field: np.ndarray) -> np.ndarray:
     """RGB space-time view matching the static matplotlib spectrogram."""
     _, norm = _stov_intensity_norm(field)
@@ -758,23 +835,22 @@ def generate_axial_pinwheel_frames(
     n_frames: int = 48,
     rotation_speed: float = 0.08,
     out_size: tuple[int, int] = (640, 640),
+    axis: str = "x",
+    spectrum_share: float = 0.33,
+    accent: tuple[int, int, int] = (255, 85, 85),
 ):
-    """
-    Option A: axial pinwheel — slowly rotate phase while intensity stays fixed.
+    """Lx-synced axial pinwheel — slow phase rotation with vector accent overlay."""
+    from PIL import Image, ImageDraw
 
-    Produces a hypnotic, intuitive spinning-vortex view of the STOV field.
-    """
-    from PIL import Image
-
-    _, norm = _stov_intensity_norm(field)
-    phase = np.angle(field)
+    _, norm, phase = _stov_component_norm_phase(field, axis)
     frames = []
     for i in range(n_frames):
-        rotated_phase = phase + i * rotation_speed
-        rgb = _stov_rgb_from_norm_phase(norm, rotated_phase)
-        frames.append(
-            Image.fromarray(rgb).resize(out_size, Image.Resampling.BILINEAR)
-        )
+        delta = i * rotation_speed
+        rgb = _stov_rgb_from_component(norm, phase, accent, spectrum_share, delta_phase=delta)
+        img = Image.fromarray(rgb)
+        draw = ImageDraw.Draw(img)
+        _draw_phase_rotation_overlay(draw, rgb.shape[1], rgb.shape[0], i, n_frames, accent)
+        frames.append(img.resize(out_size, Image.Resampling.BILINEAR))
     return frames
 
 
@@ -785,19 +861,19 @@ def generate_oblique_tilted_frames(
     rotation_speed: float = 0.07,
     tilt: float = 0.22,
     out_size: tuple[int, int] = (400, 360),
+    axis: str = "z",
+    spectrum_share: float = 0.33,
+    accent: tuple[int, int, int] = (85, 153, 255),
 ):
-    """
-    Option C: oblique three-quarter view — pinwheel rotation plus affine depth tilt.
-    """
-    from PIL import Image
+    """Lz-synced oblique view — pinwheel rotation, depth tilt, phase overlay."""
+    from PIL import Image, ImageDraw
 
-    _, norm = _stov_intensity_norm(field)
-    phase = np.angle(field)
+    _, norm, phase = _stov_component_norm_phase(field, axis)
     h, w = field.shape
     frames = []
     for i in range(n_frames):
-        rotated_phase = phase + i * rotation_speed
-        rgb = _stov_rgb_from_norm_phase(norm, rotated_phase)
+        delta = i * rotation_speed
+        rgb = _stov_rgb_from_component(norm, phase, accent, spectrum_share, delta_phase=delta)
         img = Image.fromarray(rgb)
         if tilt > 0:
             shift = int(tilt * h * 0.35 * np.sin(i * 0.12))
@@ -807,6 +883,42 @@ def generate_oblique_tilted_frames(
                 (1.0, tilt * 0.4, -shift, 0.0, 0.92, tilt * 8.0),
                 resample=Image.Resampling.BICUBIC,
             )
+        draw = ImageDraw.Draw(img)
+        _draw_phase_rotation_overlay(draw, w, h, i, n_frames, accent)
+        frames.append(img.resize(out_size, Image.Resampling.BILINEAR))
+    return frames
+
+
+def generate_spacetime_frames(
+    field: np.ndarray,
+    *,
+    n_frames: int = 48,
+    out_size: tuple[int, int] = (640, 360),
+    axis: str = "y",
+    spectrum_share: float = 0.33,
+    accent: tuple[int, int, int] = (85, 221, 85),
+    rotation_speed: float = 0.05,
+):
+    """Ly-synced space-time scanner — time cursor plus slow phase rotation overlay."""
+    from PIL import Image, ImageDraw
+
+    n_frames = int(np.clip(n_frames, 8, 60))
+    indices = np.linspace(0, field.shape[0] - 1, n_frames, dtype=int)
+    _, norm, phase = _stov_component_norm_phase(field, axis)
+    frames = []
+    for frame_i, row_idx in enumerate(indices):
+        row = int(row_idx)
+        delta = frame_i * rotation_speed
+        rgb = _stov_rgb_from_component(norm, phase, accent, spectrum_share, delta_phase=delta)
+        img = Image.fromarray(rgb.copy())
+        draw = ImageDraw.Draw(img)
+        draw.line([(0, row), (rgb.shape[1] - 1, row)], fill=accent, width=2)
+        draw.rectangle(
+            [(0, max(0, row - 2)), (rgb.shape[1] - 1, min(rgb.shape[0] - 1, row + 2))],
+            outline=accent,
+            width=1,
+        )
+        _draw_phase_rotation_overlay(draw, rgb.shape[1], rgb.shape[0], frame_i, n_frames, accent)
         frames.append(img.resize(out_size, Image.Resampling.BILINEAR))
     return frames
 
@@ -816,8 +928,11 @@ def generate_three_stov_perspective_frames(
     *,
     n_frames: int = 48,
     gallery_size: tuple[int, int] = (400, 360),
+    spectrum_shares: dict[str, float] | None = None,
 ) -> tuple[list, list, list]:
-    """Generate axial, space-time, and oblique frame lists from one STOV field."""
+    """Generate Lx / Ly / Lz synced perspective frame lists from one STOV field."""
+    shares = spectrum_shares or {"x": 0.33, "y": 0.33, "z": 0.34}
+    accents = {axis: color for axis, _, color in STOV_VECTOR_AXES}
     square = (gallery_size[0], gallery_size[0])
     return (
         generate_axial_pinwheel_frames(
@@ -825,44 +940,28 @@ def generate_three_stov_perspective_frames(
             n_frames=n_frames,
             rotation_speed=0.07,
             out_size=square,
+            axis="x",
+            spectrum_share=shares["x"],
+            accent=accents["x"],
         ),
-        generate_spacetime_frames(field, n_frames=n_frames, out_size=gallery_size),
+        generate_spacetime_frames(
+            field,
+            n_frames=n_frames,
+            out_size=gallery_size,
+            axis="y",
+            spectrum_share=shares["y"],
+            accent=accents["y"],
+        ),
         generate_oblique_tilted_frames(
             field,
             n_frames=n_frames,
             rotation_speed=0.07,
             out_size=gallery_size,
+            axis="z",
+            spectrum_share=shares["z"],
+            accent=accents["z"],
         ),
     )
-
-
-def generate_spacetime_frames(
-    field: np.ndarray,
-    *,
-    n_frames: int = 48,
-    out_size: tuple[int, int] = (640, 360),
-):
-    """
-    Option B: space-time evolution — full-field RGB with a scanning time cursor.
-    """
-    from PIL import Image, ImageDraw
-
-    n_frames = int(np.clip(n_frames, 8, 60))
-    indices = np.linspace(0, field.shape[0] - 1, n_frames, dtype=int)
-    rgb = _stov_rgb_array(field)
-    frames = []
-    for row_idx in indices:
-        row = int(row_idx)
-        img = Image.fromarray(rgb.copy())
-        draw = ImageDraw.Draw(img)
-        draw.line([(0, row), (rgb.shape[1] - 1, row)], fill=(255, 220, 80), width=2)
-        draw.rectangle(
-            [(0, max(0, row - 2)), (rgb.shape[1] - 1, min(rgb.shape[0] - 1, row + 2))],
-            outline=(255, 180, 40),
-            width=1,
-        )
-        frames.append(img.resize(out_size, Image.Resampling.BILINEAR))
-    return frames
 
 
 def _save_stov_animation_frames(
@@ -960,14 +1059,16 @@ def render_stov_three_perspective_gallery(
     if session is None:
         return None, None, None, "⚠ Run **Analyze** first to generate the three-perspective gallery."
 
+    shares = _vector_spectrum_shares(session.result)
     axial_frames, spacetime_frames, oblique_frames = generate_three_stov_perspective_frames(
         session.field,
         n_frames=n_frames,
+        spectrum_shares=shares,
     )
     specs = (
-        (axial_frames, "stov_axial_pinwheel", 8.0, "Axial Pinwheel"),
-        (spacetime_frames, "stov_spacetime_scanner", 11.0, "Space-Time Scanner"),
-        (oblique_frames, "stov_oblique_tilt", 8.0, "Oblique Tilted View"),
+        (axial_frames, "stov_lx_pinwheel", 8.0, "Lx · Axial Pinwheel"),
+        (spacetime_frames, "stov_ly_spacetime", 11.0, "Ly · Space-Time Scanner"),
+        (oblique_frames, "stov_lz_oblique", 8.0, "Lz · Oblique Tilt"),
     )
     paths: list[str | None] = []
     labels: list[str] = []
@@ -988,7 +1089,9 @@ def render_stov_three_perspective_gallery(
 
     mp4_suffix = f" ({mp4_notes[0]})" if mp4_notes else ""
     note = (
-        f"✓ **Three-perspective gallery** — {', '.join(labels)} "
-        f"(dominant m={session.result.dominant_m:+d}, {n_frames} frames each).{mp4_suffix}"
+        f"✓ **Vector-synced gallery** — {', '.join(labels)} "
+        f"(dominant m={session.result.dominant_m:+d}, "
+        f"Lx/Ly/Lz shares {shares['x']:.2f}/{shares['y']:.2f}/{shares['z']:.2f}, "
+        f"{n_frames} frames each).{mp4_suffix}"
     )
     return paths[0], paths[1], paths[2], note
