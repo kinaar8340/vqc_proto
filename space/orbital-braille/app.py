@@ -845,7 +845,7 @@ def _nav_tab_btn_update(*, active: bool) -> gr.Update:
     return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
 
 
-ACTION_BTN_CLASSES = ["vqc-action-btn", "vqc-receiver-preset"]
+ACTION_BTN_CLASSES = ["vqc-receiver-preset"]
 
 
 def _action_btn_idle() -> gr.Update:
@@ -2026,17 +2026,21 @@ footer {{
 .gradio-container .vqc-action-btn-row > .column {{
     min-width: 0 !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-action-btn.vqc-receiver-preset {{
+.gradio-container .vqc-optics-panel .vqc-action-btn-row button.vqc-receiver-preset {{
     width: 100% !important;
-    min-height: 2.35rem !important;
 }}
-.gradio-container .vqc-optics-panel button.vqc-action-btn-latched,
-.gradio-container .vqc-optics-panel button.vqc-action-btn-latched:hover {{
-    border-color: #e04040 !important;
-    color: #ffe8e8 !important;
+.gradio-container .vqc-optics-action-spacer {{
+    min-height: 0.45rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-receiver-preset.vqc-action-btn-latched,
+.gradio-container .vqc-optics-panel button.vqc-receiver-preset.vqc-action-btn-latched:hover {{
+    border-color: #39ff14 !important;
+    color: #e8ffe8 !important;
     box-shadow:
-        0 0 12px rgba(224, 64, 64, 0.42),
-        inset 0 0 0 1px rgba(224, 64, 64, 0.38) !important;
+        0 0 12px rgba(57, 255, 20, 0.45),
+        inset 0 0 0 1px rgba(57, 255, 20, 0.35) !important;
 }}
 .gradio-container .vqc-optics-panel .vqc-slm-toggle label {{
     color: #c9a227 !important;
@@ -2461,6 +2465,31 @@ def build_app() -> gr.Blocks:
                             size="sm",
                             elem_classes=["vqc-receiver-preset"],
                         )
+                gr.HTML(
+                    '<div class="vqc-optics-action-spacer" aria-hidden="true"></div>',
+                    elem_classes=["vqc-optics-action-spacer"],
+                )
+                gr.HTML(
+                    '<div class="vqc-optics-action-spacer" aria-hidden="true"></div>',
+                    elem_classes=["vqc-optics-action-spacer"],
+                )
+                run_demo_latched = gr.State(value=False)
+                animate_latched = gr.State(value=False)
+                with gr.Row(equal_height=True, elem_classes=["vqc-action-btn-row"]):
+                    with gr.Column(scale=1):
+                        run_btn = gr.Button(
+                            "Run demo",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes=ACTION_BTN_CLASSES,
+                        )
+                    with gr.Column(scale=1):
+                        animate_btn = gr.Button(
+                            "Animate typehead",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes=ACTION_BTN_CLASSES,
+                        )
                 export_slm_frames = gr.Checkbox(
                     label="Include SLM-ready phase frames (PNG)",
                     value=False,
@@ -2512,23 +2541,6 @@ def build_app() -> gr.Blocks:
                         inputs=[optics_terminal, term_ui_state],
                     )
 
-            run_demo_latched = gr.State(value=False)
-            animate_latched = gr.State(value=False)
-            with gr.Row(equal_height=True, elem_classes=["vqc-action-btn-row"]):
-                with gr.Column(scale=1):
-                    run_btn = gr.Button(
-                        "Run demo",
-                        variant="secondary",
-                        size="sm",
-                        elem_classes=ACTION_BTN_CLASSES,
-                    )
-                with gr.Column(scale=1):
-                    animate_btn = gr.Button(
-                        "Animate typehead",
-                        variant="secondary",
-                        size="sm",
-                        elem_classes=ACTION_BTN_CLASSES,
-                    )
             run_cache = gr.State(value=None)
             with gr.Row(equal_height=True):
                 with gr.Column(scale=1):
