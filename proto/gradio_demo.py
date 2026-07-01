@@ -858,28 +858,12 @@ def _action_btn_idle() -> gr.Update:
 
 
 def _action_btn_latched() -> gr.Update:
-    """Action button while backend job is running — red latched outline."""
+    """Action button while backend job is running — matrix-green latched outline."""
     return gr.update(
         elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-latched"],
         variant="secondary",
         interactive=False,
     )
-
-
-def _latch_run_demo_on():
-    return True, _action_btn_latched()
-
-
-def _latch_run_demo_off():
-    return False, _action_btn_idle()
-
-
-def _latch_animate_on():
-    return True, _action_btn_latched()
-
-
-def _latch_animate_off():
-    return False, _action_btn_idle()
 
 
 def _nav_to_page(page: str) -> tuple:
@@ -2021,13 +2005,18 @@ footer {{
 .gradio-container .vqc-action-btn-row {{
     gap: 0.55rem !important;
     width: 100% !important;
-    margin: 0.35rem 0 0.5rem 0 !important;
+    margin: 0.15rem 0 0.45rem 0 !important;
 }}
 .gradio-container .vqc-action-btn-row > .column {{
     min-width: 0 !important;
 }}
 .gradio-container .vqc-optics-panel .vqc-action-btn-row button.vqc-receiver-preset {{
     width: 100% !important;
+}}
+.gradio-container .vqc-optics-panel .vqc-action-btn-row button.vqc-action-btn-tall {{
+    min-height: 4.6rem !important;
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
 }}
 .gradio-container .vqc-optics-action-spacer {{
     min-height: 0.45rem !important;
@@ -2469,26 +2458,23 @@ def build_app() -> gr.Blocks:
                     '<div class="vqc-optics-action-spacer" aria-hidden="true"></div>',
                     elem_classes=["vqc-optics-action-spacer"],
                 )
-                gr.HTML(
-                    '<div class="vqc-optics-action-spacer" aria-hidden="true"></div>',
-                    elem_classes=["vqc-optics-action-spacer"],
-                )
                 run_demo_latched = gr.State(value=False)
                 animate_latched = gr.State(value=False)
+                preset_latched_key = gr.State(value=None)
                 with gr.Row(equal_height=True, elem_classes=["vqc-action-btn-row"]):
                     with gr.Column(scale=1):
                         run_btn = gr.Button(
                             "Run demo",
                             variant="secondary",
                             size="sm",
-                            elem_classes=ACTION_BTN_CLASSES,
+                            elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-tall"],
                         )
                     with gr.Column(scale=1):
                         animate_btn = gr.Button(
                             "Animate typehead",
                             variant="secondary",
                             size="sm",
-                            elem_classes=ACTION_BTN_CLASSES,
+                            elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-tall"],
                         )
                 export_slm_frames = gr.Checkbox(
                     label="Include SLM-ready phase frames (PNG)",
@@ -2602,42 +2588,121 @@ def build_app() -> gr.Blocks:
                 run_cache,
             ]
 
+            preset_btn_list = list(preset_buttons.values())
+            preset_btn_keys = list(preset_buttons.keys())
+
+            def _all_presets_idle():
+                return tuple(_action_btn_idle() for _ in preset_btn_list)
+
+            def _latch_preset_on(active_key: str):
+                updates = [
+                    _action_btn_latched() if k == active_key else _action_btn_idle()
+                    for k in preset_btn_keys
+                ]
+                return (
+                    active_key,
+                    *updates,
+                    False,
+                    _action_btn_idle(),
+                    False,
+                    _action_btn_idle(),
+                )
+
+            def _latch_preset_off():
+                return (
+                    None,
+                    *_all_presets_idle(),
+                    False,
+                    _action_btn_idle(),
+                    False,
+                    _action_btn_idle(),
+                )
+
+            def _latch_run_demo_on_full():
+                return (
+                    None,
+                    *_all_presets_idle(),
+                    True,
+                    _action_btn_latched(),
+                    False,
+                    _action_btn_idle(),
+                )
+
+            def _latch_run_demo_off_full():
+                return (
+                    None,
+                    *_all_presets_idle(),
+                    False,
+                    _action_btn_idle(),
+                    False,
+                    _action_btn_idle(),
+                )
+
+            def _latch_animate_on_full():
+                return (
+                    None,
+                    *_all_presets_idle(),
+                    False,
+                    _action_btn_idle(),
+                    True,
+                    _action_btn_latched(),
+                )
+
+            def _latch_animate_off_full():
+                return (
+                    None,
+                    *_all_presets_idle(),
+                    False,
+                    _action_btn_idle(),
+                    False,
+                    _action_btn_idle(),
+                )
+
+            latch_all_outputs = [
+                preset_latched_key,
+                *preset_btn_list,
+                run_demo_latched,
+                run_btn,
+                animate_latched,
+                animate_btn,
+            ]
+
             run_btn.click(
-                _latch_run_demo_on,
-                outputs=[run_demo_latched, run_btn],
+                _latch_run_demo_on_full,
+                outputs=latch_all_outputs,
             ).then(
                 run_demo,
                 inputs=run_inputs,
                 outputs=run_outputs,
             ).then(
-                _latch_run_demo_off,
-                outputs=[run_demo_latched, run_btn],
+                _latch_run_demo_off_full,
+                outputs=latch_all_outputs,
             )
             animate_btn.click(
-                _latch_animate_on,
-                outputs=[animate_latched, animate_btn],
+                _latch_animate_on_full,
+                outputs=latch_all_outputs,
             ).then(
                 animate_typehead,
                 inputs=[run_cache],
                 outputs=[animation_video, animation_gif, animation_info],
             ).then(
-                _latch_animate_off,
-                outputs=[animate_latched, animate_btn],
+                _latch_animate_off_full,
+                outputs=latch_all_outputs,
             )
             for key, btn in preset_buttons.items():
                 btn.click(
                     lambda k=key: load_example_preset(k),
                     outputs=[payload, num_orbs, gamma_1, noise_level],
                 ).then(
-                    _latch_run_demo_on,
-                    outputs=[run_demo_latched, run_btn],
+                    lambda k=key: _latch_preset_on(k),
+                    outputs=latch_all_outputs,
                 ).then(
                     run_demo,
                     inputs=run_inputs,
                     outputs=run_outputs,
                 ).then(
-                    _latch_run_demo_off,
-                    outputs=[run_demo_latched, run_btn],
+                    _latch_preset_off,
+                    outputs=latch_all_outputs,
                 )
 
         with gr.Column(visible=False, elem_classes=["vqc-animations-page"]) as page_animations:
