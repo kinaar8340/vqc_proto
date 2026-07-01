@@ -15,12 +15,10 @@ from pathlib import Path
 import gradio as gr
 
 from stov_analyzer import (
-    STOV_ANIM_PINWHEEL,
-    STOV_ANIM_STYLES,
     STOV_PRESETS,
     bridge_stov_to_demo,
     load_stov_preset,
-    render_stov_animation_bundle,
+    render_stov_three_perspective_gallery,
     run_stov_analysis,
     run_stov_reconstruct_decode,
 )
@@ -1376,6 +1374,29 @@ footer {{
     max-height: 280px !important;
     overflow: hidden !important;
 }}
+.gradio-container .vqc-stov-perspective-gallery {{
+    width: 100% !important;
+    gap: 0.65rem !important;
+}}
+.gradio-container .vqc-stov-perspective-gallery > .column {{
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+}}
+.gradio-container .vqc-stov-perspective-gallery video {{
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 260px !important;
+    min-height: 180px !important;
+    object-fit: contain !important;
+    display: block !important;
+    background: rgba(8, 6, 18, 0.55) !important;
+    border-radius: 8px !important;
+}}
+.gradio-container .vqc-stov-perspective-gallery .markdown p {{
+    text-align: center !important;
+    margin: 0 0 0.35rem 0 !important;
+    font-size: 0.82rem !important;
+}}
 .gradio-container .vqc-stov-gauges {{
     display: flex;
     flex-direction: column;
@@ -2560,16 +2581,6 @@ def build_app() -> gr.Blocks:
                     stov_noise = gr.Slider(0.0, 0.5, value=0.1, step=0.01, label="Noise level")
                     stov_n_modes = gr.Slider(3, 25, value=9, step=1, label="Active modes")
                     stov_seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
-                    with gr.Row():
-                        stov_animation_style = gr.Radio(
-                            choices=list(STOV_ANIM_STYLES),
-                            value=STOV_ANIM_PINWHEEL,
-                            label="Animation style",
-                            info=(
-                                "Pinwheel = intuitive slow spinning view · "
-                                "Space-Time = technical scanner view"
-                            ),
-                        )
                     with gr.Accordion("Presets", open=True):
                         stov_preset_buttons: dict[str, gr.Button] = {}
                         for key, preset in STOV_PRESETS.items():
@@ -2595,7 +2606,7 @@ def build_app() -> gr.Blocks:
                             elem_classes=["vqc-full-width"],
                         )
                         stov_export_anim_btn = gr.Button(
-                            "Export STOV animation (GIF / MP4)",
+                            "Refresh STOV animation gallery",
                             variant="secondary",
                             elem_classes=["vqc-full-width"],
                         )
@@ -2621,20 +2632,43 @@ def build_app() -> gr.Blocks:
                     stov_spectrum_plot = gr.Plot(label="Power vs m")
                     with gr.Accordion("Vector components (Lx / Ly / Lz)", open=False):
                         stov_vector_plot = gr.Plot(label="Three-component spectra")
-                    with gr.Accordion("STOV space-time animation", open=False) as stov_animation_accordion:
+                    with gr.Accordion(
+                        "STOV Animations (Three Perspectives)",
+                        open=True,
+                    ) as stov_animation_accordion:
                         with gr.Column(elem_classes=["vqc-stov-animation-panel"]):
                             stov_animation_info = gr.Markdown(
-                                "*Default: **Axial Pinwheel** slow rotation. "
-                                "Switch to Space-Time Evolution for the technical scanner view.*"
+                                "*Three views of the same generated STOV field — "
+                                "axial pinwheel, space-time scanner, and oblique tilt.*"
                             )
-                            stov_animation_video = gr.Video(
-                                label="STOV animation (MP4)",
-                                autoplay=False,
-                            )
-                            stov_animation_gif = gr.Image(
-                                label="STOV animation (GIF)",
-                                type="filepath",
-                            )
+                            with gr.Row(
+                                equal_height=True,
+                                elem_classes=["vqc-stov-perspective-gallery"],
+                            ):
+                                with gr.Column():
+                                    gr.Markdown("**1. Axial Pinwheel** (default)")
+                                    stov_axial_video = gr.Video(
+                                        label="Axial Pinwheel View",
+                                        show_label=False,
+                                        autoplay=True,
+                                        loop=True,
+                                    )
+                                with gr.Column():
+                                    gr.Markdown("**2. Space-Time Scanner**")
+                                    stov_spacetime_video = gr.Video(
+                                        label="Space-Time Evolution",
+                                        show_label=False,
+                                        autoplay=True,
+                                        loop=True,
+                                    )
+                                with gr.Column():
+                                    gr.Markdown("**3. Oblique Tilted View**")
+                                    stov_oblique_video = gr.Video(
+                                        label="Oblique Perspective",
+                                        show_label=False,
+                                        autoplay=True,
+                                        loop=True,
+                                    )
             with gr.Row(elem_classes=["vqc-stov-meters"], visible=False):
                 stov_purity = gr.Number(label="Mode purity", value=0.0, precision=4)
                 stov_dominant_m = gr.Number(label="Dominant m", value=0, precision=0)
@@ -2674,20 +2708,21 @@ def build_app() -> gr.Blocks:
                 )
 
             stov_animation_outputs = [
-                stov_animation_gif,
-                stov_animation_video,
+                stov_axial_video,
+                stov_spacetime_video,
+                stov_oblique_video,
                 stov_animation_info,
                 stov_animation_accordion,
             ]
 
-            def _export_stov_animation(cache, animation_style):
-                gif_path, mp4_path, note = render_stov_animation_bundle(
-                    cache,
-                    animation_style,
+            def _export_stov_animation(cache):
+                axial_path, spacetime_path, oblique_path, note = (
+                    render_stov_three_perspective_gallery(cache)
                 )
                 return (
-                    gif_path,
-                    mp4_path,
+                    axial_path,
+                    spacetime_path,
+                    oblique_path,
                     note,
                     gr.update(open=True),
                 )
@@ -2700,7 +2735,7 @@ def build_app() -> gr.Blocks:
                 outputs=stov_outputs,
             ).then(
                 _export_stov_animation,
-                inputs=[stov_cache, stov_animation_style],
+                inputs=[stov_cache],
                 outputs=stov_animation_outputs,
             )
             for key, btn in stov_preset_buttons.items():
@@ -2713,7 +2748,7 @@ def build_app() -> gr.Blocks:
                     outputs=stov_outputs,
                 ).then(
                     _export_stov_animation,
-                    inputs=[stov_cache, stov_animation_style],
+                    inputs=[stov_cache],
                     outputs=stov_animation_outputs,
                 )
 
@@ -2729,7 +2764,7 @@ def build_app() -> gr.Blocks:
             )
             stov_export_anim_btn.click(
                 _export_stov_animation,
-                inputs=[stov_cache, stov_animation_style],
+                inputs=[stov_cache],
                 outputs=stov_animation_outputs,
             )
 
@@ -2777,7 +2812,7 @@ def build_app() -> gr.Blocks:
         demo.load(_stream_term_boot, outputs=term_keypad_outputs)
         demo.load(stov_bootstrap_fn, outputs=stov_outputs).then(
             _export_stov_animation,
-            inputs=[stov_cache, stov_animation_style],
+            inputs=[stov_cache],
             outputs=stov_animation_outputs,
         )
 

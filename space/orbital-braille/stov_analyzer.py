@@ -1,15 +1,17 @@
 """STOV (spatiotemporal OAM) spectrum analysis for the VQC Gradio demo."""
 
 from __future__ import annotations
-
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from PIL import Image, ImageDraw, ImageFont
 
+import io
+import tempfile
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+
 
 STOV_BG = "#1a1a2e"
 STOV_AX = "#0f0f23"
@@ -776,6 +778,64 @@ def generate_axial_pinwheel_frames(
     return frames
 
 
+def generate_oblique_tilted_frames(
+    field: np.ndarray,
+    *,
+    n_frames: int = 48,
+    rotation_speed: float = 0.07,
+    tilt: float = 0.22,
+    out_size: tuple[int, int] = (400, 360),
+):
+    """
+    Option C: oblique three-quarter view — pinwheel rotation plus affine depth tilt.
+    """
+    from PIL import Image
+
+    _, norm = _stov_intensity_norm(field)
+    phase = np.angle(field)
+    h, w = field.shape
+    frames = []
+    for i in range(n_frames):
+        rotated_phase = phase + i * rotation_speed
+        rgb = _stov_rgb_from_norm_phase(norm, rotated_phase)
+        img = Image.fromarray(rgb)
+        if tilt > 0:
+            shift = int(tilt * h * 0.35 * np.sin(i * 0.12))
+            img = img.transform(
+                (w, h),
+                Image.AFFINE,
+                (1.0, tilt * 0.4, -shift, 0.0, 0.92, tilt * 8.0),
+                resample=Image.Resampling.BICUBIC,
+            )
+        frames.append(img.resize(out_size, Image.Resampling.BILINEAR))
+    return frames
+
+
+def generate_three_stov_perspective_frames(
+    field: np.ndarray,
+    *,
+    n_frames: int = 48,
+    gallery_size: tuple[int, int] = (400, 360),
+) -> tuple[list, list, list]:
+    """Generate axial, space-time, and oblique frame lists from one STOV field."""
+    square = (gallery_size[0], gallery_size[0])
+    return (
+        generate_axial_pinwheel_frames(
+            field,
+            n_frames=n_frames,
+            rotation_speed=0.07,
+            out_size=square,
+        ),
+        generate_spacetime_frames(field, n_frames=n_frames, out_size=gallery_size),
+        generate_oblique_tilted_frames(
+            field,
+            n_frames=n_frames,
+            rotation_speed=0.07,
+            out_size=gallery_size,
+        ),
+    )
+
+
 def generate_spacetime_frames(
     field: np.ndarray,
     *,
@@ -883,3 +943,52 @@ def render_stov_animation_bundle(
         f"(dominant m={session.result.dominant_m:+d}).{mp4_note}"
     )
     return gif_path, mp4_path, note
+
+
+def _gallery_video_path(gif_path: str, mp4_path: str | None) -> str | None:
+    """Prefer MP4 for gr.Video; fall back to GIF when ffmpeg is unavailable."""
+    return mp4_path or gif_path
+
+
+def render_stov_three_perspective_gallery(
+    cache: dict[str, Any] | None,
+    *,
+    n_frames: int = 48,
+) -> tuple[str | None, str | None, str | None, str]:
+    """Render axial, space-time, and oblique animations from the cached STOV field."""
+    session = STOVSession.from_cache(cache)
+    if session is None:
+        return None, None, None, "⚠ Run **Analyze** first to generate the three-perspective gallery."
+
+    axial_frames, spacetime_frames, oblique_frames = generate_three_stov_perspective_frames(
+        session.field,
+        n_frames=n_frames,
+    )
+    specs = (
+        (axial_frames, "stov_axial_pinwheel", 8.0, "Axial Pinwheel"),
+        (spacetime_frames, "stov_spacetime_scanner", 11.0, "Space-Time Scanner"),
+        (oblique_frames, "stov_oblique_tilt", 8.0, "Oblique Tilted View"),
+    )
+    paths: list[str | None] = []
+    labels: list[str] = []
+    mp4_notes: list[str] = []
+    for frames, basename, fps, label in specs:
+        if not frames:
+            paths.append(None)
+            continue
+        gif_path, mp4_path, mp4_note = _save_stov_animation_frames(
+            frames,
+            basename=basename,
+            fps=fps,
+        )
+        paths.append(_gallery_video_path(gif_path, mp4_path))
+        labels.append(label)
+        if mp4_note:
+            mp4_notes.append(mp4_note.strip())
+
+    mp4_suffix = f" ({mp4_notes[0]})" if mp4_notes else ""
+    note = (
+        f"✓ **Three-perspective gallery** — {', '.join(labels)} "
+        f"(dominant m={session.result.dominant_m:+d}, {n_frames} frames each).{mp4_suffix}"
+    )
+    return paths[0], paths[1], paths[2], note
