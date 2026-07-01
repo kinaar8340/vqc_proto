@@ -2225,6 +2225,13 @@ def build_app() -> gr.Blocks:
                                     variant="secondary",
                                 )
                             with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
+                                tab_stov_btn = gr.Button(
+                                    "STOV Analyzer",
+                                    elem_classes=["vqc-source-tab"],
+                                    scale=0,
+                                    variant="secondary",
+                                )
+                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
                                 tab_anim_btn = gr.Button(
                                     "Animations",
                                     elem_classes=["vqc-source-tab"],
@@ -2241,13 +2248,6 @@ def build_app() -> gr.Blocks:
                             with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
                                 tab_newhere_btn = gr.Button(
                                     "New here?",
-                                    elem_classes=["vqc-source-tab"],
-                                    scale=0,
-                                    variant="secondary",
-                                )
-                            with gr.Column(elem_classes=["vqc-nav-cell"], scale=1, min_width=72):
-                                tab_stov_btn = gr.Button(
-                                    "STOV Analyzer",
                                     elem_classes=["vqc-source-tab"],
                                     scale=0,
                                     variant="secondary",
@@ -2543,16 +2543,16 @@ def build_app() -> gr.Blocks:
                     scale=0,
                     variant="secondary",
                 )
+                anim_tab_stov_btn = gr.Button(
+                    "STOV Analyzer",
+                    elem_classes=["vqc-source-tab"],
+                    scale=0,
+                    variant="secondary",
+                )
                 anim_tab_anim_btn = gr.Button(
                     "Animations",
                     elem_classes=["vqc-source-tab", "active"],
                     interactive=False,
-                    scale=0,
-                    variant="secondary",
-                )
-                anim_tab_stov_btn = gr.Button(
-                    "STOV Analyzer",
-                    elem_classes=["vqc-source-tab"],
                     scale=0,
                     variant="secondary",
                 )
@@ -2570,16 +2570,16 @@ def build_app() -> gr.Blocks:
                     scale=0,
                     variant="secondary",
                 )
-                stov_tab_anim_btn = gr.Button(
-                    "Animations",
-                    elem_classes=["vqc-source-tab"],
-                    scale=0,
-                    variant="secondary",
-                )
                 stov_tab_stov_btn = gr.Button(
                     "STOV Analyzer",
                     elem_classes=["vqc-source-tab", "active"],
                     interactive=False,
+                    scale=0,
+                    variant="secondary",
+                )
+                stov_tab_anim_btn = gr.Button(
+                    "Animations",
+                    elem_classes=["vqc-source-tab"],
                     scale=0,
                     variant="secondary",
                 )
