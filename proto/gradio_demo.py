@@ -15,6 +15,8 @@ from pathlib import Path
 import gradio as gr
 
 from stov_analyzer import (
+    STOV_ANIM_PINWHEEL,
+    STOV_ANIM_STYLES,
     STOV_PRESETS,
     bridge_stov_to_demo,
     load_stov_preset,
@@ -2558,6 +2560,16 @@ def build_app() -> gr.Blocks:
                     stov_noise = gr.Slider(0.0, 0.5, value=0.1, step=0.01, label="Noise level")
                     stov_n_modes = gr.Slider(3, 25, value=9, step=1, label="Active modes")
                     stov_seed = gr.Slider(0, 9999, value=42, step=1, label="Random seed")
+                    with gr.Row():
+                        stov_animation_style = gr.Radio(
+                            choices=list(STOV_ANIM_STYLES),
+                            value=STOV_ANIM_PINWHEEL,
+                            label="Animation style",
+                            info=(
+                                "Pinwheel = intuitive slow spinning view · "
+                                "Space-Time = technical scanner view"
+                            ),
+                        )
                     with gr.Accordion("Presets", open=True):
                         stov_preset_buttons: dict[str, gr.Button] = {}
                         for key, preset in STOV_PRESETS.items():
@@ -2612,7 +2624,8 @@ def build_app() -> gr.Blocks:
                     with gr.Accordion("STOV space-time animation", open=False) as stov_animation_accordion:
                         with gr.Column(elem_classes=["vqc-stov-animation-panel"]):
                             stov_animation_info = gr.Markdown(
-                                "*Export scrolls through the time axis of the current field.*"
+                                "*Default: **Axial Pinwheel** slow rotation. "
+                                "Switch to Space-Time Evolution for the technical scanner view.*"
                             )
                             stov_animation_video = gr.Video(
                                 label="STOV animation (MP4)",
@@ -2660,12 +2673,35 @@ def build_app() -> gr.Blocks:
                     preset_key=preset_key,
                 )
 
+            stov_animation_outputs = [
+                stov_animation_gif,
+                stov_animation_video,
+                stov_animation_info,
+                stov_animation_accordion,
+            ]
+
+            def _export_stov_animation(cache, animation_style):
+                gif_path, mp4_path, note = render_stov_animation_bundle(
+                    cache,
+                    animation_style,
+                )
+                return (
+                    gif_path,
+                    mp4_path,
+                    note,
+                    gr.update(open=True),
+                )
+
             stov_analyze_btn.click(
                 lambda m_min, m_max, noise, n_modes, seed, pk: run_stov_analysis(
                     m_min, m_max, noise, n_modes, seed, preset_key=pk
                 ),
                 inputs=[*stov_inputs, stov_preset_key],
                 outputs=stov_outputs,
+            ).then(
+                _export_stov_animation,
+                inputs=[stov_cache, stov_animation_style],
+                outputs=stov_animation_outputs,
             )
             for key, btn in stov_preset_buttons.items():
                 btn.click(
@@ -2675,6 +2711,10 @@ def build_app() -> gr.Blocks:
                     _run_stov_with_preset,
                     inputs=[*stov_inputs, stov_preset_key],
                     outputs=stov_outputs,
+                ).then(
+                    _export_stov_animation,
+                    inputs=[stov_cache, stov_animation_style],
+                    outputs=stov_animation_outputs,
                 )
 
             stov_reconstruct_btn.click(
@@ -2687,24 +2727,10 @@ def build_app() -> gr.Blocks:
                 inputs=[stov_cache],
                 outputs=[payload, num_orbs, noise_level, gamma_1, stov_bridge_status],
             )
-            def _export_stov_animation(cache):
-                gif_path, mp4_path, note = render_stov_animation_bundle(cache)
-                return (
-                    gif_path,
-                    mp4_path,
-                    note,
-                    gr.update(open=True),
-                )
-
             stov_export_anim_btn.click(
                 _export_stov_animation,
-                inputs=[stov_cache],
-                outputs=[
-                    stov_animation_gif,
-                    stov_animation_video,
-                    stov_animation_info,
-                    stov_animation_accordion,
-                ],
+                inputs=[stov_cache, stov_animation_style],
+                outputs=stov_animation_outputs,
             )
 
             def _bootstrap_stov_tab():
@@ -2749,7 +2775,11 @@ def build_app() -> gr.Blocks:
         newhere_minimize_btn.click(_minimize_newhere, outputs=newhere_outputs[:3])
         claims_minimize_btn.click(_minimize_claims, outputs=claims_outputs[:3])
         demo.load(_stream_term_boot, outputs=term_keypad_outputs)
-        demo.load(stov_bootstrap_fn, outputs=stov_outputs)
+        demo.load(stov_bootstrap_fn, outputs=stov_outputs).then(
+            _export_stov_animation,
+            inputs=[stov_cache, stov_animation_style],
+            outputs=stov_animation_outputs,
+        )
 
         gr.Markdown(
             "Non-commercial research only · CC-BY-NC-SA-4.0 + patent restrictions · "

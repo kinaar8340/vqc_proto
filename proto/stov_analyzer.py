@@ -15,6 +15,10 @@ STOV_BG = "#1a1a2e"
 STOV_AX = "#0f0f23"
 STOV_GRID = "#c8b820"
 
+STOV_ANIM_PINWHEEL = "Axial Pinwheel (Default)"
+STOV_ANIM_SPACETIME = "Space-Time Evolution"
+STOV_ANIM_STYLES = (STOV_ANIM_PINWHEEL, STOV_ANIM_SPACETIME)
+
 STOV_PRESETS: dict[str, dict] = {
     "vqc_carrier": {
         "label": "VQC LG₁ carrier",
@@ -720,65 +724,96 @@ def bridge_stov_to_demo(cache: dict[str, Any] | None) -> tuple[str, float, float
     )
 
 
-def _stov_rgb_array(field: np.ndarray) -> np.ndarray:
-    """RGB space-time view matching the static matplotlib spectrogram."""
+def _stov_intensity_norm(field: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Stable intensity envelope and percentile-normalized amplitude."""
     intensity = np.abs(field)
-    phase = np.angle(field)
     peak = np.percentile(intensity, 99) + 1e-9
-    norm = intensity / peak
+    return intensity, intensity / peak
+
+
+def _stov_rgb_from_norm_phase(norm: np.ndarray, phase: np.ndarray) -> np.ndarray:
+    """RGB channels from normalized intensity and phase (static spectrogram style)."""
     red = np.clip(norm * (0.55 + 0.45 * np.sin(phase)), 0, 1)
     green = np.clip(norm * (0.55 + 0.45 * np.cos(phase * 1.5)), 0, 1)
     blue = np.clip(norm * (0.55 + 0.45 * np.sin(phase * 2.0)), 0, 1)
     return (np.stack([red, green, blue], axis=-1) * 255).astype(np.uint8)
 
 
-def _stov_frame_pil(x: np.ndarray, t: np.ndarray, field: np.ndarray, row_idx: int):
-    from PIL import Image, ImageDraw
-
-    rgb = _stov_rgb_array(field)
-    window = min(64, field.shape[0])
-    row = int(np.clip(row_idx, 0, field.shape[0] - 1))
-    r0 = int(np.clip(row - window // 2, 0, max(0, field.shape[0] - window)))
-    crop = rgb[r0 : r0 + window, :, :]
-    img = Image.fromarray(crop)
-    draw = ImageDraw.Draw(img)
-    cursor = row - r0
-    if 0 <= cursor < window:
-        draw.line([(0, cursor), (crop.shape[1] - 1, cursor)], fill=(255, 220, 80), width=2)
-    return img.resize((640, 240), Image.Resampling.BILINEAR)
+def _stov_rgb_array(field: np.ndarray) -> np.ndarray:
+    """RGB space-time view matching the static matplotlib spectrogram."""
+    _, norm = _stov_intensity_norm(field)
+    return _stov_rgb_from_norm_phase(norm, np.angle(field))
 
 
-def _stov_full_frame_pil(field: np.ndarray, row_idx: int):
-    """Full-field RGB frame with a time-axis cursor (for GIF/MP4 export)."""
-    from PIL import Image, ImageDraw
-
-    rgb = _stov_rgb_array(field)
-    img = Image.fromarray(rgb)
-    draw = ImageDraw.Draw(img)
-    row = int(np.clip(row_idx, 0, field.shape[0] - 1))
-    draw.line([(0, row), (rgb.shape[1] - 1, row)], fill=(255, 220, 80), width=2)
-    return img.resize((640, 360), Image.Resampling.BILINEAR)
+def is_pinwheel_animation_style(animation_style: str) -> bool:
+    """True when the intuitive axial pinwheel style is selected."""
+    return animation_style != STOV_ANIM_SPACETIME
 
 
-def render_stov_animation_bundle(
-    cache: dict[str, Any] | None,
+def generate_axial_pinwheel_frames(
+    field: np.ndarray,
     *,
     n_frames: int = 48,
-    fps: float = 11.0,
-) -> tuple[str | None, str | None, str]:
-    """Export STOV space-time scroll animation as GIF + optional MP4."""
-    session = STOVSession.from_cache(cache)
-    if session is None:
-        return None, None, "⚠ Run **Analyze** first before exporting animation."
+    rotation_speed: float = 0.08,
+    out_size: tuple[int, int] = (640, 640),
+):
+    """
+    Option A: axial pinwheel — slowly rotate phase while intensity stays fixed.
+
+    Produces a hypnotic, intuitive spinning-vortex view of the STOV field.
+    """
+    from PIL import Image
+
+    _, norm = _stov_intensity_norm(field)
+    phase = np.angle(field)
+    frames = []
+    for i in range(n_frames):
+        rotated_phase = phase + i * rotation_speed
+        rgb = _stov_rgb_from_norm_phase(norm, rotated_phase)
+        frames.append(
+            Image.fromarray(rgb).resize(out_size, Image.Resampling.BILINEAR)
+        )
+    return frames
+
+
+def generate_spacetime_frames(
+    field: np.ndarray,
+    *,
+    n_frames: int = 48,
+    out_size: tuple[int, int] = (640, 360),
+):
+    """
+    Option B: space-time evolution — full-field RGB with a scanning time cursor.
+    """
+    from PIL import Image, ImageDraw
 
     n_frames = int(np.clip(n_frames, 8, 60))
-    indices = np.linspace(0, session.field.shape[0] - 1, n_frames, dtype=int)
-    frames = [_stov_full_frame_pil(session.field, int(i)) for i in indices]
-    if not frames:
-        return None, None, "⚠ No frames generated — re-run **Analyze** and try again."
+    indices = np.linspace(0, field.shape[0] - 1, n_frames, dtype=int)
+    rgb = _stov_rgb_array(field)
+    frames = []
+    for row_idx in indices:
+        row = int(row_idx)
+        img = Image.fromarray(rgb.copy())
+        draw = ImageDraw.Draw(img)
+        draw.line([(0, row), (rgb.shape[1] - 1, row)], fill=(255, 220, 80), width=2)
+        draw.rectangle(
+            [(0, max(0, row - 2)), (rgb.shape[1] - 1, min(rgb.shape[0] - 1, row + 2))],
+            outline=(255, 180, 40),
+            width=1,
+        )
+        frames.append(img.resize(out_size, Image.Resampling.BILINEAR))
+    return frames
 
+
+def _save_stov_animation_frames(
+    frames: list,
+    *,
+    basename: str,
+    fps: float,
+) -> tuple[str, str | None, str]:
+    """Write GIF + optional MP4 from PIL frames; return paths and MP4 status note."""
     out_dir = Path(tempfile.mkdtemp(prefix="vqc_stov_anim_"))
-    gif_path = out_dir / "stov_field.gif"
+    gif_path = out_dir / f"{basename}.gif"
     frame_ms = max(40, int(1000.0 / fps))
     frames[0].save(
         gif_path,
@@ -795,16 +830,56 @@ def render_stov_animation_bundle(
     try:
         from demo_core import _encode_frames_mp4
 
-        encoded = _encode_frames_mp4(frames, out_dir / "stov_field.mp4", fps=fps)
+        encoded = _encode_frames_mp4(frames, out_dir / f"{basename}.mp4", fps=fps)
         if encoded is not None:
             mp4_path = str(encoded)
         else:
             mp4_note = " MP4 skipped (ffmpeg not available on this host)."
     except Exception as exc:
         mp4_note = f" MP4 export failed: {exc}"
+    return str(gif_path), mp4_path, mp4_note
 
-    note = (
-        f"✓ Exported {n_frames} full-field RGB frames "
-        f"(dominant m={session.result.dominant_m:+d}, {fps:.0f} fps).{mp4_note}"
+
+def render_stov_animation_bundle(
+    cache: dict[str, Any] | None,
+    animation_style: str = STOV_ANIM_PINWHEEL,
+    *,
+    n_frames: int | None = None,
+    fps: float | None = None,
+) -> tuple[str | None, str | None, str]:
+    """Export STOV animation as GIF + optional MP4 (pinwheel or space-time style)."""
+    session = STOVSession.from_cache(cache)
+    if session is None:
+        return None, None, "⚠ Run **Analyze** first before exporting animation."
+
+    pinwheel = is_pinwheel_animation_style(animation_style)
+    if pinwheel:
+        n_frames = int(n_frames or 48)
+        fps = float(fps or 8.0)
+        frames = generate_axial_pinwheel_frames(
+            session.field,
+            n_frames=n_frames,
+            rotation_speed=0.08,
+        )
+        label = "Axial Pinwheel Animation (slow rotation)"
+        basename = "stov_pinwheel"
+    else:
+        n_frames = int(n_frames or 48)
+        fps = float(fps or 11.0)
+        frames = generate_spacetime_frames(session.field, n_frames=n_frames)
+        label = "Space-Time Evolution Animation (time cursor)"
+        basename = "stov_spacetime"
+
+    if not frames:
+        return None, None, "⚠ No frames generated — re-run **Analyze** and try again."
+
+    gif_path, mp4_path, mp4_note = _save_stov_animation_frames(
+        frames,
+        basename=basename,
+        fps=fps,
     )
-    return str(gif_path), mp4_path, note
+    note = (
+        f"✓ **{label}** — {len(frames)} frames at {fps:.0f} fps "
+        f"(dominant m={session.result.dominant_m:+d}).{mp4_note}"
+    )
+    return gif_path, mp4_path, note
