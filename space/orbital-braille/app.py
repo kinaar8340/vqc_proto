@@ -845,6 +845,43 @@ def _nav_tab_btn_update(*, active: bool) -> gr.Update:
     return gr.update(interactive=True, elem_classes=["vqc-source-tab"], variant="secondary")
 
 
+ACTION_BTN_CLASSES = ["vqc-action-btn", "vqc-receiver-preset"]
+
+
+def _action_btn_idle() -> gr.Update:
+    """Preset-style action button — idle (default border)."""
+    return gr.update(
+        elem_classes=ACTION_BTN_CLASSES,
+        variant="secondary",
+        interactive=True,
+    )
+
+
+def _action_btn_latched() -> gr.Update:
+    """Action button while backend job is running — red latched outline."""
+    return gr.update(
+        elem_classes=[*ACTION_BTN_CLASSES, "vqc-action-btn-latched"],
+        variant="secondary",
+        interactive=False,
+    )
+
+
+def _latch_run_demo_on():
+    return True, _action_btn_latched()
+
+
+def _latch_run_demo_off():
+    return False, _action_btn_idle()
+
+
+def _latch_animate_on():
+    return True, _action_btn_latched()
+
+
+def _latch_animate_off():
+    return False, _action_btn_idle()
+
+
 def _nav_to_page(page: str) -> tuple:
     """Switch demo / animations / STOV screens; refresh Source tab highlights."""
     on_demo = page == "demo"
@@ -1981,6 +2018,26 @@ footer {{
     background: linear-gradient(180deg, #6b4f1d 0%, #3d2e14 100%) !important;
     color: #fff8e8 !important;
 }}
+.gradio-container .vqc-action-btn-row {{
+    gap: 0.55rem !important;
+    width: 100% !important;
+    margin: 0.35rem 0 0.5rem 0 !important;
+}}
+.gradio-container .vqc-action-btn-row > .column {{
+    min-width: 0 !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-action-btn.vqc-receiver-preset {{
+    width: 100% !important;
+    min-height: 2.35rem !important;
+}}
+.gradio-container .vqc-optics-panel button.vqc-action-btn-latched,
+.gradio-container .vqc-optics-panel button.vqc-action-btn-latched:hover {{
+    border-color: #e04040 !important;
+    color: #ffe8e8 !important;
+    box-shadow:
+        0 0 12px rgba(224, 64, 64, 0.42),
+        inset 0 0 0 1px rgba(224, 64, 64, 0.38) !important;
+}}
 .gradio-container .vqc-optics-panel .vqc-slm-toggle label {{
     color: #c9a227 !important;
     font-size: 0.76rem !important;
@@ -2455,7 +2512,23 @@ def build_app() -> gr.Blocks:
                         inputs=[optics_terminal, term_ui_state],
                     )
 
-            run_btn = gr.Button("Run demo", variant="primary", elem_classes=["vqc-full-width"])
+            run_demo_latched = gr.State(value=False)
+            animate_latched = gr.State(value=False)
+            with gr.Row(equal_height=True, elem_classes=["vqc-action-btn-row"]):
+                with gr.Column(scale=1):
+                    run_btn = gr.Button(
+                        "Run demo",
+                        variant="secondary",
+                        size="sm",
+                        elem_classes=ACTION_BTN_CLASSES,
+                    )
+                with gr.Column(scale=1):
+                    animate_btn = gr.Button(
+                        "Animate typehead",
+                        variant="secondary",
+                        size="sm",
+                        elem_classes=ACTION_BTN_CLASSES,
+                    )
             run_cache = gr.State(value=None)
             with gr.Row(equal_height=True):
                 with gr.Column(scale=1):
@@ -2477,11 +2550,6 @@ def build_app() -> gr.Blocks:
                     label="Plotly 3D",
                     elem_classes=["vqc-plot3d-panel"],
                 )
-            animate_btn = gr.Button(
-                "Animate typehead",
-                variant="secondary",
-                elem_classes=["vqc-full-width"],
-            )
             animation_video = gr.Video(
                 label="Typehead animation (MP4)",
                 elem_classes=["vqc-animation-panel"],
@@ -2522,17 +2590,43 @@ def build_app() -> gr.Blocks:
                 run_cache,
             ]
 
-            run_btn.click(run_demo, run_inputs, run_outputs)
+            run_btn.click(
+                _latch_run_demo_on,
+                outputs=[run_demo_latched, run_btn],
+            ).then(
+                run_demo,
+                inputs=run_inputs,
+                outputs=run_outputs,
+            ).then(
+                _latch_run_demo_off,
+                outputs=[run_demo_latched, run_btn],
+            )
             animate_btn.click(
+                _latch_animate_on,
+                outputs=[animate_latched, animate_btn],
+            ).then(
                 animate_typehead,
                 inputs=[run_cache],
                 outputs=[animation_video, animation_gif, animation_info],
+            ).then(
+                _latch_animate_off,
+                outputs=[animate_latched, animate_btn],
             )
             for key, btn in preset_buttons.items():
                 btn.click(
                     lambda k=key: load_example_preset(k),
                     outputs=[payload, num_orbs, gamma_1, noise_level],
-                ).then(run_demo, inputs=run_inputs, outputs=run_outputs)
+                ).then(
+                    _latch_run_demo_on,
+                    outputs=[run_demo_latched, run_btn],
+                ).then(
+                    run_demo,
+                    inputs=run_inputs,
+                    outputs=run_outputs,
+                ).then(
+                    _latch_run_demo_off,
+                    outputs=[run_demo_latched, run_btn],
+                )
 
         with gr.Column(visible=False, elem_classes=["vqc-animations-page"]) as page_animations:
             with gr.Row(elem_classes=["vqc-source-tabs-row", "vqc-animations-nav-row"]):
